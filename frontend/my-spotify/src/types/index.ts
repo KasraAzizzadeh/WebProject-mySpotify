@@ -17,18 +17,27 @@ export interface PlaylistItem {
   trackCount: number;
 }
 
+// Extended to support Discover page sorting and Artist routing
 export interface AlbumItem {
   id: string;
   name: string;
   artistName: string;
+  artistId: string;       // Added for routing
+  listeners: number;      // Added for sorting/display
+  releaseDate: string;    // Added for sorting/display
   imageUrl?: string;
 }
 
+// Extended to support Discover page sorting, Album routing, and Artist routing
 export interface SongItem {
   id: string;
   title: string;
   artistName: string;
+  artistId: string;       // Added for routing
   albumName?: string;
+  albumId?: string;       // Added for routing
+  listeners: number;      // Added for sorting/display
+  releaseDate: string;    // Added for sorting/display
   imageUrl?: string;
 }
 
@@ -36,5 +45,5 @@ export interface DashboardData {
   recentlyPlayed: PlaylistItem[];
   trendingSongs: SongItem[];
   recentAlbums: AlbumItem[];
-  earlyAccess?: AlbumItem[]; // Restricted to Gold users
+  earlyAccess?: AlbumItem[]; 
 }
