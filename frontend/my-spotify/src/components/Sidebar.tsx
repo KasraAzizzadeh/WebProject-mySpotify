@@ -2,10 +2,8 @@ import Link from 'next/link';
 
 export default function Sidebar() {
   const links = [
+    { label: 'Discover', href: '/discover', icon: '🔍' },
     { label: 'Playlists', href: '/playlists', icon: '🎶' },
-    { label: 'Profile', href: '/profile', icon: '👤' },
-    { label: 'Albums', href: '/albums', icon: '💿' },
-    { label: 'Singles', href: '/singles', icon: '🎵' },
     { label: 'Settings', href: '/settings', icon: '⚙️' },
   ];
 
