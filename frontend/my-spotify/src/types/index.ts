@@ -9,6 +9,25 @@ export interface UserProfile {
   profilePictureUrl?: string;
   role: UserRole;
   subscriptionType: SubscriptionType;
+  
+  createdAt?: string;
+  artistProfile?: ArtistProfile;
+  listenerProfile?: ListenerProfile;
+}
+
+interface ArtistProfile {
+  bio?: string;
+  isVerified: boolean;
+  singles?: string[];
+  albums?: string[];
+  totalStreams: number;
+  followersCount: number;
+}
+
+interface ListenerProfile {
+  followingArtists: string[];
+  likedTracks: string[];
+  recentlyPlayed: string[];
 }
 
 export interface PlaylistItem {

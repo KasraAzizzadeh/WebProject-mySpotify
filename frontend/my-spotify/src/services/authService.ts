@@ -1,4 +1,5 @@
 import { UserProfile } from "@/types";
+import { getUsers, saveUsers, User } from "@/store/mockDb";
 
 type LoginResponse = {
   token: string;
@@ -17,19 +18,17 @@ export async function login(
     // replace with actual api
     await delay(100);
 
-    if (email !== "alex@gmail.com" || password !== "1234") {
+    const users = getUsers();
+    const user = users.find(u =>
+        u.email === email && u.password === password
+    )
+
+    if(!user) {
         throw new Error("Invalid credentials");
     }
 
     return {
-        token: "mock-access-token-abc123",
-        user: {
-            id: "user-123",
-            username: "jam_session99",
-            displayName: "Alex Carter",
-            profilePictureUrl: undefined,
-            role: "listener",
-            subscriptionType: "gold",
-        },
+        token: `token-${user.username}`,
+        user: user
     };
 }
