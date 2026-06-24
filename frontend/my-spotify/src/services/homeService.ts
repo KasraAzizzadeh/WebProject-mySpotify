@@ -8,6 +8,7 @@ export async function getCurrentUser(): Promise<UserProfile> {
         id: 'user-123',
         username: 'jam_session99',
         displayName: 'Alex Carter',
+        email: 'alex.carter@gmail.com',
         profilePictureUrl: undefined, // Simulates fallback verification
         role: 'listener',
         subscriptionType: 'gold', // Change to 'basic' or 'silver' to test variants

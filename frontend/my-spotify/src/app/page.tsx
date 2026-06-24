@@ -1,19 +1,50 @@
-import { getCurrentUser, getDashboardData } from '@/services/homeService';
+'use client';
+
+import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
+import { getDashboardData } from '@/services/homeService';
+import { DashboardData, UserProfile } from '@/types';
 import Avatar from '@/components/ui/Avatar';
 import AlbumCard from '@/components/AlbumCard';
 import SongCard from '@/components/SongCard';
 import PlaylistCard from '@/components/PlaylistCard';
 import Link from 'next/link';
 
-export default async function HomePage() {
-  const user = await getCurrentUser();
-  const data = await getDashboardData(user.subscriptionType);
+export default function HomePage() {
+  const { user: authUser } = useAuth();
+  const [data, setData] = useState<DashboardData | null>(null);
+
+  // Mock user if localstorage empty
+  const user: UserProfile = authUser || {
+    id: 'user-123',
+    username: 'jam_session99',
+    displayName: 'Alex Carter',
+    email: 'alex.carter@gmail.com',
+    profilePictureUrl: undefined,
+    role: 'listener',
+    subscriptionType: 'gold', // Change to 'basic' or 'silver' to test variants
+  };
+
+  useEffect(() => {
+    // Fetches the lists of songs/albums based on active tier status
+    getDashboardData(user.subscriptionType).then((res) => {
+      setData(res);
+    });
+  }, [authUser, user.subscriptionType]);
+
+  // Only displays loading if the dashboard songs data hasn't finished loading yet
+  if (!data) {
+    return (
+      <div className="h-screen flex items-center justify-center text-neutral-500 text-sm tracking-wide">
+        Loading music environment...
+      </div>
+    );
+  }
 
   return (
-    // Replaced layout padding to account for the sticky header height
     <main className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto relative">
       
-      {/* 2.2 Top Header Block - Sticky top positioning with high z-index and explicit bg tint */}
+      {/* 2.2 Top Header Block - Sticky navigation wrapper linked to user profile page */}
       <header className="sticky top-0 z-40 bg-neutral-900/80 backdrop-blur-md py-4 border-b border-neutral-800/40 -mx-4 px-4 md:-mx-8 md:px-8 transition-all duration-200 group">
         <Link 
           href="/profile" 
@@ -40,7 +71,7 @@ export default async function HomePage() {
         </Link>
       </header>
 
-      {/* Premium Section */}
+      {/* Exclusive Early Access Section (Visible to Gold Subscriptions) */}
       {user.subscriptionType === 'gold' && data.earlyAccess && (
         <section className="bg-gradient-to-br from-amber-950/20 to-neutral-900 p-5 rounded-2xl border border-amber-500/20">
           <h2 className="text-lg md:text-xl font-bold text-amber-400 tracking-tight mb-4">Exclusive Early Access</h2>
@@ -52,7 +83,7 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Playlists */}
+      {/* Playlists Dashboard Row */}
       <section className="space-y-2">
         <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">Recently Played Playlists</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -62,7 +93,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Trending Songs */}
+      {/* Trending Tracks Dashboard Row */}
       <section className="space-y-2">
         <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">Trending Songs</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -72,7 +103,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Recent Albums */}
+      {/* Recent Studio Album Publications */}
       <section className="space-y-2">
         <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">Recently Released Albums</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">

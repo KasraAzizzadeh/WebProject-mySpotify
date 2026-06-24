@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 export default function Sidebar() {
   const links = [
+    { label: 'Home', href: '/', icon: '🏠' }, // Added home route matching your root path
     { label: 'Discover', href: '/discover', icon: '🔍' },
     { label: 'Playlists', href: '/playlists', icon: '🎶' },
     { label: 'Settings', href: '/settings', icon: '⚙️' },
