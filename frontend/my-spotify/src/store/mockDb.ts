@@ -1,13 +1,10 @@
 import { UserProfile } from "@/types";
 
-// USERS
 const USERS_KEY = "app_users";
 
 export type User = UserProfile & {
   password: string;
 };
-
-// SEED DATA
 
 const SEED_USERS: User[] = [
   {
@@ -19,15 +16,16 @@ const SEED_USERS: User[] = [
     role: "artist",
     subscriptionType: "gold",
     createdAt: new Date().toISOString(),
-
     password: "Alex_1234",
+    
+    followers: ["user-2"], // Jane follows Alex
+    following: [],
 
     artistProfile: {
-       bio: "Electronic music producer",
-       isVerified: true,
-       totalStreams: 120000,
-       followersCount: 5400,
-     },
+      bio: "Electronic music producer",
+      isVerified: true,
+      totalStreams: 120000,
+    },
   },
   {
     id: "user-2",
@@ -38,11 +36,17 @@ const SEED_USERS: User[] = [
     role: "listener",
     subscriptionType: "basic",
     createdAt: new Date().toISOString(),
-
     password: "J123_abcd",
+    
+    followers: [],
+    following: ["user-1"], // Jane follows Alex
+
+    listenerProfile: {
+      likedTracks: [],
+      recentlyPlayed: [],
+    },
   },
 ];
-
 
 export function getUsers(): User[] {
   const data = localStorage.getItem(USERS_KEY);
