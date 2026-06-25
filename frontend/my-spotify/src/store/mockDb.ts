@@ -22,12 +22,12 @@ const SEED_USERS: User[] = [
 
     password: "Alex_1234",
 
-    // artistProfile: {
-    //   bio: "Electronic music producer",
-    //   isVerified: true,
-    //   totalStreams: 120000,
-    //   followersCount: 5400,
-    // },
+    artistProfile: {
+       bio: "Electronic music producer",
+       isVerified: true,
+       totalStreams: 120000,
+       followersCount: 5400,
+     },
   },
   {
     id: "user-2",
