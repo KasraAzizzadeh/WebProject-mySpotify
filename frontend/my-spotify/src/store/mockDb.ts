@@ -18,7 +18,7 @@ const SEED_USERS: User[] = [
     profilePictureUrl: undefined,
     role: "artist",
     subscriptionType: "gold",
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(),
 
     password: "Alex_1234",
 
@@ -37,7 +37,7 @@ const SEED_USERS: User[] = [
     profilePictureUrl: undefined,
     role: "listener",
     subscriptionType: "basic",
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(),
 
     password: "J123_abcd",
   },

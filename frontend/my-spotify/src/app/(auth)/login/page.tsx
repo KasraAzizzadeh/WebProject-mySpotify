@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { login } from "@/services/authService";
 import { validateEmail, validatePassword } from "@/utils/authUtils";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import Alert from "@/components/ui/Alert";
 
 type LoginErrors = {
   emailError: string;
@@ -24,6 +26,8 @@ export default function LoginPage() {
     passwordError: "",
   });
 
+  const router = useRouter();
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -37,6 +41,7 @@ export default function LoginPage() {
       try {
         const result = await login(email, password);
         loginUser(result.user, result.token);
+        router.push("/");
       } catch {
         setError("Invalid email or password");
       }
@@ -84,9 +89,7 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        {error && (
-          <p className="text-red-500 text-sm">{error}</p>
-        )}
+        <Alert message={error}/>
 
         <Button type="submit">Login</Button>
       </form>

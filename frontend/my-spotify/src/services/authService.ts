@@ -1,5 +1,6 @@
 import { UserProfile } from "@/types";
 import { getUsers, saveUsers, User } from "@/store/mockDb";
+import { use } from "react";
 
 type LoginResponse = {
   token: string;
@@ -31,4 +32,45 @@ export async function login(
         token: `token-${user.username}`,
         user: user
     };
+}
+
+export async function register(
+    displayName: string,
+    email: string,
+    password: string,
+    birthDate: string,
+    gender: string
+): Promise<LoginResponse> {
+    
+    // replace with actual API
+    await delay(100);
+
+    const users = getUsers();
+    const exists = users.find(u =>
+        u.email === email
+    )
+    if (exists) {
+        throw new Error("A user with this email already exists");
+    }
+
+    const newUserProfile : UserProfile = {
+        id: crypto.randomUUID(),
+        username: displayName.replace(/\s+/g, "") + crypto.randomUUID(),
+        displayName: displayName,
+        email: email,
+        role: "listener",
+        subscriptionType: "basic",
+        gender: gender,
+        birthDate: new Date(birthDate),
+        createdAt: new Date()
+    }
+
+    const newUser = {...newUserProfile, password};
+    const newUsers = [...users, newUser];
+    saveUsers(newUsers);
+
+    return {
+        token: `token-${newUserProfile.username}`,
+        user: newUserProfile
+    }
 }
