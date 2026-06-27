@@ -82,7 +82,7 @@ export default function LoginPage() {
 
         <div className="text-left -mt-2">
           <Link
-            href="/password-reset"
+            href="/reset-password"
             className="text-xs text-neutral-400 hover:text-green-400"
           >
             Forgot your password?

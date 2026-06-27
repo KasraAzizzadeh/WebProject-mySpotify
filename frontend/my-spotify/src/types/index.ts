@@ -79,3 +79,12 @@ export interface ArtistApplicationTicket {
     verificationStatus: VerificationStatus;
     submittedAt: Date;
 }
+
+export interface OtpEntry {
+  id: string;
+  userId: string;
+  userEmail: string;
+  otpCode: string;
+  createdAt: Date;
+  expiresAt: Date;
+}

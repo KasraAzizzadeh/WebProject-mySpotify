@@ -27,3 +27,15 @@ export const validatePassword = (password: string) => {
     }
     return message;
 }
+
+export const validateOtp = (otp: string) => {
+    let message = "";
+
+    if (!otp.trim()) {
+        message = "OTP is required!";
+    } else if (!/^\d{6}$/.test(otp)) {
+        message = "OTP must be a 6-digit number";
+    }
+
+    return message;
+};

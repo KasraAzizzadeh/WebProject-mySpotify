@@ -1,7 +1,7 @@
-import { UserProfile, ArtistApplicationTicket } from "@/types";
+import { UserProfile, ArtistApplicationTicket, OtpEntry } from "@/types";
 import { getUsers, saveUsers, User } from "@/store/mockDb";
 import { getApplicaitonTickets, saveApplicationTickets } from "@/store/mockDb";
-import { use } from "react";
+import { getOtps, saveOtps } from "@/store/mockDb";
 
 type LoginResponse = {
   token: string;
@@ -121,3 +121,74 @@ export async function applyArtist(
     const { password, ...updatedProfile } = updatedUser;
     return updatedProfile;
 };
+
+function genOtp(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+export async function generateOtp (email : string) : Promise<string> {
+    await delay(100);
+
+    const allUsers = getUsers();
+    const user = allUsers.find(u => u.email === email);
+    if (!user)
+        throw new Error("No user with this email exists");
+
+    const allOtps = getOtps();
+    const generatedOtp = genOtp();
+    console.log(generatedOtp);
+    const newOtpEntry : OtpEntry = {
+        id: crypto.randomUUID(),
+        userId: user.id,
+        userEmail: email,
+        otpCode: generatedOtp,
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000)
+    }
+    const remainingOtps = getOtps().filter(o => o.userId !== user.id);
+    saveOtps([...remainingOtps, newOtpEntry]);
+    return newOtpEntry.id;
+}
+
+export async function verifyOtp(otpId: string, otp: string) : Promise<void> {
+    await delay(100);
+
+    const allOtps = getOtps();
+    const otpEntry = allOtps.find(o => o.id === otpId);
+    if (!otpEntry)
+        throw new Error("No otp with this email exists");
+    if (otpEntry.expiresAt < new Date())
+        throw new Error("This otp is invaalid, please generate a new onw");
+    if (otpEntry.otpCode !== otp)
+        throw new Error("Please enter the correct code");
+
+    const remainingOtps = allOtps.filter(o => o.id !== otpId);
+    saveOtps(remainingOtps);
+
+}
+
+export async function changePassword(
+    email: string, password: string
+): Promise<void> {
+
+    await delay(100);
+
+    const users = getUsers();
+    const index = users.findIndex(u => u.email === email);
+
+    if (index === -1) {
+        throw new Error("No user with this email exists");
+    }
+
+    users[index] = {
+        ...users[index],
+        password,
+    };
+
+    saveUsers(users);
+
+    const remainingOtps = getOtps().filter(
+        o => o.userId !== users[index].id
+    );
+    saveOtps(remainingOtps);
+}
