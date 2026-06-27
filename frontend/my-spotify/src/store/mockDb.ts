@@ -1,4 +1,4 @@
-import { UserProfile } from "@/types";
+import { UserProfile, ArtistApplicationTicket } from "@/types";
 
 // USERS
 const USERS_KEY = "app_users";
@@ -57,4 +57,20 @@ export function getUsers(): User[] {
 
 export function saveUsers(users: User[]): void {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+// Tickets
+const ARTIST_TICKET_KEY = "app_artist_tickets";
+export function getApplicaitonTickets(): ArtistApplicationTicket[] {
+  const data = localStorage.getItem(ARTIST_TICKET_KEY);
+
+  if (!data) {
+    return [];
+  }
+
+  return JSON.parse(data);
+}
+
+export function saveApplicationTickets(tickets: ArtistApplicationTicket[]): void {
+  localStorage.setItem(ARTIST_TICKET_KEY, JSON.stringify(tickets));
 }

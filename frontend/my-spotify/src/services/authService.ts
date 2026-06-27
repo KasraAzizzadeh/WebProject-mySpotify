@@ -1,5 +1,6 @@
-import { UserProfile } from "@/types";
+import { UserProfile, ArtistApplicationTicket } from "@/types";
 import { getUsers, saveUsers, User } from "@/store/mockDb";
+import { getApplicaitonTickets, saveApplicationTickets } from "@/store/mockDb";
 import { use } from "react";
 
 type LoginResponse = {
@@ -74,3 +75,49 @@ export async function register(
         user: newUserProfile
     }
 }
+
+export async function applyArtist(
+    user: UserProfile,
+    artisticName: string,
+    samples: File[]
+): Promise<UserProfile> {
+    
+    // replace with actual API
+    await delay(100);
+
+    const allUsers = getUsers();
+    const index = allUsers.findIndex((u) => u.id === user.id);
+
+    const updatedUser: User = {
+        ...allUsers[index],
+        artistProfile: {
+            verificationStatus: "pending",
+            bio: "",
+            singles: [],
+            albums: [],
+            totalStreams: 0,
+            followersCount: 0,
+        }
+    };
+
+    allUsers[index] = updatedUser;
+    saveUsers(allUsers);
+
+    const tickets = getApplicaitonTickets();
+    const samplePaths : string[] = samples.map(
+        (file) => `/mockUploads/${user.id}/${file.name}`
+    );
+    const newApplication : ArtistApplicationTicket = {
+        id: crypto.randomUUID(),
+        userId: user.id,
+        email: user.email,
+        artisticName,
+        samples: samplePaths,
+        verificationStatus: "pending",
+        submittedAt: new Date(),
+    }
+    saveApplicationTickets([...tickets, newApplication]);
+
+    const { password, ...updatedProfile } = updatedUser;
+    return updatedProfile;
+};

@@ -1,5 +1,6 @@
 export type UserRole = 'listener' | 'artist' | 'supporter' | 'admin';
 export type SubscriptionType = 'basic' | 'silver' | 'gold';
+export type VerificationStatus = "pending" | "approved" | "rejected";
 
 export interface UserProfile {
   id: string;
@@ -10,14 +11,17 @@ export interface UserProfile {
   role: UserRole;
   subscriptionType: SubscriptionType;
   
-  createdAt?: string;
+  gender?: string;
+  birthDate?: Date;
+
+  createdAt?: Date;
   artistProfile?: ArtistProfile;
   listenerProfile?: ListenerProfile;
 }
 
 interface ArtistProfile {
   bio?: string;
-  isVerified: boolean;
+  verificationStatus: VerificationStatus;
   singles?: string[];
   albums?: string[];
   totalStreams: number;
@@ -66,4 +70,14 @@ export interface DashboardData {
   trendingSongs: SongItem[];
   recentAlbums: AlbumItem[];
   earlyAccess?: AlbumItem[]; 
+}
+
+export interface ArtistApplicationTicket {
+    id: string;
+    userId: string;
+    email: string;
+    artisticName: string;
+    samples: string[];
+    verificationStatus: VerificationStatus;
+    submittedAt: Date;
 }

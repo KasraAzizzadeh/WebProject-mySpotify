@@ -76,7 +76,9 @@ export default function LoginPage() {
         const result = await register(displayName, email, password, birthDate, gender);
         loginUser(result.user, result.token);
         if (applyArtist) {
-            router.push("/apply-artist");
+            setTimeout(() => {
+                router.push("/apply-artist");
+            }, 1000);
         }
         else {
             router.push("/")
