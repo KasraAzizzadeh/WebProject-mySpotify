@@ -2,23 +2,25 @@
 
 import { DashboardData } from '@/types';
 import PlaylistCard from '@/components/PlaylistCard';
+import HorizontalScrollRow from '@/components/ui/HorizontalScrollRow';
 
-interface Props {
+export default function PlaylistRow({
+  data,
+  onShowAll,
+}: {
   data: DashboardData;
-}
-
-export default function PlaylistRow({ data }: Props) {
+  onShowAll: () => void;
+}) {
   return (
-    <section className="space-y-2">
-      <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">
-        Recently Played Playlists
-      </h2>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {data.recentlyPlayed.map((playlist) => (
-          <PlaylistCard key={playlist.id} playlist={playlist} />
-        ))}
-      </div>
-    </section>
+    <HorizontalScrollRow
+      title="Recently Played Playlists"
+      onShowAll={onShowAll}
+    >
+      {data.recentlyPlayed.map((playlist) => (
+        <div key={playlist.id} className="flex-none w-[180px]">
+          <PlaylistCard playlist={playlist} />
+        </div>
+      ))}
+    </HorizontalScrollRow>
   );
 }

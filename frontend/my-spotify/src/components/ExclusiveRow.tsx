@@ -2,26 +2,30 @@
 
 import { DashboardData, UserProfile } from '@/types';
 import AlbumCard from '@/components/AlbumCard';
+import HorizontalScrollRow from '@/components/ui/HorizontalScrollRow';
 
-interface Props {
-  user: UserProfile;
+export default function ExclusiveRow({
+  data,
+  user,
+}: {
   data: DashboardData;
-}
-
-export default function ExclusiveRow({ user, data }: Props) {
+  user: UserProfile;
+}) {
   if (user.subscriptionType !== 'gold' || !data.earlyAccess) return null;
 
   return (
-    <section className="bg-gradient-to-br from-amber-950/20 to-neutral-900 p-5 rounded-2xl border border-amber-500/20">
-      <h2 className="text-lg md:text-xl font-bold text-amber-400 tracking-tight mb-4">
+    <section className="bg-gradient-to-br from-amber-950/20 to-neutral-900 p-5 rounded-2xl border border-amber-500/20 space-y-3">
+      <h2 className="text-lg md:text-xl font-bold text-amber-400">
         Exclusive Early Access
       </h2>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <HorizontalScrollRow title="">
         {data.earlyAccess.map((album) => (
-          <AlbumCard key={album.id} album={album} badge="New" />
+          <div key={album.id} className="min-w-[180px]">
+            <AlbumCard album={album} badge="New" />
+          </div>
         ))}
-      </div>
+      </HorizontalScrollRow>
     </section>
   );
 }
