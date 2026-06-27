@@ -1,4 +1,5 @@
-import { UserProfile, ArtistApplicationTicket, AlbumItem, PlaylistItem, SongItem } from "@/types";
+import { UserProfile, ArtistApplicationTicket, AlbumItem,
+   PlaylistItem, SongItem, OtpEntry } from "@/types";
 
 // Database Keys
 const USERS_KEY = "app_users";
@@ -6,6 +7,7 @@ const ALBUMS_KEY = "app_albums";
 const SONGS_KEY = "app_songs";
 const PLAYLISTS_KEY = "app_playlists";
 const ARTIST_TICKET_KEY = "app_artist_tickets";
+const OTPS_KEY = "app_otps"
 
 export type User = UserProfile & {
   password: string;
@@ -109,3 +111,10 @@ export function getApplicaitonTickets(): ArtistApplicationTicket[] {
   return JSON.parse(data).map((t: any) => ({ ...t, submittedAt: t.submittedAt ? new Date(t.submittedAt) : new Date() }));
 }
 export function saveApplicationTickets(tickets: ArtistApplicationTicket[]): void { localStorage.setItem(ARTIST_TICKET_KEY, JSON.stringify(tickets)); }
+
+export function getOtps(): OtpEntry[] {
+  const data = localStorage.getItem(OTPS_KEY);
+  if (!data) return [];
+  return JSON.parse(data);
+}
+export function saveOtps(otps: OtpEntry[]): void { localStorage.setItem(OTPS_KEY, JSON.stringify(otps)); }
