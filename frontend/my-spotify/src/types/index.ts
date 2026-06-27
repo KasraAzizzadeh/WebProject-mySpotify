@@ -10,13 +10,11 @@ export interface UserProfile {
   profilePictureUrl?: string;
   role: UserRole;
   subscriptionType: SubscriptionType;
-  
   gender?: string;
   birthDate?: Date;
-
   createdAt?: Date;
-  artistProfile?: ArtistProfile;
   listenerProfile?: ListenerProfile;
+  artistProfile?: ArtistProfile;
 }
 
 interface ArtistProfile {
