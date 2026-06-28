@@ -1,4 +1,5 @@
 import Avatar from '@/components/ui/Avatar';
+import Button from '@/components/ui/Button'; // <-- New Import
 import { UserProfile } from '@/types';
 
 interface ProfileCardProps {
@@ -51,44 +52,43 @@ export default function ProfileCard({
 
       <div className="w-full md:w-auto flex justify-center mt-4 md:mt-0">
         {isOwnProfile ? (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
             {isEditing ? (
               <>
-                <button 
+                <Button 
+                  variant="secondary"
                   onClick={handleCancelEdit}
                   disabled={isSaving}
-                  className="px-6 py-2.5 rounded-full font-bold text-sm bg-neutral-800 text-white hover:bg-neutral-700 border border-neutral-700 transition disabled:opacity-50"
+                  className="md:w-auto px-6 py-2.5 text-sm disabled:opacity-50"
                 >
                   Cancel
-                </button>
-                <button 
+                </Button>
+                <Button 
                   onClick={handleSaveProfile}
                   disabled={isSaving}
-                  className="px-6 py-2.5 rounded-full font-bold text-sm bg-white text-black hover:bg-neutral-200 transition disabled:opacity-50"
+                  className="bg-white text-black hover:bg-neutral-200 md:w-auto px-6 py-2.5 text-sm disabled:opacity-50"
                 >
                   {isSaving ? 'Saving...' : 'Save Changes'}
-                </button>
+                </Button>
               </>
             ) : (
-              <button 
+              <Button 
+                variant="secondary"
                 onClick={() => setIsEditing(true)}
-                className="px-6 py-2.5 rounded-full font-bold text-sm bg-neutral-800 text-white hover:bg-neutral-700 border border-neutral-700 transition"
+                className="md:w-auto px-6 py-2.5 text-sm border border-neutral-700"
               >
                 Edit Profile
-              </button>
+              </Button>
             )}
           </div>
         ) : (
-          <button 
+          <Button 
+            variant={isFollowing ? "secondary" : "primary"}
             onClick={() => setIsFollowing(!isFollowing)}
-            className={`px-6 py-2.5 rounded-full font-bold text-sm transition ${
-              isFollowing 
-                ? 'bg-neutral-800 text-white border border-neutral-600 hover:bg-neutral-700' 
-                : 'bg-green-500 text-black hover:bg-green-400'
-            }`}
+            className={`md:w-auto px-6 py-2.5 text-sm ${isFollowing ? 'border border-neutral-600' : ''}`}
           >
             {isFollowing ? 'Following' : 'Follow'}
-          </button>
+          </Button>
         )}
       </div>
     </section>
