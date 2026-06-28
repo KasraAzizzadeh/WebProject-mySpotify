@@ -63,6 +63,8 @@ export async function register(
         subscriptionType: "basic",
         gender: gender,
         birthDate: new Date(birthDate),
+        followers: [],
+        following: [],
         createdAt: new Date()
     }
 
@@ -96,7 +98,6 @@ export async function applyArtist(
             singles: [],
             albums: [],
             totalStreams: 0,
-            followersCount: 0,
         }
     };
 
@@ -145,7 +146,7 @@ export async function generateOtp (email : string) : Promise<string> {
         createdAt: new Date(),
         expiresAt: new Date(Date.now() + 15 * 60 * 1000)
     }
-    const remainingOtps = getOtps().filter(o => o.userId !== user.id);
+    const remainingOtps = allOtps.filter(o => o.userId !== user.id);
     saveOtps([...remainingOtps, newOtpEntry]);
     return newOtpEntry.id;
 }

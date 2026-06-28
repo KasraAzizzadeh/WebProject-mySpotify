@@ -109,9 +109,10 @@ export default function ProfileCard({
                 </Button>
 
                 <Button
+                  variant="primary"
                   onClick={handleSaveProfile}
                   disabled={isSaving}
-                  className="bg-white text-black hover:bg-neutral-200 md:w-auto px-6 py-2.5 text-sm disabled:opacity-50"
+                  className="md:w-auto px-6 py-2.5 text-sm disabled:opacity-50"
                 >
                   {isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
@@ -128,14 +129,15 @@ export default function ProfileCard({
 
           </div>
         ) : (
+          // TODO implement the follow functionality
           <Button
-            variant={isFollowing ? 'secondary' : 'primary'}
+            variant={isFollowing ? 'danger' : 'primary'}
             onClick={() => setIsFollowing(!isFollowing)}
             className={`md:w-auto px-6 py-2.5 text-sm ${
               isFollowing ? 'border border-neutral-600' : ''
             }`}
           >
-            {isFollowing ? 'Following' : 'Follow'}
+            {isFollowing ? 'Unfollow' : 'Follow'}
           </Button>
         )}
 

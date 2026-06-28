@@ -29,7 +29,7 @@ export default function ProfileDiscography({
             onClick={() => setActiveTab('songs')}
             className={`px-4 py-1.5 rounded-md text-xs font-bold transition ${
               activeTab === 'songs' 
-                ? 'bg-neutral-800 text-white shadow-sm' 
+                ? 'bg-green-600 hover:bg-green-500 text-black shadow-sm' 
                 : 'text-neutral-400 hover:text-neutral-200'
             }`}
           >
@@ -39,7 +39,7 @@ export default function ProfileDiscography({
             onClick={() => setActiveTab('albums')}
             className={`px-4 py-1.5 rounded-md text-xs font-bold transition ${
               activeTab === 'albums' 
-                ? 'bg-neutral-800 text-white shadow-sm' 
+                ? 'bg-green-600 hover:bg-green-400 text-black shadow-sm' 
                 : 'text-neutral-400 hover:text-neutral-200'
             }`}
           >

@@ -3,7 +3,7 @@
 import { ButtonHTMLAttributes } from "react";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "danger";
 };
 
 export default function Button({
@@ -19,6 +19,8 @@ export default function Button({
       "bg-green-500 hover:bg-green-400 text-black",
     secondary:
       "bg-neutral-800 hover:bg-neutral-700 text-white",
+    danger: 
+      "bg-red-600 hover:bg-red-500 border-red-700 text-white",
   };
 
   return (
