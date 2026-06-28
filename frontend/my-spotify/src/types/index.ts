@@ -13,21 +13,22 @@ export interface UserProfile {
   gender?: string;
   birthDate?: Date;
   createdAt?: Date;
+  followers: string[]; // Array of User IDs following this user
+  following: string[]; // Array of User IDs this user is following
   listenerProfile?: ListenerProfile;
   artistProfile?: ArtistProfile;
 }
 
 interface ArtistProfile {
   bio?: string;
+  //isVerified: boolean;
   verificationStatus: VerificationStatus;
   singles?: string[];
   albums?: string[];
   totalStreams: number;
-  followersCount: number;
-}
+ }
 
 interface ListenerProfile {
-  followingArtists: string[];
   likedTracks: string[];
   recentlyPlayed: string[];
 }
@@ -39,27 +40,25 @@ export interface PlaylistItem {
   trackCount: number;
 }
 
-// Extended to support Discover page sorting and Artist routing
 export interface AlbumItem {
   id: string;
   name: string;
   artistName: string;
-  artistId: string;       // Added for routing
-  listeners: number;      // Added for sorting/display
-  releaseDate: string;    // Added for sorting/display
+  artistId: string;
+  listeners: number;
+  releaseDate: string;
   imageUrl?: string;
 }
 
-// Extended to support Discover page sorting, Album routing, and Artist routing
 export interface SongItem {
   id: string;
   title: string;
   artistName: string;
-  artistId: string;       // Added for routing
+  artistId: string;
   albumName?: string;
-  albumId?: string;       // Added for routing
-  listeners: number;      // Added for sorting/display
-  releaseDate: string;    // Added for sorting/display
+  albumId?: string;
+  listeners: number;
+  releaseDate: string;
   imageUrl?: string;
 }
 
