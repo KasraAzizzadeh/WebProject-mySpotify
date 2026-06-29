@@ -42,13 +42,12 @@ const SEED_USERS: User[] = [
 
     artistProfile: {
       bio: "Electronic music producer",
-      // merged safely (keep richer version from file 1)
-      //isVerified: true,
       verificationStatus: "pending",
       singles: ["s1", "s3"],
       albums: ["a1"],
       totalStreams: 120000,
-     },
+      uniqueListener: 8200,
+    },
   },
   {
     id: "user-2",
@@ -77,48 +76,48 @@ const SEED_USERS: User[] = [
 // SEED DATA (ALBUMS)
 // --------------------
 const SEED_ALBUMS: AlbumItem[] = [
-  { id: "a1", name: "Velvet Dreams", artistName: "The Soft Tones", artistId: "art-st1", listeners: 450000, releaseDate: "2026-04-12" },
-  { id: "a2", name: "Hyperdrive", artistName: "Glitch Fox", artistId: "art-gf4", listeners: 890000, releaseDate: "2026-05-20" },
-  { id: "a3", name: "Midnight Aurora", artistName: "Luna Eclipse", artistId: "art-le3", listeners: 1200000, releaseDate: "2025-11-10" },
-  { id: "a4", name: "Solar Drift", artistName: "Neon Horizon", artistId: "user-1", listeners: 670000, releaseDate: "2026-01-08" },
-  { id: "a5", name: "Echoes of Code", artistName: "Binary Soul", artistId: "art-bs9", listeners: 340000, releaseDate: "2026-03-15" },
-  { id: "a6", name: "Dreamstate", artistName: "Cloud Atlas", artistId: "art-ca2", listeners: 510000, releaseDate: "2026-02-22" },
-  { id: "a7", name: "Neon Abyss", artistName: "Void Runner", artistId: "art-vr7", listeners: 980000, releaseDate: "2025-09-30" },
-  { id: "a8", name: "Fragments", artistName: "Static Bloom", artistId: "art-sb5", listeners: 230000, releaseDate: "2026-06-01" },
-  { id: "a9", name: "Quantum Lullabies", artistName: "Orbit Theory", artistId: "art-ot4", listeners: 760000, releaseDate: "2026-04-28" },
-  { id: "a10", name: "Afterlight", artistName: "Dusk Signal", artistId: "art-ds6", listeners: 410000, releaseDate: "2025-12-19" },
+  { id: "a1", name: "Velvet Dreams", artistName: "The Soft Tones", artistId: "art-st1", listeners: 450000, releaseDate: "2026-04-12", songList: ["s1", "s3"] },
+  { id: "a2", name: "Hyperdrive", artistName: "Glitch Fox", artistId: "art-gf4", listeners: 890000, releaseDate: "2026-05-20", songList: ["s2"], },
+  { id: "a3", name: "Midnight Aurora", artistName: "Luna Eclipse", artistId: "art-le3", listeners: 1200000, releaseDate: "2025-11-10", songList: ["s4", "s5"] },
+  { id: "a4", name: "Solar Drift", artistName: "Neon Horizon", artistId: "user-1", listeners: 670000, releaseDate: "2026-01-08", songList: [] },
+  { id: "a5", name: "Echoes of Code", artistName: "Binary Soul", artistId: "art-bs9", listeners: 340000, releaseDate: "2026-03-15", songList: ["s7"] },
+  { id: "a6", name: "Dreamstate", artistName: "Cloud Atlas", artistId: "art-ca2", listeners: 510000, releaseDate: "2026-02-22", songList: ["s9"] },
+  { id: "a7", name: "Neon Abyss", artistName: "Void Runner", artistId: "art-vr7", listeners: 980000, releaseDate: "2025-09-30", songList: ["s10"]},
+  { id: "a8", name: "Fragments", artistName: "Static Bloom", artistId: "art-sb5", listeners: 230000, releaseDate: "2026-06-01", songList: [] },
+  { id: "a9", name: "Quantum Lullabies", artistName: "Orbit Theory", artistId: "art-ot4", listeners: 760000, releaseDate: "2026-04-28", songList: ["s8"] },
+  { id: "a10", name: "Afterlight", artistName: "Dusk Signal", artistId: "art-ds6", listeners: 410000, releaseDate: "2025-12-19", songList: ["s6"] },
 ];
 
 // --------------------
 // SEED DATA (PLAYLISTS)
 // --------------------
 const SEED_PLAYLISTS: PlaylistItem[] = [
-  { id: "p1", name: "Chill Lo-Fi Beats", trackCount: 42 },
-  { id: "p2", name: "Coding Session Intensity", trackCount: 18 },
-  { id: "p3", name: "Night Drive Vibes", trackCount: 35 },
-  { id: "p4", name: "Deep Focus Flow", trackCount: 28 },
-  { id: "p5", name: "Morning Energy Boost", trackCount: 22 },
-  { id: "p6", name: "Cyberpunk Dreams", trackCount: 40 },
-  { id: "p7", name: "Rainy Day Chill", trackCount: 31 },
-  { id: "p8", name: "Underground EDM", trackCount: 55 },
-  { id: "p9", name: "Soft Acoustic Nights", trackCount: 19 },
-  { id: "p10", name: "Late Night Study", trackCount: 26 },
+  { id: "p1", name: "Chill Lo-Fi Beats", ownerId: "user-2", isPrivate: false, songList: ["s1", "s2", "s3"] },
+  { id: "p2", name: "Coding Session Intensity", ownerId: "user-2", songList: ["s4", "s5"] },
+  { id: "p3", name: "Night Drive Vibes", ownerId: "user-2", songList: ["s6", "s7", "s8"] },
+  { id: "p4", name: "Deep Focus Flow", ownerId: "user-2", songList: ["s9", "s10"] },
+  { id: "p5", name: "Morning Energy Boost", ownerId: "user-2", songList: ["s1", "s5", "s9"] },
+  { id: "p6", name: "Cyberpunk Dreams", ownerId: "user-2", songList: ["s3", "s6", "s10"] },
+  { id: "p7", name: "Rainy Day Chill", ownerId: "user-2", songList: ["s2", "s8"] },
+  { id: "p8", name: "Underground EDM", ownerId: "user-2", songList: ["s4", "s5", "s6", "s7"] },
+  { id: "p9", name: "Soft Acoustic Nights", ownerId: "user-2", songList: ["s1", "s2"] },
+  { id: "p10", name: "Late Night Study", ownerId: "user-2", songList: ["s9", "s10", "s3"] },
 ];
 
 // --------------------
 // SEED DATA (SONGS)
 // --------------------
 const SEED_SONGS: SongItem[] = [
-  { id: "s1", title: "Midnight Pulse", artistName: "Neon Horizon", artistId: "user-1", albumName: "Synth City", albumId: "alb-sc2", listeners: 1200000, releaseDate: "2026-06-01" },
-  { id: "s2", title: "Ethereal Echoes", artistName: "Luna Eclipse", artistId: "art-le3", listeners: 85000, releaseDate: "2025-12-15" },
-  { id: "s3", title: "Cosmic Drift", artistName: "Neon Horizon", artistId: "user-1", listeners: 45000, releaseDate: "2026-02-10" },
-  { id: "s4", title: "Digital Rain", artistName: "Binary Soul", artistId: "art-bs9", listeners: 320000, releaseDate: "2026-01-12" },
-  { id: "s5", title: "Static Hearts", artistName: "Glitch Fox", artistId: "art-gf4", listeners: 540000, releaseDate: "2026-03-02" },
-  { id: "s6", title: "Orbiting Silence", artistName: "Orbit Theory", artistId: "art-ot4", listeners: 610000, releaseDate: "2026-05-18" },
-  { id: "s7", title: "Neon Skies", artistName: "Void Runner", artistId: "art-vr7", listeners: 980000, releaseDate: "2025-10-09" },
-  { id: "s8", title: "Lost Frequency", artistName: "Dusk Signal", artistId: "art-ds6", listeners: 210000, releaseDate: "2026-04-04" },
-  { id: "s9", title: "Frozen Code", artistName: "Cloud Atlas", artistId: "art-ca2", listeners: 430000, releaseDate: "2026-02-28" },
-  { id: "s10", title: "Broken Signal", artistName: "Static Bloom", artistId: "art-sb5", listeners: 370000, releaseDate: "2026-06-10" },
+  { id: "s1", title: "Midnight Pulse", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 1200000, releaseDate: "2026-06-01" },
+  { id: "s2", title: "Ethereal Echoes", artistName: "Luna Eclipse", artistId: "art-le3", albumName: "Midnight Aurora", albumId: "a3", streams: 85000, releaseDate: "2025-12-15" },
+  { id: "s3", title: "Cosmic Drift", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 45000, releaseDate: "2026-02-10" },
+  { id: "s4", title: "Digital Rain", artistName: "Binary Soul", artistId: "art-bs9", albumName: "Echoes of Code", albumId: "a5", streams: 320000, releaseDate: "2026-01-12" },
+  { id: "s5", title: "Static Hearts", artistName: "Glitch Fox", artistId: "art-gf4", albumName: "Hyperdrive", albumId: "a2", streams: 540000, releaseDate: "2026-03-02" },
+  { id: "s6", title: "Orbiting Silence", artistName: "Orbit Theory", artistId: "art-ot4", albumName: "Quantum Lullabies", albumId: "a9", streams: 610000, releaseDate: "2026-05-18" },
+  { id: "s7", title: "Neon Skies", artistName: "Void Runner", artistId: "art-vr7", albumName: "Neon Abyss", albumId: "a7", streams: 980000, releaseDate: "2025-10-09" },
+  { id: "s8", title: "Lost Frequency", artistName: "Dusk Signal", artistId: "art-ds6", albumName: "Afterlight", albumId: "a10", streams: 210000, releaseDate: "2026-04-04" },
+  { id: "s9", title: "Frozen Code", artistName: "Cloud Atlas", artistId: "art-ca2", albumName: "Dreamstate", albumId: "a6", streams: 430000, releaseDate: "2026-02-28" },
+  { id: "s10", title: "Broken Signal", artistName: "Static Bloom", artistId: "art-sb5", albumName: "Fragments", albumId: "a8", streams: 370000, releaseDate: "2026-06-10" },
 ];
 
 // --------------------

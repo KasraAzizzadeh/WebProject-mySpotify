@@ -13,19 +13,19 @@ export interface UserProfile {
   gender?: string;
   birthDate?: Date;
   createdAt?: Date;
-  followers: string[]; // Array of User IDs following this user
-  following: string[]; // Array of User IDs this user is following
+  followers: string[];
+  following: string[];
   listenerProfile?: ListenerProfile;
   artistProfile?: ArtistProfile;
 }
 
 interface ArtistProfile {
   bio?: string;
-  //isVerified: boolean;
   verificationStatus: VerificationStatus;
   singles?: string[];
   albums?: string[];
   totalStreams: number;
+  uniqueListener?: number;
  }
 
 interface ListenerProfile {
@@ -36,8 +36,10 @@ interface ListenerProfile {
 export interface PlaylistItem {
   id: string;
   name: string;
+  ownerId: string;
   imageUrl?: string;
-  trackCount: number;
+  isPrivate?: boolean;
+  songList: string[];
 }
 
 export interface AlbumItem {
@@ -48,6 +50,7 @@ export interface AlbumItem {
   listeners: number;
   releaseDate: string;
   imageUrl?: string;
+  songList: string[];
 }
 
 export interface SongItem {
@@ -57,9 +60,10 @@ export interface SongItem {
   artistId: string;
   albumName?: string;
   albumId?: string;
-  listeners: number;
+  streams: number;
   releaseDate: string;
   imageUrl?: string;
+  trackNumber?: number;
 }
 
 export interface DashboardData {

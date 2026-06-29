@@ -11,7 +11,7 @@ export default function PlaylistCard({ playlist }: { playlist: PlaylistItem }) {
         <span className="text-3xl">🎶</span>
       </div>
       <h4 className="font-semibold text-white truncate text-base">{playlist.name}</h4>
-      <p className="text-neutral-400 text-sm mt-1 truncate">{playlist.trackCount} Tracks</p>
+      <p className="text-neutral-400 text-sm mt-1 truncate">{playlist.songList.length} Tracks</p>
     </div>
   );
 }
