@@ -108,16 +108,16 @@ const SEED_PLAYLISTS: PlaylistItem[] = [
 // SEED DATA (SONGS)
 // --------------------
 const SEED_SONGS: SongItem[] = [
-  { id: "s1", title: "Midnight Pulse", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 1200000, releaseDate: "2026-06-01" },
-  { id: "s2", title: "Ethereal Echoes", artistName: "Luna Eclipse", artistId: "art-le3", albumName: "Midnight Aurora", albumId: "a3", streams: 85000, releaseDate: "2025-12-15" },
-  { id: "s3", title: "Cosmic Drift", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 45000, releaseDate: "2026-02-10" },
-  { id: "s4", title: "Digital Rain", artistName: "Binary Soul", artistId: "art-bs9", albumName: "Echoes of Code", albumId: "a5", streams: 320000, releaseDate: "2026-01-12" },
-  { id: "s5", title: "Static Hearts", artistName: "Glitch Fox", artistId: "art-gf4", albumName: "Hyperdrive", albumId: "a2", streams: 540000, releaseDate: "2026-03-02" },
-  { id: "s6", title: "Orbiting Silence", artistName: "Orbit Theory", artistId: "art-ot4", albumName: "Quantum Lullabies", albumId: "a9", streams: 610000, releaseDate: "2026-05-18" },
-  { id: "s7", title: "Neon Skies", artistName: "Void Runner", artistId: "art-vr7", albumName: "Neon Abyss", albumId: "a7", streams: 980000, releaseDate: "2025-10-09" },
-  { id: "s8", title: "Lost Frequency", artistName: "Dusk Signal", artistId: "art-ds6", albumName: "Afterlight", albumId: "a10", streams: 210000, releaseDate: "2026-04-04" },
-  { id: "s9", title: "Frozen Code", artistName: "Cloud Atlas", artistId: "art-ca2", albumName: "Dreamstate", albumId: "a6", streams: 430000, releaseDate: "2026-02-28" },
-  { id: "s10", title: "Broken Signal", artistName: "Static Bloom", artistId: "art-sb5", albumName: "Fragments", albumId: "a8", streams: 370000, releaseDate: "2026-06-10" },
+  { id: "s1", title: "Midnight Pulse", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 1200000, releaseDate: "2026-06-01", songDurationMs: 213000 },
+  { id: "s2", title: "Ethereal Echoes", artistName: "Luna Eclipse", artistId: "art-le3", albumName: "Midnight Aurora", albumId: "a3", streams: 85000, releaseDate: "2025-12-15", songDurationMs: 247000 },
+  { id: "s3", title: "Cosmic Drift", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 45000, releaseDate: "2026-02-10", songDurationMs: 196000 },
+  { id: "s4", title: "Digital Rain", artistName: "Binary Soul", artistId: "art-bs9", albumName: "Echoes of Code", albumId: "a5", streams: 320000, releaseDate: "2026-01-12", songDurationMs: 231000 },
+  { id: "s5", title: "Static Hearts", artistName: "Glitch Fox", artistId: "art-gf4", albumName: "Hyperdrive", albumId: "a2", streams: 540000, releaseDate: "2026-03-02", songDurationMs: 221000 },
+  { id: "s6", title: "Orbiting Silence", artistName: "Orbit Theory", artistId: "art-ot4", albumName: "Quantum Lullabies", albumId: "a9", streams: 610000, releaseDate: "2026-05-18", songDurationMs: 258000 },
+  { id: "s7", title: "Neon Skies", artistName: "Void Runner", artistId: "art-vr7", albumName: "Neon Abyss", albumId: "a7", streams: 980000, releaseDate: "2025-10-09", songDurationMs: 205000 },
+  { id: "s8", title: "Lost Frequency", artistName: "Dusk Signal", artistId: "art-ds6", albumName: "Afterlight", albumId: "a10", streams: 210000, releaseDate: "2026-04-04", songDurationMs: 239000 },
+  { id: "s9", title: "Frozen Code", artistName: "Cloud Atlas", artistId: "art-ca2", albumName: "Dreamstate", albumId: "a6", streams: 430000, releaseDate: "2026-02-28", songDurationMs: 226000 },
+  { id: "s10", title: "Broken Signal", artistName: "Static Bloom", artistId: "art-sb5", albumName: "Fragments", albumId: "a8", streams: 370000, releaseDate: "2026-06-10", songDurationMs: 244000 },
 ];
 
 // --------------------

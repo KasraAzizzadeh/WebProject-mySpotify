@@ -116,12 +116,12 @@ export default function ProfilePage() {
   const shouldShowDailyStreams = isOwnProfile || dbUser.role === 'listener';
 
   const mockArtistSongs: SongItem[] = [
-    { id: 's1', title: 'Midnight Pulse', artistName: dbUser.displayName, artistId: dbUser.id, listeners: 1200000, releaseDate: '2026-06-01' },
-    { id: 's3', title: 'Cosmic Drift', artistName: dbUser.displayName, artistId: dbUser.id, listeners: 45000, releaseDate: '2026-02-10' }
+    { id: "s1", title: "Midnight Pulse", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 1200000, releaseDate: "2026-06-01", songDurationMs: 213000 },
+    { id: "s3", title: "Cosmic Drift", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 45000, releaseDate: "2026-02-10", songDurationMs: 196000 },
   ];
 
   const mockArtistAlbums: AlbumItem[] = [
-    { id: 'a1', name: 'Neon Horizon', artistName: dbUser.displayName, artistId: dbUser.id, listeners: 2500000, releaseDate: '2026-04-15' }
+    { id: "a1", name: "Velvet Dreams", artistName: "The Soft Tones", artistId: "art-st1", listeners: 450000, releaseDate: "2026-04-12", songList: ["s1", "s3"] }
   ];
 
   return (

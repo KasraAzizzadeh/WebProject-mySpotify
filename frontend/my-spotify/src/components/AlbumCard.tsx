@@ -5,7 +5,7 @@ import { AlbumItem } from '@/types';
 export default function AlbumCard({ album, badge }: { album: AlbumItem; badge?: string }) {
   return (
     <div 
-      onClick={() => window.location.href = `/albums/${album.id}`}
+      onClick={() => window.location.href = `/album/${album.id}`}
       className="bg-neutral-900/60 hover:bg-neutral-800/80 p-4 rounded-xl border border-neutral-800/40 transition-all cursor-pointer group flex flex-col justify-between relative"
     >
       {badge && (

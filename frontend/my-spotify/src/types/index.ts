@@ -64,6 +64,8 @@ export interface SongItem {
   releaseDate: string;
   imageUrl?: string;
   trackNumber?: number;
+  songDurationMs?: number;
+  audioUrl?: string;
 }
 
 export interface DashboardData {
