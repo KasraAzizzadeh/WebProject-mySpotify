@@ -79,3 +79,16 @@ export const createPlaylist = async (name: string, userId: string): Promise<{ pl
 
   return { playlist: newPlaylist, updatedUser: targetUser };
 };
+
+// 🆕 NEW: Resolves all songs belonging to a specific playlist ID
+export const getSongsByPlaylistId = async (playlistId: string): Promise<SongItem[]> => {
+  await delay(100);
+
+  const playlist = await getPlaylistById(playlistId);
+
+  const songs = await Promise.all(
+    playlist.songList.map((songId) => getSongById(songId).catch(() => null))
+  );
+
+  return songs.filter((song): song is SongItem => song !== null);
+};

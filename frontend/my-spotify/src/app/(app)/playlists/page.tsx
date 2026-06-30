@@ -98,7 +98,6 @@ export default function UserPlaylistsPage() {
             <Music size={48} className="mx-auto text-neutral-600 stroke-[1.5]" />
           </div>
           
-          {/* Brought back header, omitted description paragraph */}
           <div className="space-y-2">
             <h2 className="text-2xl font-bold text-white tracking-tight">Create your first playlist</h2>
           </div>
