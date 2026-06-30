@@ -40,6 +40,12 @@ const SEED_USERS: User[] = [
     followers: ["user-2"],
     following: [],
 
+    listenerProfile: {
+      playlists: [],
+      likedTracks: [],
+      recentlyPlayed: ["p1"],
+    },
+
     artistProfile: {
       bio: "Electronic music producer",
       verificationStatus: "pending",
@@ -66,6 +72,7 @@ const SEED_USERS: User[] = [
     following: ["user-1"],
 
     listenerProfile: {
+      playlists: ["p1", "p5", "p6"],
       likedTracks: [],
       recentlyPlayed: ["p1"],
     },

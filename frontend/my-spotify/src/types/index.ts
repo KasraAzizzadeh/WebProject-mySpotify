@@ -29,6 +29,7 @@ interface ArtistProfile {
  }
 
 interface ListenerProfile {
+  playlists?: string[];
   likedTracks: string[];
   recentlyPlayed: string[];
 }
