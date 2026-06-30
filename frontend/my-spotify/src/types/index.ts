@@ -39,6 +39,7 @@ export interface PlaylistItem {
   name: string;
   ownerId: string;
   imageUrl?: string;
+  description?: string;
   isPrivate?: boolean;
   songList: string[];
 }
@@ -49,8 +50,10 @@ export interface AlbumItem {
   artistName: string;
   artistId: string;
   listeners: number;
+  // change to date
   releaseDate: string;
   imageUrl?: string;
+  description?: string;
   songList: string[];
 }
 

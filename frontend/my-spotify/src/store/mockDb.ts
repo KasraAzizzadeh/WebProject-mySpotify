@@ -83,7 +83,7 @@ const SEED_USERS: User[] = [
 // SEED DATA (ALBUMS)
 // --------------------
 const SEED_ALBUMS: AlbumItem[] = [
-  { id: "a1", name: "Velvet Dreams", artistName: "The Soft Tones", artistId: "art-st1", listeners: 450000, releaseDate: "2026-04-12", songList: ["s1", "s3"] },
+  { id: "a1", name: "Velvet Dreams", artistName: "The Soft Tones", artistId: "art-st1", listeners: 450000, releaseDate: "2026-04-12", songList: ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"], imageUrl:"/pic2.jpg" },
   { id: "a2", name: "Hyperdrive", artistName: "Glitch Fox", artistId: "art-gf4", listeners: 890000, releaseDate: "2026-05-20", songList: ["s2"], },
   { id: "a3", name: "Midnight Aurora", artistName: "Luna Eclipse", artistId: "art-le3", listeners: 1200000, releaseDate: "2025-11-10", songList: ["s4", "s5"] },
   { id: "a4", name: "Solar Drift", artistName: "Neon Horizon", artistId: "user-1", listeners: 670000, releaseDate: "2026-01-08", songList: [] },

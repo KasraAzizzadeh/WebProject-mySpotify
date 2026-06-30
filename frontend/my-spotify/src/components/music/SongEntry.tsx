@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Play } from 'lucide-react';
+import { Play, CirclePlus } from 'lucide-react';
 
 import { SongItem, SubscriptionType } from '@/types';
 import Cover from '../ui/Cover';
@@ -28,7 +28,7 @@ export default function SongEntry({
         group grid w-full items-center gap-4 px-4 h-16 rounded-md
         grid-cols-[40px_1fr_auto]
         md:grid-cols-[40px_1fr_160px_auto]
-        lg:grid-cols-[40px_1fr_200px_200px_80px]
+        lg:grid-cols-[40px_1fr_200px_200px_100px]
         hover:bg-neutral-800
       "
     >
@@ -88,8 +88,19 @@ export default function SongEntry({
       )}
 
       {/* Duration (always visible) */}
-      <div className="text-right text-neutral-400">
-        {formatDuration(song.songDurationMs)}
+      <div className="flex items-center justify-end gap-3 text-neutral-400">
+        <span>{formatDuration(song.songDurationMs)}</span>
+
+        <button
+          className="
+            flex items-center justify-center
+            md:opacity-0 md:group-hover:opacity-100
+            transition-opacity
+            hover:text-green-500 hover:scale-105
+          "
+        >
+          <CirclePlus size={18} />
+        </button>
       </div>
 
     </div>
