@@ -7,11 +7,14 @@ import { DashboardData } from '@/types';
 
 import ProfileHeader from '@/components/ProfileHeader';
 import ExclusiveRow from '@/components/ExclusiveRow';
-import PlaylistRow from '@/components/PlaylistRow';
-import TrendingRow from '@/components/TrendingRow';
-import RecentRow from '@/components/RecentRow';
+import HorizontalScrollRow from '@/components/ui/HorizontalScrollRow';
 
-// ✅ ADD THESE
+// Cards needed for the direct row implementation
+import PlaylistCard from '@/components/PlaylistCard';
+import SongCard from '@/components/SongCard';
+import AlbumCard from '@/components/AlbumCard';
+
+// View All components
 import AllPlaylists from '@/components/AllPlaylists';
 import AllSongs from '@/components/AllSongs';
 import AllAlbums from '@/components/AllAlbums';
@@ -70,21 +73,44 @@ export default function HomePage() {
         <>
           <ExclusiveRow user={authUser} data={data} />
 
-          <PlaylistRow
-            data={data}
+          {/* PLAYLISTS ROW */}
+          <HorizontalScrollRow
+            title="Recently Played Playlists"
             onShowAll={() => setView('playlists-all')}
-          />
+          >
+            {data.recentlyPlayed.map((playlist) => (
+              <div key={playlist.id} className="flex-none w-[180px]">
+                <PlaylistCard playlist={playlist} />
+              </div>
+            ))}
+          </HorizontalScrollRow>
 
-          <TrendingRow
-            data={data}
-            user={authUser}
+          {/* TRENDING ROW */}
+          <HorizontalScrollRow
+            title="Trending Songs"
             onShowAll={() => setView('songs-all')}
-          />
+          >
+            {data.trendingSongs.map((song) => (
+              <div key={song.id} className="flex-none w-[180px]">
+                <SongCard
+                  song={song}
+                  subscriptionType={authUser.subscriptionType}
+                />
+              </div>
+            ))}
+          </HorizontalScrollRow>
 
-          <RecentRow
-            data={data}
+          {/* RECENTLY RELEASED ALBUMS ROW */}
+          <HorizontalScrollRow
+            title="Recently Released Albums"
             onShowAll={() => setView('albums-all')}
-          />
+          >
+            {data.recentAlbums.map((album) => (
+              <div key={album.id} className="flex-none w-[180px]">
+                <AlbumCard album={album} />
+              </div>
+            ))}
+          </HorizontalScrollRow>
         </>
       )}
 
