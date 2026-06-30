@@ -62,7 +62,7 @@ export default function HorizontalScrollRow({
             onClick={onShowAll}
             className="text-sm text-neutral-400 hover:text-white"
           >
-            Show all →
+            Show all
           </button>
         )}
       </div>

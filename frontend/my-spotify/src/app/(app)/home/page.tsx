@@ -8,17 +8,13 @@ import { DashboardData } from '@/types';
 import ProfileHeader from '@/components/ProfileHeader';
 import ExclusiveRow from '@/components/ExclusiveRow';
 import ItemRow from '@/components/ItemRow';
+import ShowAll from '@/components/ShowAll';
 
-// View All components
-import AllPlaylists from '@/components/AllPlaylists';
-import AllSongs from '@/components/AllSongs';
-import AllAlbums from '@/components/AllAlbums';
+// Imported Lucide Icon
+import { ArrowLeft } from 'lucide-react';
 
-type ViewMode =
-  | 'dashboard'
-  | 'playlists-all'
-  | 'songs-all'
-  | 'albums-all';
+type RowKey = 'recentlyPlayed' | 'trendingSongs' | 'recentAlbums';
+type ViewMode = 'dashboard' | RowKey;
 
 export default function HomePage() {
   const { user: authUser } = useAuth();
@@ -49,17 +45,37 @@ export default function HomePage() {
     );
   }
 
+  // Configuration mapping to determine exactly what the ShowAll view should render
+  const viewConfigs: Record<RowKey, { title: string; type: 'playlist' | 'song' | 'album'; items: any[] }> = {
+    recentlyPlayed: {
+      title: 'All Playlists',
+      type: 'playlist',
+      items: data.recentlyPlayed,
+    },
+    trendingSongs: {
+      title: 'All Songs',
+      type: 'song',
+      items: data.trendingSongs,
+    },
+    recentAlbums: {
+      title: 'All Albums',
+      type: 'album',
+      items: data.recentAlbums,
+    },
+  };
+
   return (
     <main className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto relative">
       <ProfileHeader user={authUser} />
 
-      {/* BACK BUTTON */}
+      {/* BACK BUTTON WITH LUCIDE ICON */}
       {view !== 'dashboard' && (
         <button
           onClick={() => setView('dashboard')}
-          className="text-sm text-neutral-400 hover:text-white transition"
+          className="flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition group"
         >
-          ← Back to Home
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+          <span>Back to Home</span>
         </button>
       )}
 
@@ -69,36 +85,40 @@ export default function HomePage() {
           <ExclusiveRow user={authUser} data={data} />
 
           <ItemRow
-            type="recentlyPlayed"
-            data={data}
+            title="Recently Played Playlists"
+            type="playlist"
+            items={data.recentlyPlayed}
             user={authUser}
-            onShowAll={() => setView('playlists-all')}
+            onShowAll={() => setView('recentlyPlayed')}
           />
 
           <ItemRow
-            type="trendingSongs"
-            data={data}
+            title="Trending Songs"
+            type="song"
+            items={data.trendingSongs}
             user={authUser}
-            onShowAll={() => setView('songs-all')}
+            onShowAll={() => setView('trendingSongs')}
           />
 
           <ItemRow
-            type="recentAlbums"
-            data={data}
+            title="Recently Released Albums"
+            type="album"
+            items={data.recentAlbums}
             user={authUser}
-            onShowAll={() => setView('albums-all')}
+            onShowAll={() => setView('recentAlbums')}
           />
         </>
       )}
 
       {/* EXPANDED VIEWS */}
-      {view === 'playlists-all' && <AllPlaylists data={data} />}
-
-      {view === 'songs-all' && (
-        <AllSongs data={data} user={authUser} />
+      {view !== 'dashboard' && (
+        <ShowAll
+          title={viewConfigs[view].title}
+          type={viewConfigs[view].type}
+          items={viewConfigs[view].items}
+          user={authUser}
+        />
       )}
-
-      {view === 'albums-all' && <AllAlbums data={data} />}
     </main>
   );
 }
