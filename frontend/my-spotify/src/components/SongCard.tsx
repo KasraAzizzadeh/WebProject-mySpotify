@@ -48,7 +48,7 @@ export default function SongCard({ song, subscriptionType }: SongCardProps) {
             <>
               From:{' '}
               <Link
-                href={`/albums/${song.albumId}`}
+                href={`/album/${song.albumId}`}
                 onClick={(e) => e.stopPropagation()}
                 className="text-neutral-400 hover:underline"
               >
