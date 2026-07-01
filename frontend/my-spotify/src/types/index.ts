@@ -38,6 +38,7 @@ export interface PlaylistItem {
   id: string;
   name: string;
   ownerId: string;
+  createdAt?: string;
   imageUrl?: string;
   description?: string;
   isPrivate?: boolean;
@@ -77,6 +78,17 @@ export interface DashboardData {
   trendingSongs: SongItem[];
   recentAlbums: AlbumItem[];
   earlyAccess?: AlbumItem[]; 
+}
+
+export type DiscoverFilter =
+  | "latest"
+  | "most-streamed"
+  | "oldest";
+
+export interface DiscoverData {
+    songs: SongItem[];
+    albums: AlbumItem[];
+    playlists: PlaylistItem[];
 }
 
 export interface ArtistApplicationTicket {

@@ -1,5 +1,5 @@
 import { getAlbums, getSongs, getPlaylists, savePlaylists, getUsers, saveUsers } from "@/store/mockDb";
-import { AlbumItem, SongItem, PlaylistItem, UserProfile } from "@/types";
+import { AlbumItem, SongItem, PlaylistItem, DiscoverData, DiscoverFilter } from "@/types";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -127,4 +127,80 @@ export const removeSongFromPlaylist = async (songId: string, playlistId: string)
   savePlaylists(allPlaylists);
 
   return allPlaylists[index];
+};
+
+export const getMediaData = async (
+  query: string,
+  filter: DiscoverFilter = "latest"
+): Promise<DiscoverData> => {
+  await delay(100);
+
+  let songs = getSongs();
+  let albums = getAlbums();
+  let playlists = getPlaylists();
+
+  if (query.trim()) {
+    const search = query.toLowerCase();
+
+    songs = songs.filter(
+      (song) =>
+        song.title.toLowerCase().includes(search) ||
+        song.artistName.toLowerCase().includes(search)
+    );
+
+    albums = albums.filter(
+      (album) =>
+        album.name.toLowerCase().includes(search) ||
+        album.artistName.toLowerCase().includes(search)
+    );
+
+    playlists = playlists.filter((playlist) =>
+      playlist.name.toLowerCase().includes(search)
+    );
+  }
+  
+  switch (filter) {
+    case "latest":
+      songs.sort(
+        (a, b) =>
+          new Date(b.releaseDate).getTime() -
+          new Date(a.releaseDate).getTime()
+      );
+
+      albums.sort(
+        (a, b) =>
+          new Date(b.releaseDate).getTime() -
+          new Date(a.releaseDate).getTime()
+      );
+
+      break;
+
+    case "oldest":
+      songs.sort(
+        (a, b) =>
+          new Date(a.releaseDate).getTime() -
+          new Date(b.releaseDate).getTime()
+      );
+
+      albums.sort(
+        (a, b) =>
+          new Date(a.releaseDate).getTime() -
+          new Date(b.releaseDate).getTime()
+      );
+
+      break;
+
+    case "most-streamed":
+      songs.sort((a, b) => b.streams - a.streams);
+
+      albums.sort((a, b) => b.listeners - a.listeners);
+
+      break;
+  }
+
+  return {
+    songs: songs.slice(0, 50),
+    albums: albums.slice(0, 50),
+    playlists: playlists.slice(0, 50),
+  };
 };
