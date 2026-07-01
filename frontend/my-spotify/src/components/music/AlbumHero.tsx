@@ -19,7 +19,6 @@ type HeroProps =
   | {
       type: "playlist";
       item: PlaylistItem;
-      user: UserProfile;
       duration: number;
       heroRef?: React.RefObject<HTMLDivElement | null>;
       ownerName: string;

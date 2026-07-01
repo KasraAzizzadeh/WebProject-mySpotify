@@ -5,7 +5,7 @@ import { useParams, notFound } from "next/navigation";
 import { useAuth } from '@/contexts/AuthContext';
 
 import { PlaylistItem, SongItem } from "@/types";
-import { getPlaylistById, getSongsByPlaylistId } from "@/services/mediaService";
+import { getPlaylistById, getSongsByPlaylistId, removeSongFromPlaylist } from "@/services/mediaService";
 import SongEntry from "@/components/music/SongEntry";
 import SongTableHeader from "@/components/music/TableHead";
 
@@ -47,6 +47,15 @@ export default function PlaylistPage() {
     loadPlaylist();
   }, [id]);
 
+  const remove = async (songId: string) => {
+    if (!playlist) return;
+
+    const updatedPlaylist = await removeSongFromPlaylist(songId, playlist.id)
+    setPlaylist(updatedPlaylist);
+    const updatedSongs = songs.filter(s => s.id !== songId);
+    setSongs(updatedSongs);
+  }
+  
   if (loading) {
     return <div className="p-8 text-neutral-400">Loading playlist environment...</div>;
   }
@@ -78,9 +87,10 @@ export default function PlaylistPage() {
               <SongEntry
                 key={song.id}
                 song={song}
-                trackNumber={index + 1} // Starts tracks cleanly at position #1
+                trackNumber={index + 1}
                 hasPermission={isOwner}
                 subscriptionType={authUser?.subscriptionType || "basic"}
+                onRemove={(songId: string) => {remove(songId);}}
               />
             ))}
           </div>

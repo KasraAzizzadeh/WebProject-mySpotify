@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Play, CirclePlus } from 'lucide-react';
+import { Play, CirclePlus, CircleX } from 'lucide-react';
 
 import { SongItem, SubscriptionType } from '@/types';
 import Cover from '../ui/Cover';
@@ -13,6 +13,8 @@ interface SongEntryProps {
   subscriptionType: SubscriptionType;
   hasPermission: boolean;
   showAlbum?: boolean;
+  onAdd?: (id: string) => void;
+  onRemove?: (id: string) => void;
 }
 
 export default function SongEntry({
@@ -21,6 +23,8 @@ export default function SongEntry({
   subscriptionType,
   hasPermission,
   showAlbum = true,
+  onAdd,
+  onRemove
 }: SongEntryProps) {
   return (
     <div
@@ -91,16 +95,33 @@ export default function SongEntry({
       <div className="flex items-center justify-end gap-3 text-neutral-400">
         <span>{formatDuration(song.songDurationMs)}</span>
 
-        <button
-          className="
-            flex items-center justify-center
-            md:opacity-0 md:group-hover:opacity-100
-            transition-opacity
-            hover:text-green-500 hover:scale-105
-          "
-        >
-          <CirclePlus size={18} />
-        </button>
+        {!hasPermission && (
+          <button
+            className="
+              flex items-center justify-center
+              md:opacity-0 md:group-hover:opacity-100
+              transition-opacity
+              hover:text-green-500 hover:scale-105
+            "
+            onClick={() => {onAdd?.(song.id)}}
+          >
+            <CirclePlus size={18} />
+          </button>
+        )}
+
+        {hasPermission && (
+          <button
+            className="
+              flex items-center justify-center
+              md:opacity-0 md:group-hover:opacity-100
+              transition-opacity
+              hover:text-red-500 hover:scale-105
+            "
+            onClick={() => {onRemove?.(song.id)}}
+          >
+            <CircleX size={18} />
+          </button>
+        )}
       </div>
 
     </div>

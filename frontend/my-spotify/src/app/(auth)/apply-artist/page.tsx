@@ -23,7 +23,7 @@ export default function ArtistApplyPage() {
   });
 
   const router = useRouter();
-  const { user: authUser, token: authToken, loginUser} = useAuth();
+  const { user: authUser, token: authToken, updateUser} = useAuth();
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +47,7 @@ export default function ArtistApplyPage() {
     if (!errors.nameError) {
         try{
             const result = await applyArtist(authUser, artisticName, files);
-            loginUser(result, authToken);
+            updateUser(result);
             router.push("/");
         } catch {
             setError("Something went wrong");

@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { ArrowLeft, Music, Plus } from 'lucide-react';
 
 export default function UserPlaylistsPage() {
-  const { user: authUser, setUser } = useAuth() as any;
+  const { user: authUser, updateUser} = useAuth() as any;
   const [playlists, setPlaylists] = useState<PlaylistItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,9 +42,7 @@ export default function UserPlaylistsPage() {
     
     const { playlist, updatedUser } = await createPlaylist(name, authUser.id);
     
-    if (setUser) {
-      setUser(updatedUser);
-    }
+    updateUser(updatedUser);
     
     setPlaylists((prev) => [...(prev || []), playlist]);
   };

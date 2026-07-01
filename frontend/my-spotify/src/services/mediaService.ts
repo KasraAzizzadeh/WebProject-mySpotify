@@ -92,3 +92,39 @@ export const getSongsByPlaylistId = async (playlistId: string): Promise<SongItem
 
   return songs.filter((song): song is SongItem => song !== null);
 };
+
+export const addSongToPlaylist = async (songId: string, playlistId: string): Promise<void> => {
+  await delay(100);
+
+  const allPlaylists = getPlaylists();
+  const index = allPlaylists.findIndex((p) => p.id === playlistId);
+      
+  if (index !== -1) {
+    if (allPlaylists[index].songList.find(s => s === songId))
+      throw new Error ("Song is already in this playlist");
+    allPlaylists[index].songList.push(songId);
+    savePlaylists(allPlaylists);
+  }
+};
+
+export const removeSongFromPlaylist = async (songId: string, playlistId: string): Promise<PlaylistItem> => {
+  await delay(100);
+
+  const allPlaylists = getPlaylists();
+  const index = allPlaylists.findIndex((p) => p.id === playlistId);
+
+  if (index === -1) {
+    throw new Error("Playlist not found");
+  }
+
+  if (!allPlaylists[index].songList.includes(songId)) {
+    throw new Error("Song is not in this playlist");
+  }
+
+  allPlaylists[index].songList =
+    allPlaylists[index].songList.filter((s) => s !== songId);
+
+  savePlaylists(allPlaylists);
+
+  return allPlaylists[index];
+};

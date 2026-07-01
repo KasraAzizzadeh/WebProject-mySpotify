@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams, notFound } from "next/navigation";
+import { useParams, notFound, useRouter } from "next/navigation";
 import { useAuth } from '@/contexts/AuthContext';
 
 import { AlbumItem, SongItem } from "@/types";
@@ -10,16 +10,19 @@ import SongEntry from "@/components/music/SongEntry";
 import SongTableHeader from "@/components/music/TableHead";
 import HeroCard from "@/components/music/AlbumHero";
 import StickyBar from "@/components/music/StickyBar";
+import AddToPlaylistModal from "@/components/music/AddToPlaylistModal";
 
 export default function AlbumPage() {
   const { id } = useParams<{ id: string }>();
   const { user: authUser } = useAuth();
   const heroRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const [album, setAlbum] = useState<AlbumItem | null>(null);
   const [songs, setSongs] = useState<SongItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [selectedSongId, setSelectedSongId] = useState("");
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -39,6 +42,8 @@ export default function AlbumPage() {
   
   useEffect(() => {
     if (!id) return;
+
+    if (!authUser) router.push("/login");
 
     const loadAlbum = async () => {
       setLoading(true);
@@ -70,7 +75,7 @@ export default function AlbumPage() {
   }  
 
   return (
-    <div
+    <main
       className="relative min-h-screen px-2 rounded-lg"
         style={{
         background: `
@@ -104,15 +109,24 @@ export default function AlbumPage() {
               key={song.id}
               song={song}
               trackNumber={index}
-              hasPermission={authUser?.id === album.artistId}
+              hasPermission={false}
               subscriptionType={
                 authUser?.subscriptionType || "basic"
               }
               showAlbum={false}
+              onAdd={(songId: string) => setSelectedSongId(songId)}
             />
           ))}
         </div>
       </div>
-    </div>
+
+      {selectedSongId && authUser && (
+        <AddToPlaylistModal
+          songId={selectedSongId}
+          user={authUser}
+          onClose={() => setSelectedSongId("")}
+        />
+      )}
+    </main>
   );
 }

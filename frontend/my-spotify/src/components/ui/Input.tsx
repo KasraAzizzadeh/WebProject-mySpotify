@@ -1,11 +1,13 @@
 "use client";
 
 import { InputHTMLAttributes, useState } from "react";
-import {Eye, EyeOff} from "lucide-react"
+import { Eye, EyeOff, Search } from "lucide-react";
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
   error?: string;
+  variant?: "default" | "search";
+  onSearch?: () => void;
 };
 
 export default function Input({
@@ -13,14 +15,18 @@ export default function Input({
   error,
   className = "",
   type,
+  variant = "default",
+  onSearch,
   ...props
 }: InputProps) {
   const isPassword = type === "password";
+  const isSearch = variant === "search";
+
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="w-full">
-      {label && (
+      {label && !isSearch && (
         <label className="block text-sm text-neutral-400 mb-1">
           {label}
         </label>
@@ -32,7 +38,7 @@ export default function Input({
           type={isPassword && showPassword ? "text" : type}
           className={`
             w-full p-3
-            ${isPassword ? "pr-16" : ""}
+            ${(isPassword || isSearch) ? "pr-16" : ""}
             bg-neutral-800/60
             border border-neutral-700/40
             rounded-lg
@@ -46,16 +52,26 @@ export default function Input({
         {isPassword && (
           <button
             type="button"
-            onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-neutral-400 hover:text-green-400 transition"
+            onClick={() => setShowPassword(prev => !prev)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-green-400 transition cursor-pointer"
           >
             {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
+          </button>
+        )}
+
+        {isSearch && (
+          <button
+            type="button"
+            onClick={onSearch}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-green-400 transition cursor-pointer"
+          >
+            <Search size={20} />
           </button>
         )}
       </div>
 
       {error && (
-        <p className="text-red-500 text-xs mt-1">
+        <p className="mt-1 text-xs text-red-500">
           {error}
         </p>
       )}
