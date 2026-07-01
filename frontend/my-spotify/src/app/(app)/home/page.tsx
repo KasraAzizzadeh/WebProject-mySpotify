@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from 'react';
 import { getDashboardData } from '@/services/homeService';
 import { DashboardData } from '@/types';
@@ -10,7 +11,6 @@ import ExclusiveRow from '@/components/ExclusiveRow';
 import ItemRow from '@/components/ItemRow';
 import ShowAll from '@/components/ShowAll';
 
-// Imported Lucide Icon
 import { ArrowLeft } from 'lucide-react';
 
 type RowKey = 'recentlyPlayed' | 'trendingSongs' | 'recentAlbums';
@@ -20,7 +20,9 @@ export default function HomePage() {
   const { user: authUser } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [view, setView] = useState<ViewMode>('dashboard');
+  const router = useRouter();
 
+  // Handle data fetching based on the verified auth state
   useEffect(() => {
     if (!authUser) return;
 
@@ -29,10 +31,11 @@ export default function HomePage() {
       .catch(console.error);
   }, [authUser]);
 
+  // Fallback safety guard if no user is present in memory
   if (!authUser) {
     return (
       <div className="h-screen flex items-center justify-center text-neutral-500 text-sm bg-black">
-        Verifying user security context...
+        Redirecting to secure terminal...
       </div>
     );
   }
@@ -45,7 +48,6 @@ export default function HomePage() {
     );
   }
 
-  // Configuration mapping to determine exactly what the ShowAll view should render
   const viewConfigs: Record<RowKey, { title: string; type: 'playlist' | 'song' | 'album'; items: any[] }> = {
     recentlyPlayed: {
       title: 'All Playlists',
@@ -68,7 +70,6 @@ export default function HomePage() {
     <main className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto relative">
       <ProfileHeader user={authUser} />
 
-      {/* BACK BUTTON WITH LUCIDE ICON */}
       {view !== 'dashboard' && (
         <button
           onClick={() => setView('dashboard')}
@@ -79,7 +80,6 @@ export default function HomePage() {
         </button>
       )}
 
-      {/* DASHBOARD */}
       {view === 'dashboard' && (
         <>
           <ExclusiveRow user={authUser} data={data} />
@@ -110,7 +110,6 @@ export default function HomePage() {
         </>
       )}
 
-      {/* EXPANDED VIEWS */}
       {view !== 'dashboard' && (
         <ShowAll
           title={viewConfigs[view].title}
