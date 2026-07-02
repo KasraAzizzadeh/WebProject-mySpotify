@@ -4,11 +4,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import { getUserPlaylists, createPlaylist } from '@/services/mediaService';
 import { getUsers } from '@/store/mockDb';
-import { PlaylistItem } from '@/types';
+import { PlaylistItem, SubscriptionType } from '@/types';
 import ShowAll from '@/components/ShowAll';
 import CreatePlaylistModal from '@/components/CreatePlaylistModal';
 import Link from 'next/link';
-import { ArrowLeft, Music, Plus } from 'lucide-react';
+import { ArrowLeft, Music, Plus, Lock } from 'lucide-react';
+
+// Explicit tier limit mappings matching user configuration parameters
+const PLAYLIST_LIMITS: Record<string, number> = {
+  basic: 6,
+  silver: 100,
+  gold: Infinity,
+};
 
 export default function UserPlaylistsPage() {
   const { user: authUser, updateUser} = useAuth() as any;
@@ -65,6 +72,12 @@ export default function UserPlaylistsPage() {
 
   const hasNoPlaylists = playlists.length === 0;
 
+  // Evaluation logic to block generation operations based on account properties
+  const userTier: string = (authUser.subscriptionType || 'basic').toLowerCase();
+  const allowedLimit = PLAYLIST_LIMITS[userTier] ?? PLAYLIST_LIMITS.basic;
+  const isLimitReached = playlists.length >= allowedLimit;
+  const isGold = allowedLimit === Infinity;
+
   return (
     <main className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto relative min-h-screen flex flex-col">
       
@@ -79,13 +92,32 @@ export default function UserPlaylistsPage() {
         </Link>
 
         {!hasNoPlaylists && (
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-black bg-green-500 hover:bg-green-400 rounded-full transition-all shadow-md"
-          >
-            <Plus size={16} />
-            <span>Create Playlist</span>
-          </button>
+          <div className="flex items-center gap-3">
+            {isLimitReached ? (
+              <button
+                disabled
+                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-neutral-500 bg-neutral-800 border border-neutral-700/50 rounded-full cursor-not-allowed select-none"
+              >
+                <Lock size={14} />
+                <span>Max Playlists Reached</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-black bg-green-500 hover:bg-green-400 rounded-full transition-all shadow-md"
+              >
+                <Plus size={16} />
+                <span>Create Playlist</span>
+              </button>
+            )}
+
+            {/* Counter rendering outside the button, completely hidden for Gold tier */}
+            {!isGold && (
+              <span className="text-xs font-semibold text-neutral-400 tabular-nums select-none bg-neutral-900 border border-neutral-800 px-2.5 py-1.5 rounded-full">
+                {playlists.length}/{allowedLimit}
+              </span>
+            )}
+          </div>
         )}
       </div>
 
@@ -100,13 +132,32 @@ export default function UserPlaylistsPage() {
             <h2 className="text-2xl font-bold text-white tracking-tight">Create your first playlist</h2>
           </div>
 
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 font-semibold text-black bg-green-500 hover:bg-green-400 rounded-xl transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Plus size={18} />
-            <span>New Playlist</span>
-          </button>
+          <div className="flex items-center gap-3 justify-center">
+            {isLimitReached ? (
+              <button
+                disabled
+                className="inline-flex items-center gap-2 px-6 py-3 font-semibold text-neutral-500 bg-neutral-800 border border-neutral-700/50 rounded-xl cursor-not-allowed select-none"
+              >
+                <Lock size={16} />
+                <span>Max Playlists Reached</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 font-semibold text-black bg-green-500 hover:bg-green-400 rounded-xl transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Plus size={18} />
+                <span>New Playlist</span>
+              </button>
+            )}
+
+            {/* Counter rendering outside the empty-state button, hidden for Gold tier */}
+            {!isGold && (
+              <span className="text-xs font-semibold text-neutral-400 tabular-nums select-none bg-neutral-900 border border-neutral-800 px-3 py-2 rounded-xl">
+                {playlists.length}/{allowedLimit}
+              </span>
+            )}
+          </div>
         </div>
       ) : (
         <ShowAll
@@ -118,7 +169,7 @@ export default function UserPlaylistsPage() {
       )}
 
       {/* POPUP OVERLAY ACTION PROMPT TEMPLATE */}
-      {isModalOpen && (
+      {isModalOpen && !isLimitReached && (
         <CreatePlaylistModal
           onClose={() => setIsModalOpen(false)}
           onSave={handleCreatePlaylist}

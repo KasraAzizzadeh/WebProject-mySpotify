@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // Replaced redirect with client router hook
+import { useRouter } from 'next/navigation';
 import Cover from "@/components/ui/Cover";
 import { AlbumItem, PlaylistItem } from "@/types";
 import { formatDuration } from "@/utils/mediaUtils";
@@ -30,10 +30,11 @@ export default function HeroCard(props: HeroProps) {
     const router = useRouter();
   
     const color = useAverageColor(item.imageUrl);
+    
+    // Changed strictly here: returns "Playlist" plainly instead of checking privacy states
     const itemType = type == "album" ? (item.songList.length === 1 ? "Single" : "Album") 
-                                     : (`${item.isPrivate ? "Private" : "Public"} Playlist`);
+                                     : "Playlist";
 
-    // Computes target link path based entirely on item asset types
     const profileHref = type === "album" 
       ? `/album/${item.artistId}` 
       : `/profile/${item.ownerId}`;
@@ -43,7 +44,6 @@ export default function HeroCard(props: HeroProps) {
         ref={heroRef}
         className="relative overflow-hidden h-[500px] md:h-[420px]"
         >
-        {/* Background Overlay */}
         <div
             className="absolute inset-0"
             style={{
@@ -59,7 +59,6 @@ export default function HeroCard(props: HeroProps) {
             }}
         />
 
-        {/* Content Wrapper */}
         <div className="relative z-10 flex h-full flex-col justify-end px-4 pb-6 md:px-8">
             <div className="flex flex-col items-center gap-6 md:flex-row md:items-end md:gap-8">
                 <Cover
@@ -77,67 +76,72 @@ export default function HeroCard(props: HeroProps) {
                     {item.name}
                     </h1>
 
-                    <p className="mt-3 text-base md:text-lg text-neutral-200">
-                    <span className="font-semibold">
-                        <Link
-                            href={profileHref}
-                            className="hover:text-white hover:underline"
-                        >
-                            {type === "album" ? item.artistName : props.ownerName}
-                        </Link>
-                    </span>
+                    <p className="mt-3 text-sm md:text-base text-neutral-200 flex flex-wrap items-center justify-center md:justify-start gap-2">
+                        <span className="font-semibold">
+                            <Link
+                                href={profileHref}
+                                className="hover:text-white hover:underline"
+                            >
+                                {type === "album" ? item.artistName : props.ownerName}
+                            </Link>
+                        </span>
 
-                    <span className="mx-2">•</span>
+                        {/* Renders date metadata only if viewing an official Album record */}
+                        {type === "album" && (
+                            <>
+                                <span className="text-neutral-500">•</span>
+                                <span className='text-neutral-300'>
+                                    {new Date(item.releaseDate).getFullYear()}
+                                </span>
+                            </>
+                        )}
 
-                    <span className='text-neutral-300'>
-                        {type === "album" ? new Date(item.releaseDate).getFullYear() : "Playlist Metadata"}
-                    </span>
+                        <span className="text-neutral-500">•</span>
 
-                    <span className="mx-2">•</span>
+                        <span className='text-neutral-300'>
+                            {item.songList.length} {item.songList.length === 1 ? 'song' : 'songs'}
+                        </span>
 
-                    <span className='text-neutral-300'>
-                        {item.songList.length} {item.songList.length === 1 ? 'song' : 'songs'}
-                    </span>
+                        <span className="text-neutral-500">•</span>
 
-                    <span className="mx-2">•</span>
-
-                    {formatDuration(duration)}
+                        <span className="text-neutral-300">
+                            {formatDuration(duration)}
+                        </span>
                     </p>
 
                     {item.description && (
-                        <p className="mt-4 max-w-2xl text-sm md:text-base text-neutral-300">
+                        <p className="mt-4 max-w-2xl text-xs md:text-sm text-neutral-400">
                         {item.description}
                         </p>
                     )}
                 </div>
             </div>
 
-            {/* Action Control Panel */}
             <div className="mt-8 flex flex-wrap justify-center sm:justify-start items-center gap-4">
-            <button className="rounded-full bg-green-500 px-5 py-5 text-3xl font-bold text-black transition hover:scale-105">
-                <Play size={24} />
+            <button className="rounded-full bg-green-500 p-4 font-bold text-black transition hover:scale-105">
+                <Play size={20} className="fill-black" />
             </button>
 
-            <button className="rounded-full border border-neutral-500 px-4 py-4 font-medium transition hover:border-white hover:scale-102 hover:text-white">
+            <button className="rounded-full border border-neutral-700 p-4 font-medium transition hover:border-white hover:scale-105 text-neutral-400 hover:text-white">
                 <Shuffle size={20} />
             </button>
 
             {type === "playlist" && props.edit && (
                 <button 
-                    className="flex items-center gap-2 rounded-full border border-neutral-500 px-6 py-3 text-md transition hover:border-white hover:text-white"
+                    className="flex items-center gap-2 rounded-full border border-neutral-700 px-5 py-2.5 text-sm font-medium transition hover:border-white text-neutral-300 hover:text-white"
                     onClick={(e) => {
                       e.preventDefault(); 
                       router.push("/discover");
                     }}
                 >
-                    <Plus size={20} />
+                    <Plus size={16} />
                     <span>Add Tracks</span>
                 </button>
             )}
             
             {type === "playlist" && props.edit && (
-                <button className="flex items-center gap-2 rounded-full border border-neutral-500 px-6 py-3 text-md transition hover:border-white hover:text-white">
-                    <Pen size={20} />
+                <button className="flex items-center gap-2 rounded-full border border-neutral-700 px-5 py-2.5 text-sm font-medium transition hover:border-white text-neutral-300 hover:text-white">
+                    <Pen size={16} />
                     <span>Edit</span>
                 </button>
             )}

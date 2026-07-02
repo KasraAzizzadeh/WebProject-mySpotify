@@ -14,45 +14,43 @@ export default function SongTableHeader({
   return (
     <div
       className="
-        grid w-full items-center gap-4 px-4 py-2 text-md text-neutral-400 border-b border-neutral-800
-        grid-cols-[40px_1fr_auto]
-        md:grid-cols-[40px_1fr_160px_auto]
-        lg:grid-cols-[40px_1fr_200px_200px_100px]
+        grid w-full items-center gap-4 px-4 py-2 text-sm font-medium text-neutral-500 border-b border-neutral-800 select-none
+        grid-cols-[40px_1fr_60px_40px]
+        md:grid-cols-[40px_1fr_200px_60px_40px]
+        lg:grid-cols-[40px_1fr_200px_150px_60px_40px]
       "
     >
-      {/* # */}
-      <div className="flex justify-center w-10">
-        #
-      </div>
-
-      {/* Title */}
-      <div>
-        Title
-      </div>
-
-      {/* Album */}
+      {/* # Column */}
+      <div className="text-center w-10">#</div>
+      
+      {/* Title Column */}
+      <div className="text-left">Title</div>
+      
+      {/* Album Column Track (Maintains spacing even if hidden) */}
       {showAlbum ? (
-        <div className="hidden md:block truncate">
+        <div className="hidden md:block truncate text-left">
           Album
         </div>
       ) : (
-        <div className="hidden md:block" />
+        <div className="hidden md:block" /> // Locks structural tracking size
       )}
 
-      {/* Streams */}
+      {/* Streams Column Track */}
       {showStreams ? (
         <div className="hidden lg:block text-right">
           Streams
         </div>
       ) : (
-        <div className="hidden lg:block" />
+        <div className="hidden lg:block" /> // Locks structural tracking size
       )}
 
-      {/* Duration */}
-      <div className="flex items-center justify-end gap-3">
-        <Clock size={20} />
-        <div className="w-[18px]" />
+      {/* Duration Column Track (Centered Icon to align over text values) */}
+      <div className="flex items-center justify-center text-center w-full">
+        <Clock size={16} />
       </div>
+
+      {/* Action Column Track spacing */}
+      <div className="w-10" />
     </div>
   );
 }

@@ -108,7 +108,7 @@ const SEED_PLAYLISTS: PlaylistItem[] = [
   { id: "p7", name: "Rainy Day Chill", ownerId: "user-2", songList: ["s2", "s8"] },
   { id: "p8", name: "Underground EDM", ownerId: "user-2", songList: ["s4", "s5", "s6", "s7"] },
   { id: "p9", name: "Soft Acoustic Nights", ownerId: "user-2", songList: ["s1", "s2"] },
-  { id: "p10", name: "Late Night Study", ownerId: "user-2", songList: ["s9", "s10", "s3"] },
+  { id: "p10", name: "Late Night Study", ownerId: "user-1", songList: ["s9", "s10", "s3"] },
 ];
 
 // --------------------

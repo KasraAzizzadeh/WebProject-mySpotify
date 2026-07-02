@@ -26,100 +26,91 @@ export default function SongEntry({
   onAdd,
   onRemove
 }: SongEntryProps) {
+  const showStreams = subscriptionType !== "basic";
+
   return (
     <div
       className="
-        group grid w-full items-center gap-4 px-4 h-16 rounded-md
-        grid-cols-[40px_1fr_auto]
-        md:grid-cols-[40px_1fr_160px_auto]
-        lg:grid-cols-[40px_1fr_200px_200px_100px]
-        hover:bg-neutral-800
+        group grid w-full items-center gap-4 px-4 h-16 rounded-xl transition-colors duration-150
+        grid-cols-[40px_1fr_60px_40px]
+        md:grid-cols-[40px_1fr_200px_60px_40px]
+        lg:grid-cols-[40px_1fr_200px_150px_60px_40px]
+        hover:bg-white/5 active:bg-white/10
       "
     >
-
-      {/* Track */}
-      <div className="flex justify-center items-center w-10">
+      {/* Column 1: Track Play/Index */}
+      <div className="flex justify-center items-center w-10 text-neutral-400 font-medium text-sm">
         <span className="group-hover:hidden">
           {trackNumber + 1}
         </span>
-
-        <button className="hidden group-hover:flex items-center justify-center">
-          <Play size={16} fill="currentColor" />
+        <button className="hidden group-hover:flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform">
+          <Play size={14} fill="currentColor" />
         </button>
       </div>
 
-      {/* Title */}
-      <div className="flex items-center gap-4 min-w-0">
-        <div className="shrink-0">
-          <Cover src={song.imageUrl} alt={song.title} size={56} />
+      {/* Column 2: Title & Artist */}
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="shrink-0 shadow-md overflow-hidden rounded">
+          <Cover src={song.imageUrl} alt={song.title} size={40} />
         </div>
-
-        <div className="min-w-0">
-          <p className="truncate font-medium">
+        <div className="min-w-0 flex flex-col justify-center">
+          <p className="truncate font-semibold text-sm text-white tracking-tight leading-snug">
             {song.title}
           </p>
-
           <Link
             href={`/profile/${song.artistId}`}
-            className="block truncate text-sm text-neutral-400 hover:text-white hover:underline"
+            className="truncate text-xs text-neutral-400 hover:text-white hover:underline mt-0.5 w-fit"
           >
             {song.artistName}
           </Link>
         </div>
       </div>
 
-      {/* Album (hidden on small screens) */}
+      {/* Column 3: Album (Keeps layout aligned on Album pages) */}
       {showAlbum ? (
-        <div className="hidden md:block lg:block truncate text-neutral-400">
+        <div className="hidden md:block truncate text-sm text-neutral-400 font-medium">
           <Link
             href={`/album/${song.albumId}`}
-            className="hover:text-white hover:underline"
+            className="hover:text-white hover:underline transition-colors"
           >
             {song.albumName}
           </Link>
         </div>
       ) : (
-        <div />
+        <div className="hidden md:block" /> // Prevents right-side layout collapsing
       )}
 
-      {/* Streams (hidden on md and below) */}
-      {subscriptionType !== "basic" ? (
-        <div className="hidden lg:block text-right text-neutral-400">
+      {/* Column 4: Streams */}
+      {showStreams ? (
+        <div className="hidden lg:block text-right text-sm text-neutral-400 font-medium tracking-wide">
           {song.streams.toLocaleString()}
         </div>
       ) : (
-        <div />
+        <div className="hidden lg:block" /> // Prevents right-side layout collapsing
       )}
 
-      {/* Duration (always visible) */}
-      <div className="flex items-center justify-end gap-3 text-neutral-400">
-        <span>{formatDuration(song.songDurationMs)}</span>
+      {/* Column 5: Duration text (Centered to align right beneath the header clock icon) */}
+      <div className="flex items-center justify-center text-center text-sm text-neutral-400 font-medium tabular-nums select-none w-full">
+        {formatDuration(song.songDurationMs)}
+      </div>
 
-        {!hasPermission && (
+      {/* Column 6: Action Trigger */}
+      <div className="w-10 h-10 flex items-center justify-center justify-self-end">
+        {!hasPermission && onAdd && (
           <button
-            className="
-              flex items-center justify-center
-              md:opacity-0 md:group-hover:opacity-100
-              transition-opacity
-              hover:text-green-500 hover:scale-105
-            "
-            onClick={() => {onAdd?.(song.id)}}
+            className="md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150 hover:text-green-400 text-neutral-500 hover:scale-110 active:scale-90"
+            onClick={(e) => { e.stopPropagation(); onAdd(song.id); }}
           >
-            <CirclePlus size={18} />
+            <CirclePlus size={16} />
           </button>
         )}
 
-        {hasPermission && (
+        {hasPermission && onRemove && (
           <button
-            className="
-              flex items-center justify-center
-              md:opacity-0 md:group-hover:opacity-100
-              transition-opacity
-              hover:text-red-500 hover:scale-105
-            "
-            onClick={() => {onRemove?.(song.id)}}
+            className="md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150 hover:text-red-400 text-neutral-500 hover:scale-110 active:scale-90"
+            onClick={(e) => { e.stopPropagation(); onRemove(song.id); }}
           >
-            <CircleX size={18} />
+            <CircleX size={16} />
           </button>
         )}
       </div>

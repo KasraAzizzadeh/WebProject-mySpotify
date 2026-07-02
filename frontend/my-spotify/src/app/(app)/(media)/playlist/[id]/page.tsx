@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 import { PlaylistItem, SongItem } from "@/types";
 import { getPlaylistById, getSongsByPlaylistId, removeSongFromPlaylist } from "@/services/mediaService";
-import { userService } from "@/services/userService"; // Added your user service import
+import { userService } from "@/services/userService";
 import SongEntry from "@/components/music/SongEntry";
 import SongTableHeader from "@/components/music/TableHead";
 import HeroCard from "@/components/music/AlbumHero";
@@ -24,8 +24,6 @@ export default function PlaylistPage() {
   const [loading, setLoading] = useState(true);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [selectedSongId, setSelectedSongId] = useState("");
-  
-  // New state container for holding the fetched creator name
   const [ownerName, setOwnerName] = useState<string>("User");
 
   useEffect(() => {
@@ -67,7 +65,6 @@ export default function PlaylistPage() {
         setPlaylist(playlistData);
         setSongs(songsData);
 
-        // Fetch the profile name from the mock database via the ownerId
         if (playlistData.ownerId === authUser.id) {
           setOwnerName(authUser.displayName || "You");
         } else {
@@ -109,7 +106,7 @@ export default function PlaylistPage() {
 
   return (
     <main
-      className="relative min-h-screen px-2 rounded-lg"
+      className="relative min-h-screen px-1 md:px-2 rounded-lg"
       style={{
         background: `
           linear-gradient(
@@ -130,23 +127,25 @@ export default function PlaylistPage() {
         type="playlist"
         duration={songs.reduce((acc, song) => acc + (song.songDurationMs || 0), 0)}
         heroRef={heroRef}
-        ownerName={ownerName} // Now uses the dynamically resolved user profile name!
+        ownerName={ownerName}
         edit={isOwner}
       />
 
-      <div className="px-8">
+      {/* Added responsive overflow containment padding adjustments */}
+      <div className="px-4 md:px-8 overflow-x-hidden">
         <SongTableHeader showAlbum={true} showStreams={authUser?.subscriptionType !== "basic"} />
         
         {songs.length === 0 ? (
-          <div className="text-sm text-neutral-500 py-12 border-t border-neutral-800 mt-4">
+          <div className="text-sm text-neutral-500 py-12 border-t border-neutral-800 mt-4 text-center">
             This playlist is empty. Songs you add will show up here.
           </div>
         ) : (
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-1.5">
             {songs.map((song, index) => (
               <SongEntry
                 key={song.id}
                 song={song}
+                // Array index mapping starts at 0, passing index + 1 ensures the table displays exactly row #1 onwards
                 trackNumber={index + 1}
                 hasPermission={isOwner}
                 subscriptionType={authUser?.subscriptionType || "basic"}
