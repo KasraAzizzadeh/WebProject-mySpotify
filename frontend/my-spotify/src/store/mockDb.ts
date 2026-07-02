@@ -237,3 +237,42 @@ export function getOtps(): OtpEntry[] {
 export function saveOtps(otps: OtpEntry[]): void {
   localStorage.setItem(OTPS_KEY, JSON.stringify(otps));
 }
+
+/**
+ * Resolves full SongItem records for a specific Album or Playlist container string ID
+ */
+export function getSongsByCollectionSource(type: 'album' | 'playlist', id: string): SongItem[] {
+  const allSongs = getSongs();
+
+  if (type === 'album') {
+    const albums = getAlbums();
+    const album = albums.find(a => a.id === id);
+    if (!album) return [];
+    
+    // Map string IDs in songList to full song objects in order
+    return album.songList
+      .map(songId => allSongs.find(s => s.id === songId))
+      .filter((s): s is SongItem => !!s);
+  }
+
+  if (type === 'playlist') {
+    const playlists = getPlaylists();
+    const playlist = playlists.find(p => p.id === id);
+    if (!playlist) return [];
+
+    // Map string IDs in songList to full song objects in order
+    return playlist.songList
+      .map(songId => allSongs.find(s => s.id === songId))
+      .filter((s): s is SongItem => !!s);
+  }
+
+  return [];
+}
+
+/**
+ * Fallback contextual lookup to find all sibling songs matching a song's album field
+ */
+export function getSiblingSongsByAlbumId(albumId: string): SongItem[] {
+  const allSongs = getSongs();
+  return allSongs.filter(s => s.albumId === albumId);
+}

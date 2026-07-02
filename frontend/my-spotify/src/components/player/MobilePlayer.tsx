@@ -6,21 +6,28 @@ import { Play, Pause, ChevronDown } from 'lucide-react';
 import Cover from '../ui/Cover';
 
 export default function MobilePlayer() {
-  const { currentSong, isPlaying, togglePlayPause } = usePlayer();
+  const { currentSong, isPlaying, togglePlayPause, playbackSource } = usePlayer() as any;
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (!currentSong) return null;
 
   if (isExpanded) {
     return (
-      <div className="fixed inset-0 bg-neutral-900 z-[100] flex flex-col p-6 text-white animate-in slide-in-from-bottom-full duration-300">
+      <div className="fixed inset-0 bg-neutral-900 z-[100] flex flex-col p-6 text-white animate-in slide-in-from-bottom-full duration-300 select-none">
         {/* Header */}
         <div className="flex items-center justify-between mb-8 pt-4">
           <button onClick={() => setIsExpanded(false)}>
             <ChevronDown size={28} />
           </button>
-          <span className="text-xs font-bold uppercase tracking-widest text-neutral-400">Now Playing</span>
-          <div className="w-7" /> {/* Spacer */}
+          <div className="flex flex-col items-center">
+            <span className="text-xs font-bold uppercase tracking-widest text-neutral-400">Now Playing</span>
+            {playbackSource && (
+              <span className="text-[9px] uppercase tracking-wider text-neutral-500 font-semibold mt-0.5">
+                From {playbackSource.type}
+              </span>
+            )}
+          </div>
+          <div className="w-7" />
         </div>
         
         {/* Art */}
@@ -49,7 +56,7 @@ export default function MobilePlayer() {
 
   // Mini Player State
   return (
-    <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+64px)] md:bottom-[env(safe-area-inset-bottom)] left-2 right-2 bg-neutral-800 rounded-md p-2 flex items-center justify-between shadow-xl z-40 border border-neutral-700/50">
+    <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+64px)] md:bottom-[env(safe-area-inset-bottom)] left-2 right-2 bg-neutral-800 rounded-md p-2 flex items-center justify-between shadow-xl z-40 border border-neutral-700/50 select-none">
       <div 
         className="flex items-center gap-3 flex-1 min-w-0" 
         onClick={() => setIsExpanded(true)}

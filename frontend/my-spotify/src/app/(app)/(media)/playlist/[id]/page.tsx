@@ -131,7 +131,6 @@ export default function PlaylistPage() {
         edit={isOwner}
       />
 
-      {/* Added responsive overflow containment padding adjustments */}
       <div className="px-4 md:px-8 overflow-x-hidden">
         <SongTableHeader showAlbum={true} showStreams={authUser?.subscriptionType !== "basic"} />
         
@@ -145,12 +144,12 @@ export default function PlaylistPage() {
               <SongEntry
                 key={song.id}
                 song={song}
-                // Array index mapping starts at 0, passing index + 1 ensures the table displays exactly row #1 onwards
                 trackNumber={index + 1}
                 hasPermission={isOwner}
                 subscriptionType={authUser?.subscriptionType || "basic"}
                 showAlbum={true}
                 onRemove={(songId: string) => setSelectedSongId(songId)}
+                songsList={songs} // Fixed: Passing full track context array down to SongEntry
               />
             ))}
           </div>

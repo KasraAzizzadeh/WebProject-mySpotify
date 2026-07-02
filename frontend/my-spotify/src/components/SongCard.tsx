@@ -7,22 +7,20 @@ import { SongItem, SubscriptionType } from '@/types';
 interface SongCardProps {
   song: SongItem;
   subscriptionType: SubscriptionType;
+  songsContext?: SongItem[]; // The list of tracks currently displayed around this card
 }
 
-export default function SongCard({ song, subscriptionType }: SongCardProps) {
-  // Hook into our continuous global playback state context
+export default function SongCard({ song, subscriptionType, songsContext = [song] }: SongCardProps) {
   const { playSong, currentSong, isPlaying, togglePlayPause } = usePlayer();
 
-  // Evaluate if this specific song is currently the active audio item
   const isCurrentSongActive = currentSong?.id === song.id;
 
   const handleCardClick = () => {
     if (isCurrentSongActive) {
-      // If the user clicks the card of the song that's already loaded, toggle play/pause
       togglePlayPause();
     } else {
-      // Otherwise, fire it up as the newly selected song and reset the queue context with just itself
-      playSong(song, [song]);
+      // Automatically treats the current view grid list as the active play queue
+      playSong(song, songsContext, { type: 'album', id: song.albumId || 'grid' });
     }
   };
 
@@ -42,7 +40,6 @@ export default function SongCard({ song, subscriptionType }: SongCardProps) {
         <div className="w-full aspect-square bg-neutral-800 rounded-lg mb-4 flex items-center justify-center relative shadow-inner group-hover:scale-[1.02] transition-transform overflow-hidden">
           <span className="text-3xl select-none">🎵</span>
           
-          {/* Subtle green overlay state indication if it's currently loaded/playing */}
           {isCurrentSongActive && (
             <div className="absolute inset-0 bg-green-500/10 flex items-center justify-center backdrop-blur-[1px]">
               <div className="bg-black/60 rounded-full p-3 border border-green-500/30 text-green-500">
@@ -71,7 +68,6 @@ export default function SongCard({ song, subscriptionType }: SongCardProps) {
           </Link>
         </p>
 
-        {/* IMPORTANT: reserve space even if album is missing */}
         <p className="text-xs text-neutral-500 mt-1 min-h-[18px]">
           {song.albumName ? (
             <>

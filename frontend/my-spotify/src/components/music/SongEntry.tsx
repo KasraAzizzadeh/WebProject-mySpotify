@@ -15,7 +15,7 @@ interface SongEntryProps {
   showAlbum?: boolean;
   onAdd?: (id: string) => void;
   onRemove?: (id: string) => void;
-  songsList?: SongItem[]; // Added optional queue array parameter
+  songsList: SongItem[]; // Changed from optional to required to enforce proper play queues
 }
 
 export default function SongEntry({
@@ -26,14 +26,12 @@ export default function SongEntry({
   showAlbum = true,
   onAdd,
   onRemove,
-  songsList = [song] // Fallback to an array of just this song if list context is omitted
+  songsList
 }: SongEntryProps) {
   const showStreams = subscriptionType !== "basic";
   
-  // Hook directly into our continuous playback state manager
   const { currentSong, isPlaying, playSong, togglePlayPause } = usePlayer();
 
-  // Evaluate if this specific song is currently active in the audio slot
   const isCurrentSongActive = currentSong?.id === song.id;
   const isThisSpecificTrackPlaying = isCurrentSongActive && isPlaying;
 
@@ -42,7 +40,22 @@ export default function SongEntry({
     if (isCurrentSongActive) {
       togglePlayPause();
     } else {
-      playSong(song, songsList);
+      let contextType: 'album' | 'playlist' = 'album';
+      let contextId = song.albumId || 'unknown';
+
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        if (path.includes('/playlist/')) {
+          contextType = 'playlist';
+          contextId = path.split('/playlist/')[1]?.split('?')[0] || 'playlist-id';
+        } else if (path.includes('/album/')) {
+          contextType = 'album';
+          contextId = path.split('/album/')[1]?.split('?')[0] || song.albumId || 'album-id';
+        }
+      }
+
+      // Directly loads the entire parent collection array into the player context state
+      playSong(song, songsList, { type: contextType, id: contextId });
     }
   };
 
@@ -57,7 +70,7 @@ export default function SongEntry({
         ${isCurrentSongActive ? 'bg-white/5' : ''}
       `}
     >
-      {/* Column 1: Track Play/Index toggle interaction */}
+      {/* Column 1: Track Play Controls */}
       <div className="flex justify-center items-center w-10 text-neutral-400 font-medium text-sm">
         <span className={`group-hover:hidden ${isCurrentSongActive ? 'text-green-500 font-semibold' : ''}`}>
           {trackNumber + 1}
@@ -74,7 +87,7 @@ export default function SongEntry({
         </button>
       </div>
 
-      {/* Column 2: Title & Artist */}
+      {/* Column 2: Details */}
       <div className="flex items-center gap-3 min-w-0">
         <div className="shrink-0 shadow-md overflow-hidden rounded">
           <Cover src={song.imageUrl} alt={song.title} size={40} />
@@ -92,7 +105,7 @@ export default function SongEntry({
         </div>
       </div>
 
-      {/* Column 3: Album (Keeps layout aligned on Album pages) */}
+      {/* Column 3: Album */}
       {showAlbum ? (
         <div className="hidden md:block truncate text-sm text-neutral-400 font-medium">
           <Link
@@ -115,12 +128,12 @@ export default function SongEntry({
         <div className="hidden lg:block" />
       )}
 
-      {/* Column 5: Duration text */}
+      {/* Column 5: Duration */}
       <div className="flex items-center justify-center text-center text-sm text-neutral-400 font-medium tabular-nums select-none w-full">
         {formatDuration(song.songDurationMs)}
       </div>
 
-      {/* Column 6: Action Trigger */}
+      {/* Column 6: Action Buttons */}
       <div className="w-10 h-10 flex items-center justify-center justify-self-end">
         {!hasPermission && onAdd && (
           <button

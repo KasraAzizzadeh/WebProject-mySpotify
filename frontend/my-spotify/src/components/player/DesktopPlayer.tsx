@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePlayer } from '@/contexts/PlayerContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,11 +15,27 @@ export default function DesktopPlayer() {
   const { 
     currentSong, isPlaying, togglePlayPause, nextTrack, prevTrack, 
     progress, duration, seek, volume, setVolume,
-    repeatMode, toggleRepeat, isShuffle, toggleShuffle 
-  } = usePlayer();
+    repeatMode, toggleRepeat, isShuffle, toggleShuffle, 
+    playbackSource, queue, currentIndex, playSong
+  } = usePlayer() as any;
   
   const { user: authUser } = useAuth() as any;
   const isGold = authUser?.subscriptionType?.toLowerCase() === 'gold';
+
+  // Queue Modal State
+  const [showQueue, setShowQueue] = useState(false);
+  const queueRef = useRef<HTMLDivElement>(null);
+
+  // Close queue when clicking outside of it
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (queueRef.current && !queueRef.current.contains(e.target as Node)) {
+        setShowQueue(false);
+      }
+    };
+    if (showQueue) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showQueue]);
 
   if (!currentSong) return null;
 
@@ -41,6 +58,7 @@ export default function DesktopPlayer() {
               {currentSong.albumName}
             </Link>
           </div>
+          
           {/* GOLD TIER EXCLUSIVE */}
           {isGold && (
             <p className="text-[10px] text-amber-500 font-bold tracking-wider uppercase mt-1">
@@ -79,7 +97,7 @@ export default function DesktopPlayer() {
         <div className="flex items-center gap-2 w-full text-xs text-neutral-400 font-medium tabular-nums">
           <span>{formatDuration(progress * 1000)}</span>
           <input 
-            type="range" min="0" max={duration || 100} value={progress}
+            type="range" min="0" max={duration || 100} value={progress} step="0.1"
             onChange={(e) => seek(Number(e.target.value))}
             className="w-full h-1 bg-neutral-700 rounded-full appearance-none cursor-pointer accent-white hover:accent-green-500"
           />
@@ -88,15 +106,74 @@ export default function DesktopPlayer() {
       </div>
 
       {/* 3. Right: Volume & Extras */}
-      <div className="flex items-center justify-end gap-4 w-[30%] min-w-[180px] text-neutral-400">
+      <div className="flex items-center justify-end gap-4 w-[30%] min-w-[180px] text-neutral-400 relative">
         <button className="hover:text-white transition" title="Lyrics">
           <Mic2 size={18} />
         </button>
-        <button className="hover:text-white transition" title="Queue">
-          <ListMusic size={18} />
-        </button>
+        
+        {/* Queue Toggle Button */}
+        <div className="relative flex items-center">
+          <button 
+            onClick={(e) => { e.stopPropagation(); setShowQueue(!showQueue); }}
+            className={`${showQueue ? 'text-green-500' : 'text-neutral-400'} hover:text-white transition`} 
+            title="Queue"
+          >
+            <ListMusic size={18} />
+          </button>
+
+          {/* Pop-up Queue Rectangle */}
+          {showQueue && (
+            <div 
+              ref={queueRef} 
+              className="absolute bottom-12 right-0 w-80 max-h-96 bg-neutral-900 border border-neutral-800 rounded-lg shadow-2xl overflow-y-auto flex flex-col z-50 p-2 cursor-default"
+            >
+              <div className="sticky top-0 bg-neutral-900 pb-2 mb-2 border-b border-neutral-800 z-10 flex justify-between items-center px-2 pt-2">
+                <h3 className="text-white font-bold text-sm">Play Queue</h3>
+                {playbackSource && (
+                  <span className="text-[10px] text-neutral-500 font-semibold tracking-wider uppercase">
+                    {playbackSource.type}
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex flex-col gap-1">
+                {queue.map((s: any, idx: number) => {
+                  const isTrackActive = currentIndex === idx;
+                  return (
+                    <div 
+                      key={`${s.id}-${idx}`}
+                      onClick={() => {
+                        if (!isTrackActive) playSong(s, queue, playbackSource || undefined);
+                      }}
+                      className={`flex items-center gap-3 p-2 rounded-md transition ${isTrackActive ? 'bg-white/10' : 'hover:bg-white/5 cursor-pointer'}`}
+                    >
+                      <div className="relative w-8 h-8 shrink-0">
+                         <Cover src={s.imageUrl} size={32} className="rounded" alt={s.title} />
+                         {isTrackActive && isPlaying && (
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded">
+                               <div className="w-3 h-3 flex items-end justify-center gap-[2px]">
+                                 <div className="w-[2px] bg-green-500 h-full animate-pulse" />
+                                 <div className="w-[2px] bg-green-500 h-2/3 animate-pulse" style={{ animationDelay: '150ms'}} />
+                               </div>
+                            </div>
+                         )}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <p className={`text-xs font-semibold truncate ${isTrackActive ? 'text-green-500' : 'text-white'}`}>
+                          {s.title}
+                        </p>
+                        <p className="text-[10px] text-neutral-400 truncate">{s.artistName}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center gap-2 w-24">
-          <button onClick={() => setVolume(volume === 0 ? 1 : 0)}>
+          <button onClick={() => setVolume(volume === 0 ? 0.5 : 0)}>
             {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </button>
           <input 
