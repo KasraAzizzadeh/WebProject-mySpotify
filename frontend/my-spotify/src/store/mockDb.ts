@@ -99,7 +99,7 @@ const SEED_ALBUMS: AlbumItem[] = [
 // SEED DATA (PLAYLISTS)
 // --------------------
 const SEED_PLAYLISTS: PlaylistItem[] = [
-  { id: "p1", name: "Chill Lo-Fi Beats", ownerId: "user-2", isPrivate: false, songList: ["s1", "s2", "s3"] },
+  { id: "p1", name: "Chill Lo-Fi Beats", ownerId: "user-2", isPrivate: false, songList: ["s1", "s2", "s3"], imageUrl:"/pic4.jpg"  },
   { id: "p2", name: "Coding Session Intensity", ownerId: "user-2", songList: ["s4", "s5"] },
   { id: "p3", name: "Night Drive Vibes", ownerId: "user-2", songList: ["s6", "s7", "s8"] },
   { id: "p4", name: "Deep Focus Flow", ownerId: "user-2", songList: ["s9", "s10"] },

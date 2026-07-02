@@ -1,13 +1,13 @@
 "use client";
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Replaced redirect with client router hook
 import Cover from "@/components/ui/Cover";
-import { AlbumItem, PlaylistItem, UserProfile } from "@/types";
+import { AlbumItem, PlaylistItem } from "@/types";
 import { formatDuration } from "@/utils/mediaUtils";
 import { useAverageColor } from "@/hooks/useAverageColor";
 import { darken } from "@/utils/color";
 import { Shuffle, Play, Pen, Plus } from "lucide-react";
-import { redirect } from 'next/navigation';
 
 type HeroProps =
   | {
@@ -26,19 +26,24 @@ type HeroProps =
     };
 
 export default function HeroCard(props: HeroProps) {
-
     const { item, type, duration, heroRef } = props;
+    const router = useRouter();
   
     const color = useAverageColor(item.imageUrl);
     const itemType = type == "album" ? (item.songList.length === 1 ? "Single" : "Album") 
-                            : (`${item.isPrivate ? "Private" : "Public"} Playlist`);
+                                     : (`${item.isPrivate ? "Private" : "Public"} Playlist`);
+
+    // Computes target link path based entirely on item asset types
+    const profileHref = type === "album" 
+      ? `/album/${item.artistId}` 
+      : `/profile/${item.ownerId}`;
 
     return (
         <section
         ref={heroRef}
         className="relative overflow-hidden h-[500px] md:h-[420px]"
         >
-        {/* Background */}
+        {/* Background Overlay */}
         <div
             className="absolute inset-0"
             style={{
@@ -54,7 +59,7 @@ export default function HeroCard(props: HeroProps) {
             }}
         />
 
-        {/* Content */}
+        {/* Content Wrapper */}
         <div className="relative z-10 flex h-full flex-col justify-end px-4 pb-6 md:px-8">
             <div className="flex flex-col items-center gap-6 md:flex-row md:items-end md:gap-8">
                 <Cover
@@ -73,16 +78,9 @@ export default function HeroCard(props: HeroProps) {
                     </h1>
 
                     <p className="mt-3 text-base md:text-lg text-neutral-200">
-
-                    {/* maybe add artist/user profile */}
-                    {/* <Avatar
-                        src={user.profilePictureUrl}
-                        alt={user.displayName}
-                        size={52}
-                    /> */}
                     <span className="font-semibold">
                         <Link
-                            href={`/album/${type === "album" ? item.artistId : item.ownerId}`}
+                            href={profileHref}
                             className="hover:text-white hover:underline"
                         >
                             {type === "album" ? item.artistName : props.ownerName}
@@ -92,13 +90,13 @@ export default function HeroCard(props: HeroProps) {
                     <span className="mx-2">•</span>
 
                     <span className='text-neutral-300'>
-                        {type === "album" ? new Date(item.releaseDate).getFullYear() : ""}
+                        {type === "album" ? new Date(item.releaseDate).getFullYear() : "Playlist Metadata"}
                     </span>
 
                     <span className="mx-2">•</span>
 
                     <span className='text-neutral-300'>
-                        {item.songList.length} songs
+                        {item.songList.length} {item.songList.length === 1 ? 'song' : 'songs'}
                     </span>
 
                     <span className="mx-2">•</span>
@@ -114,7 +112,7 @@ export default function HeroCard(props: HeroProps) {
                 </div>
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Control Panel */}
             <div className="mt-8 flex flex-wrap justify-center sm:justify-start items-center gap-4">
             <button className="rounded-full bg-green-500 px-5 py-5 text-3xl font-bold text-black transition hover:scale-105">
                 <Play size={24} />
@@ -127,10 +125,13 @@ export default function HeroCard(props: HeroProps) {
             {type === "playlist" && props.edit && (
                 <button 
                     className="flex items-center gap-2 rounded-full border border-neutral-500 px-6 py-3 text-md transition hover:border-white hover:text-white"
-                    onClick={(e) => {e.preventDefault(); redirect("/discover");}}
+                    onClick={(e) => {
+                      e.preventDefault(); 
+                      router.push("/discover");
+                    }}
                 >
                     <Plus size={20} />
-                    <span>Add</span>
+                    <span>Add Tracks</span>
                 </button>
             )}
             
