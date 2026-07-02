@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Play, CirclePlus, CircleX } from 'lucide-react';
-
+import { Play, Pause, CirclePlus, CircleX } from 'lucide-react';
+import { usePlayer } from '@/contexts/PlayerContext';
 import { SongItem, SubscriptionType } from '@/types';
 import Cover from '../ui/Cover';
 import { formatDuration } from '@/utils/mediaUtils';
@@ -15,6 +15,7 @@ interface SongEntryProps {
   showAlbum?: boolean;
   onAdd?: (id: string) => void;
   onRemove?: (id: string) => void;
+  songsList?: SongItem[]; // Added optional queue array parameter
 }
 
 export default function SongEntry({
@@ -24,27 +25,52 @@ export default function SongEntry({
   hasPermission,
   showAlbum = true,
   onAdd,
-  onRemove
+  onRemove,
+  songsList = [song] // Fallback to an array of just this song if list context is omitted
 }: SongEntryProps) {
   const showStreams = subscriptionType !== "basic";
+  
+  // Hook directly into our continuous playback state manager
+  const { currentSong, isPlaying, playSong, togglePlayPause } = usePlayer();
+
+  // Evaluate if this specific song is currently active in the audio slot
+  const isCurrentSongActive = currentSong?.id === song.id;
+  const isThisSpecificTrackPlaying = isCurrentSongActive && isPlaying;
+
+  const handlePlayAction = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isCurrentSongActive) {
+      togglePlayPause();
+    } else {
+      playSong(song, songsList);
+    }
+  };
 
   return (
     <div
-      className="
+      className={`
         group grid w-full items-center gap-4 px-4 h-16 rounded-xl transition-colors duration-150
         grid-cols-[40px_1fr_60px_40px]
         md:grid-cols-[40px_1fr_200px_60px_40px]
         lg:grid-cols-[40px_1fr_200px_150px_60px_40px]
         hover:bg-white/5 active:bg-white/10
-      "
+        ${isCurrentSongActive ? 'bg-white/5' : ''}
+      `}
     >
-      {/* Column 1: Track Play/Index */}
+      {/* Column 1: Track Play/Index toggle interaction */}
       <div className="flex justify-center items-center w-10 text-neutral-400 font-medium text-sm">
-        <span className="group-hover:hidden">
+        <span className={`group-hover:hidden ${isCurrentSongActive ? 'text-green-500 font-semibold' : ''}`}>
           {trackNumber + 1}
         </span>
-        <button className="hidden group-hover:flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform">
-          <Play size={14} fill="currentColor" />
+        <button 
+          onClick={handlePlayAction}
+          className="hidden group-hover:flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform"
+        >
+          {isThisSpecificTrackPlaying ? (
+            <Pause size={14} className="fill-current text-green-500" />
+          ) : (
+            <Play size={14} className="fill-current" />
+          )}
         </button>
       </div>
 
@@ -54,7 +80,7 @@ export default function SongEntry({
           <Cover src={song.imageUrl} alt={song.title} size={40} />
         </div>
         <div className="min-w-0 flex flex-col justify-center">
-          <p className="truncate font-semibold text-sm text-white tracking-tight leading-snug">
+          <p className={`truncate font-semibold text-sm tracking-tight leading-snug ${isCurrentSongActive ? 'text-green-500' : 'text-white'}`}>
             {song.title}
           </p>
           <Link
@@ -77,7 +103,7 @@ export default function SongEntry({
           </Link>
         </div>
       ) : (
-        <div className="hidden md:block" /> // Prevents right-side layout collapsing
+        <div className="hidden md:block" />
       )}
 
       {/* Column 4: Streams */}
@@ -86,10 +112,10 @@ export default function SongEntry({
           {song.streams.toLocaleString()}
         </div>
       ) : (
-        <div className="hidden lg:block" /> // Prevents right-side layout collapsing
+        <div className="hidden lg:block" />
       )}
 
-      {/* Column 5: Duration text (Centered to align right beneath the header clock icon) */}
+      {/* Column 5: Duration text */}
       <div className="flex items-center justify-center text-center text-sm text-neutral-400 font-medium tabular-nums select-none w-full">
         {formatDuration(song.songDurationMs)}
       </div>
