@@ -1,10 +1,13 @@
 'use client';
+import { useRouter } from 'next/navigation';
 import { PlaylistItem } from '@/types';
 
 export default function PlaylistCard({ playlist }: { playlist: PlaylistItem }) {
+  const router = useRouter();
+
   return (
     <div 
-      onClick={() => window.location.href = `/playlist/${playlist.id}`}
+      onClick={() => router.push(`/playlist/${playlist.id}`)}
       className="bg-neutral-900/60 hover:bg-neutral-800/80 p-4 rounded-xl border border-neutral-800/40 transition-all cursor-pointer group"
     >
       <div className="w-full aspect-square bg-neutral-800 rounded-lg mb-4 flex items-center justify-center relative shadow-inner group-hover:scale-[1.02] transition-transform">

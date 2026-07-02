@@ -83,8 +83,9 @@ export default function UserPlaylistsPage() {
       
       {/* HEADER CONTROLS NAVIGATION */}
       <div className="flex items-center justify-between">
+        {/* Changed href from "/" to "/home" to stay within the (app) group layout context */}
         <Link
-          href="/"
+          href="/home"
           className="inline-flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition group"
         >
           <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />

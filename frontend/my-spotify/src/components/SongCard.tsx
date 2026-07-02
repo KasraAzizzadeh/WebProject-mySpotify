@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePlayer } from '@/contexts/PlayerContext';
 import { SongItem, SubscriptionType } from '@/types';
 
 interface SongCardProps {
@@ -9,24 +10,52 @@ interface SongCardProps {
 }
 
 export default function SongCard({ song, subscriptionType }: SongCardProps) {
+  // Hook into our continuous global playback state context
+  const { playSong, currentSong, isPlaying, togglePlayPause } = usePlayer();
+
+  // Evaluate if this specific song is currently the active audio item
+  const isCurrentSongActive = currentSong?.id === song.id;
+
+  const handleCardClick = () => {
+    if (isCurrentSongActive) {
+      // If the user clicks the card of the song that's already loaded, toggle play/pause
+      togglePlayPause();
+    } else {
+      // Otherwise, fire it up as the newly selected song and reset the queue context with just itself
+      playSong(song, [song]);
+    }
+  };
+
   return (
     <div
-      onClick={() => alert(`Playing: "${song.title}" in bottom music player`)}
-      className="
-        bg-neutral-900/60 hover:bg-neutral-800/80
-        p-4 rounded-xl border border-neutral-800/40
-        transition-all cursor-pointer group
-        flex flex-col justify-between
-        h-full
-      "
+      onClick={handleCardClick}
+      className={`
+        p-4 rounded-xl border transition-all cursor-pointer group
+        flex flex-col justify-between h-full
+        ${isCurrentSongActive 
+          ? 'bg-neutral-800/90 border-green-500/30 shadow-[0_4px_20px_rgba(34,197,94,0.1)]' 
+          : 'bg-neutral-900/60 hover:bg-neutral-800/80 border-neutral-800/40'
+        }
+      `}
     >
       <div>
-        <div className="w-full aspect-square bg-neutral-800 rounded-lg mb-4 flex items-center justify-center relative shadow-inner group-hover:scale-[1.02] transition-transform">
-          <span className="text-3xl">🎵</span>
+        <div className="w-full aspect-square bg-neutral-800 rounded-lg mb-4 flex items-center justify-center relative shadow-inner group-hover:scale-[1.02] transition-transform overflow-hidden">
+          <span className="text-3xl select-none">🎵</span>
+          
+          {/* Subtle green overlay state indication if it's currently loaded/playing */}
+          {isCurrentSongActive && (
+            <div className="absolute inset-0 bg-green-500/10 flex items-center justify-center backdrop-blur-[1px]">
+              <div className="bg-black/60 rounded-full p-3 border border-green-500/30 text-green-500">
+                <span className="text-xs font-bold uppercase tracking-wider">
+                  {isPlaying ? 'Playing' : 'Paused'}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-between items-start gap-2">
-          <h4 className="font-semibold text-white truncate text-base flex-1">
+          <h4 className={`font-semibold truncate text-base flex-1 transition-colors ${isCurrentSongActive ? 'text-green-500' : 'text-white'}`}>
             {song.title}
           </h4>
         </div>
@@ -56,7 +85,7 @@ export default function SongCard({ song, subscriptionType }: SongCardProps) {
               </Link>
             </>
           ) : (
-            <span className="opacity-0">placeholder</span>
+            <span className="opacity-0 select-none">placeholder</span>
           )}
         </p>
       </div>
