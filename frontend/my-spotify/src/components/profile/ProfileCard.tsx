@@ -1,5 +1,6 @@
 import { UserProfile } from '@/types';
 import EditableAvatar from './EditableAvatar';
+import { LogOut } from 'lucide-react';
 
 interface ProfileCardProps {
   dbUser: UserProfile;
@@ -10,6 +11,7 @@ interface ProfileCardProps {
   hasAvatarPermission: boolean;
   onAvatarDirectUpload: (file: File) => void;
   onAvatarRemove: () => void;
+  onLogoutTrigger?: () => void;
 }
 
 export default function ProfileCard({
@@ -21,6 +23,7 @@ export default function ProfileCard({
   hasAvatarPermission,
   onAvatarDirectUpload,
   onAvatarRemove,
+  onLogoutTrigger,
 }: ProfileCardProps) {
 
   const isVerified = dbUser.artistProfile?.verificationStatus === 'approved';
@@ -28,6 +31,19 @@ export default function ProfileCard({
 
   return (
     <section className="bg-neutral-900/50 border border-neutral-800/60 rounded-3xl p-6 md:p-10 flex flex-col md:flex-row items-center md:items-start gap-8 relative overflow-hidden backdrop-blur-sm">
+      
+      {/* Absolute Positioned Top-Right Log Out Button with Text Label */}
+      {isOwnProfile && onLogoutTrigger && (
+        <button
+          type="button"
+          onClick={onLogoutTrigger}
+          className="absolute top-4 right-4 md:top-6 md:right-6 gap-2 text-xs font-semibold text-neutral-400 hover:text-red-400 bg-transparent border border-neutral-800 hover:border-red-900/40 px-3 py-2 rounded-xl transition-all flex items-center justify-center shrink-0 z-20"
+          title="Log Out"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          <span>Log out</span>
+        </button>
+      )}
 
       <div className="flex-shrink-0">
         <EditableAvatar

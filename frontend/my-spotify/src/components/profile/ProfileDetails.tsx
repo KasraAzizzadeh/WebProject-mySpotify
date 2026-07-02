@@ -42,7 +42,7 @@ export default function ProfileDetails({
         <h2 className="text-xl font-bold text-white tracking-tight">Profile Details</h2>
         
         {isOwnProfile && (
-          <div className="flex items-center transform -translate-y-[2px]">
+          <div className="flex items-center gap-2 transform -translate-y-[2px]">
             {isEditing ? (
               <div className="flex items-center gap-2">
                 <Button
@@ -63,13 +63,15 @@ export default function ProfileDetails({
                 </Button>
               </div>
             ) : (
-              <Button
-                variant="secondary"
-                onClick={() => setIsEditing(true)}
-                className="px-4 text-xs h-9 border border-neutral-700 hover:bg-neutral-800 flex items-center justify-center"
-              >
-                Edit Profile
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => setIsEditing(true)}
+                  className="px-4 text-xs h-9 border border-neutral-700 hover:bg-neutral-800 flex items-center justify-center"
+                >
+                  Edit Profile
+                </Button>
+              </div>
             )}
           </div>
         )}

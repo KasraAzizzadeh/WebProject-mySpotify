@@ -6,17 +6,17 @@ import { useRouter } from 'next/navigation';
 
 import Alert from '@/components/ui/Alert';
 import Message from '@/components/ui/Message';
+import PlansModal from '@/components/settings/PlansModal';
 
-// Updated import paths to hook into your global UI assets folder
 import PreferencesForm from '@/components/settings/PreferencesForm';
 import { SettingsHeader, ProfilePanel, SubscriptionPanel } from '@/components/settings/Panels';
 
 import { Trash2 } from 'lucide-react';
 
-type ModalState = 'none' | 'logout' | 'delete' | 'save_success';
+type ModalState = 'none' | 'delete' | 'plans' | 'save_success';
 
 export default function SettingsPage() {
-  const { user: authUser, logoutUser, deleteUser } = useAuth();
+  const { user: authUser, deleteUser } = useAuth() as any;
   const router = useRouter();
 
   const [successDescription, setSuccessDescription] = useState('');
@@ -38,6 +38,14 @@ export default function SettingsPage() {
     setActiveModal('save_success');
   };
 
+  const handlePlanSelectionSave = (chosenPlan: 'basic' | 'silver' | 'gold') => {
+    // Currently logs the selection as requested before we implement backend hooks
+    console.log("User submitted subscription change target to: ", chosenPlan);
+    
+    setSuccessDescription(`Plan update pipeline to ${chosenPlan.toUpperCase()} initialized successfully.`);
+    setActiveModal('save_success');
+  };
+
   const executeDeleteAccount = async () => {
     setErrorMessage(null);
     setIsProcessing(true);
@@ -51,19 +59,24 @@ export default function SettingsPage() {
     }
   };
 
+  // Enforces fallback default fallback values if fields aren't initialized yet
+  const activeSubscriptionType = authUser.subscriptionType || 'basic';
+
   return (
     <main className="p-4 md:p-8 max-w-2xl mx-auto space-y-6 bg-black min-h-screen text-white relative">
       
       <SettingsHeader 
         onBackClick={() => router.push('/home')} 
-        onLogoutClick={() => setActiveModal('logout')} 
       />
 
       <Alert message={errorMessage} />
 
       <ProfilePanel />
 
-      <SubscriptionPanel user={authUser} />
+      <SubscriptionPanel 
+        user={authUser} 
+        onManageClick={() => setActiveModal('plans')}
+      />
 
       <PreferencesForm 
         onSaveSuccess={handlePreferencesSaved} 
@@ -87,7 +100,14 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Global Application Modals Overlays */}
+      <PlansModal
+        isOpen={activeModal === 'plans'}
+        currentPlan={activeSubscriptionType}
+        onClose={() => setActiveModal('none')}
+        onSelectPlan={handlePlanSelectionSave}
+      />
+
       <Message
         isOpen={activeModal === 'save_success'}
         title="Settings Saved"
@@ -95,15 +115,6 @@ export default function SettingsPage() {
         confirmLabel="OK"
         type="alert"
         onConfirm={() => setActiveModal('none')}
-      />
-
-      <Message
-        isOpen={activeModal === 'logout'}
-        title="Log Out"
-        description="Are you sure you want to log out? You will need to sign in again to access your account."
-        confirmLabel="Log Out"
-        onConfirm={logoutUser}
-        onCancel={() => setActiveModal('none')}
       />
 
       <Message

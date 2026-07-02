@@ -11,10 +11,10 @@ import ProfileCard from '@/components/profile/ProfileCard';
 import ProfileStats from '@/components/profile/ProfileStats';
 import ProfileDetails from '@/components/profile/ProfileDetails';
 import ProfileDiscography from '@/components/profile/ProfileDiscography';
-import Message from '@/components/ui/Message'; // Import the confirmation modal
+import Message from '@/components/ui/Message';
 
 export default function ProfilePage() {
-  const { user: authUser, refreshUser } = useAuth() as any;
+  const { user: authUser, refreshUser, logoutUser } = useAuth() as any;
   const params = useParams();
   
   const targetUserId = (params?.id as string) || authUser?.id;
@@ -26,8 +26,9 @@ export default function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   
-  // Modal Confirmation State
+  // Modals Confirmation States
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
   
   // Form Track States
@@ -95,12 +96,10 @@ export default function ProfilePage() {
     }
   };
 
-  // Triggered when clicking the trash icon to open the prompt
   const handleAvatarRemoveClick = () => {
     setIsDeleteModalOpen(true);
   };
 
-  // Executed on actual positive confirmation from Message UI
   const handleConfirmAvatarRemove = async () => {
     if (!dbUser || !targetUserId || !hasPremiumAvatarPermission) return;
 
@@ -235,6 +234,7 @@ export default function ProfilePage() {
   return (
     <main className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
       
+      {/* ProfileCard handles the logout trigger hook */}
       <ProfileCard 
         dbUser={dbUser}
         isOwnProfile={isOwnProfile}
@@ -244,6 +244,7 @@ export default function ProfilePage() {
         hasAvatarPermission={hasPremiumAvatarPermission}
         onAvatarDirectUpload={handleAvatarDirectUpload}
         onAvatarRemove={handleAvatarRemoveClick}
+        onLogoutTrigger={() => setIsLogoutModalOpen(true)}
       />
 
       <ProfileStats 
@@ -279,7 +280,7 @@ export default function ProfilePage() {
         />
       )}
 
-      {/* Confirmation Message Popup */}
+      {/* Confirmation Message Popup for Photo Deletion */}
       <Message 
         isOpen={isDeleteModalOpen}
         title="Delete Profile Picture"
@@ -291,6 +292,17 @@ export default function ProfilePage() {
         type="confirm"
         onConfirm={handleConfirmAvatarRemove}
         onCancel={() => setIsDeleteModalOpen(false)}
+      />
+
+      {/* Confirmation Message Popup for Account Log Out - Destructive Red */}
+      <Message
+        isOpen={isLogoutModalOpen}
+        title="Log Out"
+        description="Are you sure you want to log out? You will need to sign in again to access your account."
+        confirmLabel="Log Out"
+        isDangerous={true}
+        onConfirm={logoutUser}
+        onCancel={() => setIsLogoutModalOpen(false)}
       />
       
     </main>
