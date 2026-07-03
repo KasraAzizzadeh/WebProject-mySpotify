@@ -113,6 +113,7 @@ export default function AlbumPage() {
               subscriptionType={
                 authUser?.subscriptionType || "basic"
               }
+              songsList={songs}
               showAlbum={false}
               onAdd={(songId: string) => setSelectedSongId(songId)}
             />

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePlayer } from '@/contexts/PlayerContext';
+import { usePlayerStore } from '@/store/playerStore';
 import { SongItem, SubscriptionType } from '@/types';
 
 interface SongCardProps {
@@ -11,7 +11,10 @@ interface SongCardProps {
 }
 
 export default function SongCard({ song, subscriptionType, songsContext = [song] }: SongCardProps) {
-  const { playSong, currentSong, isPlaying, togglePlayPause } = usePlayer();
+  const currentSong = usePlayerStore((s) => s.currentSong);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const togglePlayPause = usePlayerStore((s) => s.togglePlayPause);
+  const playSong = usePlayerStore((s) => s.playSong);
 
   const isCurrentSongActive = currentSong?.id === song.id;
 

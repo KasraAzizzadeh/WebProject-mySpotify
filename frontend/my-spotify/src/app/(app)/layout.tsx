@@ -1,10 +1,12 @@
 import Sidebar from '@/components/Sidebar';
-import { PlayerProvider } from '@/contexts/PlayerContext';
+import AudioManager from '@/components/player/AudioManager';
 import PlayerWrapper from '@/components/player/PlayerWrapper';
 
 export default function AppGroupLayout({ children }: { children: React.ReactNode }) {
   return (
-    <PlayerProvider>
+    <>
+      <AudioManager />
+      
       <div className="flex flex-col md:flex-row min-h-screen bg-[#121212]">
         {/* Sidebar Navigation Panel */}
         <Sidebar />
@@ -19,6 +21,6 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
         {/* Global Floating Player Interface (Desktop Bar / Mobile Mini View) */}
         <PlayerWrapper />
       </div>
-    </PlayerProvider>
+    </>
   );
 }

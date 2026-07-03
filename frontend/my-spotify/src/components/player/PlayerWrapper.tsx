@@ -1,11 +1,11 @@
 'use client';
 
-import { usePlayer } from '@/contexts/PlayerContext';
+import { usePlayerStore } from '@/store/playerStore';
 import DesktopPlayer from '@/components/player/DesktopPlayer';
 import MobilePlayer from '@/components/player/MobilePlayer';
 
 export default function PlayerWrapper() {
-  const { currentSong } = usePlayer();
+  const currentSong = usePlayerStore(s => s.currentSong);
 
   // Do not render anything if no song has been selected yet
   if (!currentSong) return null;

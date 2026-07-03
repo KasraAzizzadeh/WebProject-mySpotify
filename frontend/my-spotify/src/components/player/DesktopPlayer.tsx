@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePlayer } from '@/contexts/PlayerContext';
+import { usePlayerStore } from "@/store/playerStore";
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDuration } from '@/utils/mediaUtils';
 import { 
@@ -12,12 +12,26 @@ import {
 import Cover from '../ui/Cover';
 
 export default function DesktopPlayer() {
-  const { 
-    currentSong, isPlaying, togglePlayPause, nextTrack, prevTrack, 
-    progress, duration, seek, volume, setVolume,
-    repeatMode, toggleRepeat, isShuffle, toggleShuffle, 
-    playbackSource, queue, currentIndex, playSong
-  } = usePlayer() as any;
+
+  const currentSong = usePlayerStore((s) => s.currentSong);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const progress = usePlayerStore((s) => s.progress);
+  const duration = usePlayerStore((s) => s.duration);
+  const volume = usePlayerStore((s) => s.volume);
+  const repeatMode = usePlayerStore((s) => s.repeatMode);
+  const isShuffle = usePlayerStore((s) => s.isShuffle);
+  const playbackSource = usePlayerStore((s) => s.playbackSource);
+  const queue = usePlayerStore((s) => s.queue);
+  const currentIndex = usePlayerStore((s) => s.currentIndex);
+
+  const togglePlayPause = usePlayerStore((s) => s.togglePlayPause);
+  const nextTrack = usePlayerStore((s) => s.nextTrack);
+  const prevTrack = usePlayerStore((s) => s.prevTrack);
+  const seek = usePlayerStore((s) => s.seek);
+  const setVolume = usePlayerStore((s) => s.setVolume);
+  const toggleRepeat = usePlayerStore((s) => s.toggleRepeat);
+  const toggleShuffle = usePlayerStore((s) => s.toggleShuffle);
+  const playSong = usePlayerStore((s) => s.playSong);
   
   const { user: authUser } = useAuth() as any;
   const isGold = authUser?.subscriptionType?.toLowerCase() === 'gold';

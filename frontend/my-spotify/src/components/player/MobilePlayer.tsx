@@ -1,12 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { usePlayer } from '@/contexts/PlayerContext';
+import { usePlayerStore } from '@/store/playerStore';
 import { Play, Pause, ChevronDown } from 'lucide-react';
 import Cover from '../ui/Cover';
 
 export default function MobilePlayer() {
-  const { currentSong, isPlaying, togglePlayPause, playbackSource } = usePlayer() as any;
+  const currentSong = usePlayerStore((s) => s.currentSong);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const playbackSource = usePlayerStore((s) => s.playbackSource);
+  const togglePlayPause = usePlayerStore((s) => s.togglePlayPause);
+  const playSong = usePlayerStore((s) => s.playSong);
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (!currentSong) return null;

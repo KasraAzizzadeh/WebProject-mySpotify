@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Play, Pause, CirclePlus, CircleX } from 'lucide-react';
-import { usePlayer } from '@/contexts/PlayerContext';
+import { usePlayerStore } from '@/store/playerStore';
 import { SongItem, SubscriptionType } from '@/types';
 import Cover from '../ui/Cover';
 import { formatDuration } from '@/utils/mediaUtils';
@@ -30,7 +30,10 @@ export default function SongEntry({
 }: SongEntryProps) {
   const showStreams = subscriptionType !== "basic";
   
-  const { currentSong, isPlaying, playSong, togglePlayPause } = usePlayer();
+  const currentSong = usePlayerStore((s) => s.currentSong);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const togglePlayPause = usePlayerStore((s) => s.togglePlayPause);
+  const playSong = usePlayerStore((s) => s.playSong);
 
   const isCurrentSongActive = currentSong?.id === song.id;
   const isThisSpecificTrackPlaying = isCurrentSongActive && isPlaying;
