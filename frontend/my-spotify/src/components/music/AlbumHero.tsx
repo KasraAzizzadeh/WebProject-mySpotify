@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { usePlayerStore } from '@/store/playerStore';
 import Cover from "@/components/ui/Cover";
-import { AlbumItem, PlaylistItem } from "@/types";
+import { AlbumItem, PlaylistItem, PlaybackSource } from "@/types";
 import { formatDuration } from "@/utils/mediaUtils";
 import { useAverageColor } from "@/hooks/useAverageColor";
 import { darken } from "@/utils/color";
-import { Shuffle, Play, Pen, Plus } from "lucide-react";
+import { Shuffle, Play, Pause, Pen, Plus } from "lucide-react";
 
 type HeroProps =
   | {
@@ -15,6 +16,7 @@ type HeroProps =
       item: AlbumItem;
       duration: number;
       heroRef?: React.RefObject<HTMLDivElement | null>;
+      handlePlay: () => void;
     }
   | {
       type: "playlist";
@@ -23,21 +25,30 @@ type HeroProps =
       heroRef?: React.RefObject<HTMLDivElement | null>;
       ownerName: string;
       edit: boolean;
+      handlePlay: () => void;
     };
 
 export default function HeroCard(props: HeroProps) {
-    const { item, type, duration, heroRef } = props;
+    const { item, type, duration, heroRef, handlePlay } = props;
     const router = useRouter();
+
+    const playbackSource = usePlayerStore((s) => s.playbackSource);
+    const isPlaying = usePlayerStore((s) => s.isPlaying);
+    const isShuffle = usePlayerStore((s) => s.isShuffle);
+    const togglePlayPause = usePlayerStore((s) => s.togglePlayPause);
+    const toggleShuffle = usePlayerStore((s) => s.toggleShuffle);
   
     const color = useAverageColor(item.imageUrl);
     
     // Changed strictly here: returns "Playlist" plainly instead of checking privacy states
     const itemType = type == "album" ? (item.songList.length === 1 ? "Single" : "Album") 
-                                     : "Playlist";
+            : ((props.edit ? "Private " : "Public") + "Playlist");
 
     const profileHref = type === "album" 
       ? `/album/${item.artistId}` 
       : `/profile/${item.ownerId}`;
+
+    const isThisPlayback = playbackSource?.id === item.id;
 
     return (
         <section
@@ -118,11 +129,40 @@ export default function HeroCard(props: HeroProps) {
             </div>
 
             <div className="mt-8 flex flex-wrap justify-center sm:justify-start items-center gap-4">
-            <button className="rounded-full bg-green-500 p-4 font-bold text-black transition hover:scale-105">
-                <Play size={20} className="fill-black" />
+            <button 
+                className="rounded-full bg-green-500 py-5 px-5 font-bold text-black transition hover:scale-105"
+                onClick={(e) => {
+                    e.stopPropagation();
+
+                    if (isThisPlayback) {
+                        togglePlayPause();
+                    } else {
+                        handlePlay();
+                    }
+                }}
+            >
+                {isThisPlayback && isPlaying ? (
+                    <Pause size={20} className="fill-black" />
+                ) : (
+                    <Play size={20} className="fill-black" />
+                )}
             </button>
 
-            <button className="rounded-full border border-neutral-700 p-4 font-medium transition hover:border-white hover:scale-105 text-neutral-400 hover:text-white">
+            <button
+                className={`rounded-full border p-4 font-medium transition hover:scale-105
+                    ${
+                        isThisPlayback && isShuffle
+                            ? "border-green-500 text-green-500"
+                            : "border-neutral-700 text-neutral-400 hover:border-white hover:text-white"
+                    }`}
+                onClick={(e) => {
+                    e.stopPropagation();
+
+                    if (isThisPlayback) {
+                        toggleShuffle();
+                    }
+                }}
+            >
                 <Shuffle size={20} />
             </button>
 

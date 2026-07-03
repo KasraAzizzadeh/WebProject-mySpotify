@@ -15,7 +15,7 @@ interface SongEntryProps {
   showAlbum?: boolean;
   onAdd?: (id: string) => void;
   onRemove?: (id: string) => void;
-  songsList: SongItem[]; // Changed from optional to required to enforce proper play queues
+  handlePlay: (song: SongItem) => void;
 }
 
 export default function SongEntry({
@@ -26,14 +26,13 @@ export default function SongEntry({
   showAlbum = true,
   onAdd,
   onRemove,
-  songsList
+  handlePlay,
 }: SongEntryProps) {
   const showStreams = subscriptionType !== "basic";
   
   const currentSong = usePlayerStore((s) => s.currentSong);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const togglePlayPause = usePlayerStore((s) => s.togglePlayPause);
-  const playSong = usePlayerStore((s) => s.playSong);
 
   const isCurrentSongActive = currentSong?.id === song.id;
   const isThisSpecificTrackPlaying = isCurrentSongActive && isPlaying;
@@ -43,22 +42,7 @@ export default function SongEntry({
     if (isCurrentSongActive) {
       togglePlayPause();
     } else {
-      let contextType: 'album' | 'playlist' = 'album';
-      let contextId = song.albumId || 'unknown';
-
-      if (typeof window !== 'undefined') {
-        const path = window.location.pathname;
-        if (path.includes('/playlist/')) {
-          contextType = 'playlist';
-          contextId = path.split('/playlist/')[1]?.split('?')[0] || 'playlist-id';
-        } else if (path.includes('/album/')) {
-          contextType = 'album';
-          contextId = path.split('/album/')[1]?.split('?')[0] || song.albumId || 'album-id';
-        }
-      }
-
-      // Directly loads the entire parent collection array into the player context state
-      playSong(song, songsList, { type: contextType, id: contextId });
+      handlePlay(song);
     }
   };
 

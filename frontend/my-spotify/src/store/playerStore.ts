@@ -1,13 +1,8 @@
 import { create } from "zustand";
-import { SongItem } from "@/types";
+import { SongItem, PlaybackSource } from "@/types";
 import { stat } from "fs";
 
 type RepeatMode = "none" | "all" | "one";
-
-export interface PlaybackSource {
-  type: 'album' | 'playlist' | 'single';
-  id: string;
-}
 
 interface PlayerStore {
     currentSong: SongItem | null;

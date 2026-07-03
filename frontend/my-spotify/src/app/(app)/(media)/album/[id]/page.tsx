@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, notFound, useRouter } from "next/navigation";
 import { useAuth } from '@/contexts/AuthContext';
+import { usePlayerStore } from "@/store/playerStore";
 
 import { AlbumItem, SongItem } from "@/types";
 import { getAlbumById, getSongById, getSongsByAlbumId } from "@/services/mediaService";
@@ -17,6 +18,8 @@ export default function AlbumPage() {
   const { user: authUser } = useAuth();
   const heroRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  
+  const playSong = usePlayerStore((s) => s.playSong);
 
   const [album, setAlbum] = useState<AlbumItem | null>(null);
   const [songs, setSongs] = useState<SongItem[]>([]);
@@ -74,6 +77,14 @@ export default function AlbumPage() {
     notFound();
   }  
 
+  const handlePlayAlbum = () => {
+    playSong(songs[0], songs, {type: "album", id: album.id});
+  }
+  
+  const handlePlaySong = (song : SongItem) => {
+    playSong(song, songs, {type: "album", id: album.id});
+  }
+
   return (
     <main
       className="relative min-h-screen px-2 rounded-lg"
@@ -98,6 +109,7 @@ export default function AlbumPage() {
         type="album"
         duration={songs.reduce((acc, song) => {return acc + (song.songDurationMs || 0);}, 0)}
         heroRef={heroRef}
+        handlePlay={() => {handlePlayAlbum()}}
       />
 
       <div className="px-8">
@@ -113,7 +125,7 @@ export default function AlbumPage() {
               subscriptionType={
                 authUser?.subscriptionType || "basic"
               }
-              songsList={songs}
+              handlePlay={(song: SongItem) => {handlePlaySong(song);}}
               showAlbum={false}
               onAdd={(songId: string) => setSelectedSongId(songId)}
             />

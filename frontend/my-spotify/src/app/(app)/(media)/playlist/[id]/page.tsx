@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, notFound, useRouter } from "next/navigation";
 import { useAuth } from '@/contexts/AuthContext';
+import { usePlayerStore } from "@/store/playerStore";
 
 import { PlaylistItem, SongItem } from "@/types";
 import { getPlaylistById, getSongsByPlaylistId, removeSongFromPlaylist } from "@/services/mediaService";
@@ -18,6 +19,7 @@ export default function PlaylistPage() {
   const { user: authUser } = useAuth();
   const heroRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const playSong = usePlayerStore((s) => s.playSong);
 
   const [playlist, setPlaylist] = useState<PlaylistItem | null>(null);
   const [songs, setSongs] = useState<SongItem[]>([]);
@@ -102,6 +104,14 @@ export default function PlaylistPage() {
     notFound();
   }
 
+  const handlePlayPlaylist = () => {
+    playSong(songs[0], songs, {type: "album", id: playlist.id});
+  }
+  
+  const handlePlaySong = (song : SongItem) => {
+    playSong(song, songs, {type: "playlist", id: playlist.id});
+  }
+
   const isOwner = authUser?.id === playlist.ownerId;
 
   return (
@@ -129,6 +139,7 @@ export default function PlaylistPage() {
         heroRef={heroRef}
         ownerName={ownerName}
         edit={isOwner}
+        handlePlay={() => {handlePlayPlaylist()}}
       />
 
       <div className="px-4 md:px-8 overflow-x-hidden">
@@ -149,7 +160,7 @@ export default function PlaylistPage() {
                 subscriptionType={authUser?.subscriptionType || "basic"}
                 showAlbum={true}
                 onRemove={(songId: string) => setSelectedSongId(songId)}
-                songsList={songs} // Fixed: Passing full track context array down to SongEntry
+                handlePlay={(song: SongItem) => {handlePlaySong(song);}}
               />
             ))}
           </div>

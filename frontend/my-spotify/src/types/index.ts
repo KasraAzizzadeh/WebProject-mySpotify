@@ -85,6 +85,11 @@ export type DiscoverFilter =
   | "most-streamed"
   | "oldest";
 
+export interface PlaybackSource {
+  type: 'album' | 'playlist' | 'single';
+  id: string;
+}
+
 export interface DiscoverData {
     songs: SongItem[];
     albums: AlbumItem[];
