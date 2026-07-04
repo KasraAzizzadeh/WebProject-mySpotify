@@ -204,3 +204,42 @@ export const getMediaData = async (
     playlists: playlists.slice(0, 50),
   };
 };
+
+export const updatePlaylist = async (
+  playlistId: string,
+  updates: {
+    name: string;
+    description?: string;
+    imageFile?: File;
+  }
+): Promise<PlaylistItem> => {
+  await delay(100);
+
+  const allPlaylists = getPlaylists();
+
+  const index = allPlaylists.findIndex(
+    (p) => p.id === playlistId
+  );
+
+  if (index === -1) {
+    throw new Error("Playlist not found");
+  }
+
+  let imageUrl = allPlaylists[index].imageUrl;
+
+  if (updates.imageFile) {
+    imageUrl = URL.createObjectURL(updates.imageFile);
+    console.log(imageUrl);
+  }
+
+  allPlaylists[index] = {
+    ...allPlaylists[index],
+    name: updates.name.trim(),
+    description: updates.description?.trim() || "",
+    imageUrl: imageUrl || "",
+  };
+
+  savePlaylists(allPlaylists);
+
+  return allPlaylists[index];
+};

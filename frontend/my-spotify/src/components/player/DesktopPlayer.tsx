@@ -21,7 +21,7 @@ export default function DesktopPlayer() {
   const repeatMode = usePlayerStore((s) => s.repeatMode);
   const isShuffle = usePlayerStore((s) => s.isShuffle);
   const playbackSource = usePlayerStore((s) => s.playbackSource);
-  const queue = usePlayerStore((s) => s.queue);
+  const queue = usePlayerStore((s) => s.playQueue);
   const currentIndex = usePlayerStore((s) => s.currentIndex);
 
   const togglePlayPause = usePlayerStore((s) => s.togglePlayPause);
@@ -151,32 +151,61 @@ export default function DesktopPlayer() {
               </div>
               
               <div className="flex flex-col gap-1">
-                {queue.map((s: any, idx: number) => {
+                {queue.map((item, idx) => {
+                  const song = item.song;
                   const isTrackActive = currentIndex === idx;
+
                   return (
-                    <div 
-                      key={`${s.id}-${idx}`}
+                    <div
+                      key={`${song.id}-${idx}`}
                       onClick={() => {
-                        if (!isTrackActive) playSong(s, queue, playbackSource || undefined);
+                        if (!isTrackActive) {
+                          playSong(song, idx);
+                        }
                       }}
-                      className={`flex items-center gap-3 p-2 rounded-md transition ${isTrackActive ? 'bg-white/10' : 'hover:bg-white/5 cursor-pointer'}`}
+                      className={`flex items-center gap-3 p-2 rounded-md transition ${
+                        isTrackActive
+                          ? "bg-white/10"
+                          : "hover:bg-white/5 cursor-pointer"
+                      }`}
                     >
                       <div className="relative w-8 h-8 shrink-0">
-                         <Cover src={s.imageUrl} size={32} className="rounded" alt={s.title} />
-                         {isTrackActive && isPlaying && (
-                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded">
-                               <div className="w-3 h-3 flex items-end justify-center gap-[2px]">
-                                 <div className="w-[2px] bg-green-500 h-full animate-pulse" />
-                                 <div className="w-[2px] bg-green-500 h-2/3 animate-pulse" style={{ animationDelay: '150ms'}} />
-                               </div>
+                        <Cover
+                          src={song.imageUrl}
+                          size={32}
+                          className="rounded"
+                          alt={song.title}
+                        />
+
+                        {isTrackActive && isPlaying && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded">
+                            <div className="w-3 h-3 flex items-end justify-center gap-[2px]">
+                              <div className="w-[2px] bg-green-500 h-full animate-pulse" />
+                              <div
+                                className="w-[2px] bg-green-500 h-2/3 animate-pulse"
+                                style={{ animationDelay: "150ms" }}
+                              />
                             </div>
-                         )}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex flex-col min-w-0">
-                        <p className={`text-xs font-semibold truncate ${isTrackActive ? 'text-green-500' : 'text-white'}`}>
-                          {s.title}
+
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <p
+                          className={`text-xs font-semibold truncate ${
+                            isTrackActive ? "text-green-500" : "text-white"
+                          }`}
+                        >
+                          {song.title}
                         </p>
-                        <p className="text-[10px] text-neutral-400 truncate">{s.artistName}</p>
+
+                        <p className="text-[10px] text-neutral-400 truncate">
+                          {song.artistName}
+                        </p>
+
+                        <p className="text-[9px] text-neutral-500 uppercase tracking-wide">
+                          {item.source.type}
+                        </p>
                       </div>
                     </div>
                   );

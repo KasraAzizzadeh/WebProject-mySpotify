@@ -20,6 +20,8 @@ export default function AlbumPage() {
   const router = useRouter();
   
   const playSong = usePlayerStore((s) => s.playSong);
+  const setQueue = usePlayerStore((s) => s.setQueue);
+  const addToQueue = usePlayerStore((s) => s.addToQueue);
 
   const [album, setAlbum] = useState<AlbumItem | null>(null);
   const [songs, setSongs] = useState<SongItem[]>([]);
@@ -78,11 +80,15 @@ export default function AlbumPage() {
   }  
 
   const handlePlayAlbum = () => {
-    playSong(songs[0], songs, {type: "album", id: album.id});
+    setQueue(songs, {type: "album", id: album.id}, songs[0]);
   }
   
   const handlePlaySong = (song : SongItem) => {
-    playSong(song, songs, {type: "album", id: album.id});
+    setQueue(songs, {type: "album", id: album.id}, song);
+  }
+
+  const handleAddAlbum = () => {
+    addToQueue(songs, {type: "album", id: album.id})
   }
 
   return (
@@ -110,6 +116,7 @@ export default function AlbumPage() {
         duration={songs.reduce((acc, song) => {return acc + (song.songDurationMs || 0);}, 0)}
         heroRef={heroRef}
         handlePlay={() => {handlePlayAlbum()}}
+        handleAdd={() => {handleAddAlbum()}}
       />
 
       <div className="px-8">
@@ -128,6 +135,7 @@ export default function AlbumPage() {
               handlePlay={(song: SongItem) => {handlePlaySong(song);}}
               showAlbum={false}
               onAdd={(songId: string) => setSelectedSongId(songId)}
+              onQueue={(song) => addToQueue([song], {type: "single", id: song.id,})}
             />
           ))}
         </div>

@@ -13,18 +13,23 @@ import SongTableHeader from "@/components/music/TableHead";
 import HeroCard from "@/components/music/AlbumHero";
 import StickyBar from "@/components/music/StickyBar";
 import DeleteFromPlaylistModal from "@/components/music/DeleteFromPlaylistModal";
+import EditPlaylistModal from "@/components/music/EditPlaylistModal";
 
 export default function PlaylistPage() {
   const { id } = useParams<{ id: string }>();
   const { user: authUser } = useAuth();
   const heroRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  
   const playSong = usePlayerStore((s) => s.playSong);
+  const setQueue = usePlayerStore((s) => s.setQueue);
+  const addToQueue = usePlayerStore((s) => s.addToQueue);
 
   const [playlist, setPlaylist] = useState<PlaylistItem | null>(null);
   const [songs, setSongs] = useState<SongItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showStickyBar, setShowStickyBar] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [selectedSongId, setSelectedSongId] = useState("");
   const [ownerName, setOwnerName] = useState<string>("User");
 
@@ -105,11 +110,15 @@ export default function PlaylistPage() {
   }
 
   const handlePlayPlaylist = () => {
-    playSong(songs[0], songs, {type: "album", id: playlist.id});
+    setQueue(songs, {type: "playlist", id: playlist.id}, songs[0]);
   }
   
   const handlePlaySong = (song : SongItem) => {
-    playSong(song, songs, {type: "playlist", id: playlist.id});
+    setQueue(songs, {type: "playlist", id: playlist.id}, song);
+  }
+
+  const handleAddPlaylist = () => {
+    addToQueue(songs, {type: "playlist", id: playlist.id})
   }
 
   const isOwner = authUser?.id === playlist.ownerId;
@@ -140,6 +149,8 @@ export default function PlaylistPage() {
         ownerName={ownerName}
         edit={isOwner}
         handlePlay={() => {handlePlayPlaylist()}}
+        handleAdd={() => {handleAddPlaylist()}}
+        handleEdit={() => {setShowEdit(true)}}
       />
 
       <div className="px-4 md:px-8 overflow-x-hidden">
@@ -158,9 +169,10 @@ export default function PlaylistPage() {
                 trackNumber={index + 1}
                 hasPermission={isOwner}
                 subscriptionType={authUser?.subscriptionType || "basic"}
+                handlePlay={(song: SongItem) => {handlePlaySong(song);}}
                 showAlbum={true}
                 onRemove={(songId: string) => setSelectedSongId(songId)}
-                handlePlay={(song: SongItem) => {handlePlaySong(song);}}
+                onQueue={(song) => addToQueue([song], {type: "single", id: song.id,})}
               />
             ))}
           </div>
@@ -173,6 +185,17 @@ export default function PlaylistPage() {
           songId={selectedSongId}
           onClose={() => setSelectedSongId("")}
           onSuccess={() => remove(selectedSongId)}
+        />
+      )}
+
+      {showEdit && (
+        <EditPlaylistModal
+          playlist={playlist}
+          onSave={(playlist: PlaylistItem) => {
+            setPlaylist(playlist);
+            setShowEdit(false);
+          }}
+          onClose={() => setShowEdit(false)}
         />
       )}
     </main>

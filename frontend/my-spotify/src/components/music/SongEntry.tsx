@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Play, Pause, CirclePlus, CircleX } from 'lucide-react';
+import { Play, Pause, CirclePlus, CircleX, ListMusic } from 'lucide-react';
 import { usePlayerStore } from '@/store/playerStore';
 import { SongItem, SubscriptionType } from '@/types';
 import Cover from '../ui/Cover';
@@ -15,6 +15,7 @@ interface SongEntryProps {
   showAlbum?: boolean;
   onAdd?: (id: string) => void;
   onRemove?: (id: string) => void;
+  onQueue?: (song: SongItem) => void;
   handlePlay: (song: SongItem) => void;
 }
 
@@ -26,6 +27,7 @@ export default function SongEntry({
   showAlbum = true,
   onAdd,
   onRemove,
+  onQueue,
   handlePlay,
 }: SongEntryProps) {
   const showStreams = subscriptionType !== "basic";
@@ -50,9 +52,9 @@ export default function SongEntry({
     <div
       className={`
         group grid w-full items-center gap-4 px-4 h-16 rounded-xl transition-colors duration-150
-        grid-cols-[40px_1fr_60px_40px]
-        md:grid-cols-[40px_1fr_200px_60px_40px]
-        lg:grid-cols-[40px_1fr_200px_150px_60px_40px]
+        grid-cols-[40px_1fr_60px_60px]
+        md:grid-cols-[40px_1fr_200px_60px_60px]
+        lg:grid-cols-[40px_1fr_200px_150px_60px_60px]
         hover:bg-white/5 active:bg-white/10
         ${isCurrentSongActive ? 'bg-white/5' : ''}
       `}
@@ -121,11 +123,29 @@ export default function SongEntry({
       </div>
 
       {/* Column 6: Action Buttons */}
-      <div className="w-10 h-10 flex items-center justify-center justify-self-end">
+      <div className="w-[72px] h-10 flex items-center justify-center gap-3 justify-self-end">
+
+        {onQueue && (
+          <button
+            className="md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150 hover:text-green-400 text-neutral-500 hover:scale-110 active:scale-90"
+            onClick={(e) => {
+              e.stopPropagation();
+              onQueue(song);
+            }}
+            title="Add to queue"
+          >
+            <ListMusic size={16} />
+          </button>
+        )}
+
         {!hasPermission && onAdd && (
           <button
             className="md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150 hover:text-green-400 text-neutral-500 hover:scale-110 active:scale-90"
-            onClick={(e) => { e.stopPropagation(); onAdd(song.id); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAdd(song.id);
+            }}
+            title="Add to playlist"
           >
             <CirclePlus size={16} />
           </button>
@@ -134,11 +154,16 @@ export default function SongEntry({
         {hasPermission && onRemove && (
           <button
             className="md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150 hover:text-red-400 text-neutral-500 hover:scale-110 active:scale-90"
-            onClick={(e) => { e.stopPropagation(); onRemove(song.id); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(song.id);
+            }}
+            title="Remove from playlist"
           >
             <CircleX size={16} />
           </button>
         )}
+
       </div>
 
     </div>

@@ -9,13 +9,13 @@ import { PlaylistItem, UserProfile } from '@/types';
 import { getUserPlaylists, addSongToPlaylist } from '@/services/mediaService';
 import Alert from '../ui/Alert';
 
-interface CreatePlaylistModalProps {
+interface AddToPlaylistModalProps {
   songId: string;
   user: UserProfile;
   onClose: () => void;
 }
 
-export default function AddToPlaylistModal({ songId, user, onClose }: CreatePlaylistModalProps) {
+export default function AddToPlaylistModal({ songId, user, onClose }: AddToPlaylistModalProps) {
   const [playlists, setPlaylists] = useState<PlaylistItem[]>([]);
   const [alert, setAlert] = useState('');
   const [searchInput, setSeachInput] = useState("");
@@ -67,15 +67,18 @@ export default function AddToPlaylistModal({ songId, user, onClose }: CreatePlay
         {/* Header */}
         <div className="flex items-center justify-between border-b border-neutral-800 p-4 sm:p-6">
             <h3 className="text-lg sm:text-xl font-bold text-white">
-            Add to Playlist
+                Add to Playlist
             </h3>
 
             <button
-            onClick={onClose}
-            className="text-neutral-400 transition hover:text-red-500"
-            disabled={isSubmitting}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                }}
+                className="text-neutral-400 transition hover:text-red-500"
+                disabled={isSubmitting}
             >
-            <X size={20} />
+                <X size={20} />
             </button>
         </div>
 
@@ -109,7 +112,10 @@ export default function AddToPlaylistModal({ songId, user, onClose }: CreatePlay
                 <button
                     key={playlist.id}
                     type="button"
-                    onClick={() => handlePlaylistClick(playlist)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handlePlaylistClick(playlist);
+                    }}
                     disabled={isSubmitting}
                     className="w-full px-4 py-3 text-left transition-colors hover:bg-neutral-800 disabled:opacity-50"
                 >

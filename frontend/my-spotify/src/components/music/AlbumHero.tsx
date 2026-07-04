@@ -8,7 +8,7 @@ import { AlbumItem, PlaylistItem, PlaybackSource } from "@/types";
 import { formatDuration } from "@/utils/mediaUtils";
 import { useAverageColor } from "@/hooks/useAverageColor";
 import { darken } from "@/utils/color";
-import { Shuffle, Play, Pause, Pen, Plus } from "lucide-react";
+import { Shuffle, Play, Pause, Pen, Plus, ListMusic } from "lucide-react";
 
 type HeroProps =
   | {
@@ -17,6 +17,7 @@ type HeroProps =
       duration: number;
       heroRef?: React.RefObject<HTMLDivElement | null>;
       handlePlay: () => void;
+      handleAdd: () => void;
     }
   | {
       type: "playlist";
@@ -26,10 +27,12 @@ type HeroProps =
       ownerName: string;
       edit: boolean;
       handlePlay: () => void;
+      handleAdd: () => void;
+      handleEdit: () => void;
     };
 
 export default function HeroCard(props: HeroProps) {
-    const { item, type, duration, heroRef, handlePlay } = props;
+    const { item, type, duration, heroRef, handlePlay, handleAdd } = props;
     const router = useRouter();
 
     const playbackSource = usePlayerStore((s) => s.playbackSource);
@@ -166,6 +169,17 @@ export default function HeroCard(props: HeroProps) {
                 <Shuffle size={20} />
             </button>
 
+            <button 
+                className="flex items-center gap-2 rounded-full border border-neutral-700 px-5 py-2.5 text-sm font-medium transition hover:border-white text-neutral-300 hover:text-white"
+                onClick={(e) => {
+                    e.preventDefault(); 
+                    handleAdd();
+                }}
+            >
+                <ListMusic size={16} />
+                <span>Add to Queue</span>
+            </button>
+            
             {type === "playlist" && props.edit && (
                 <button 
                     className="flex items-center gap-2 rounded-full border border-neutral-700 px-5 py-2.5 text-sm font-medium transition hover:border-white text-neutral-300 hover:text-white"
@@ -180,7 +194,13 @@ export default function HeroCard(props: HeroProps) {
             )}
             
             {type === "playlist" && props.edit && (
-                <button className="flex items-center gap-2 rounded-full border border-neutral-700 px-5 py-2.5 text-sm font-medium transition hover:border-white text-neutral-300 hover:text-white">
+                <button 
+                    className="flex items-center gap-2 rounded-full border border-neutral-700 px-5 py-2.5 text-sm font-medium transition hover:border-white text-neutral-300 hover:text-white"
+                    onClick={(e) => {
+                      e.preventDefault(); 
+                      props.handleEdit();
+                    }}
+                >
                     <Pen size={16} />
                     <span>Edit</span>
                 </button>

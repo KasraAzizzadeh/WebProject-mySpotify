@@ -14,12 +14,6 @@ export default function AudioManager() {
 
     const volume = usePlayerStore(s => s.volume);
 
-    const repeatMode = usePlayerStore(s => s.repeatMode);
-
-    const seek = usePlayerStore(s => s.seek);
-
-    const nextTrack = usePlayerStore(s => s.nextTrack);
-
     const setProgress = usePlayerStore(s => s.setProgress);
 
     const setDuration = usePlayerStore(s => s.setDuration);
@@ -42,12 +36,11 @@ export default function AudioManager() {
 
         const handleEnded = () => {
 
+            const { repeatMode, nextTrack } = usePlayerStore.getState();
+
             if (repeatMode === "one") {
-
                 audio.currentTime = 0;
-
                 audio.play();
-
                 return;
             }
 

@@ -15,9 +15,9 @@ export default function SongTableHeader({
     <div
       className="
         grid w-full items-center gap-4 px-4 py-2 text-sm font-medium text-neutral-500 border-b border-neutral-800 select-none
-        grid-cols-[40px_1fr_60px_40px]
-        md:grid-cols-[40px_1fr_200px_60px_40px]
-        lg:grid-cols-[40px_1fr_200px_150px_60px_40px]
+        grid-cols-[40px_1fr_60px_60px]
+        md:grid-cols-[40px_1fr_200px_60px_60px]
+        lg:grid-cols-[40px_1fr_200px_150px_60px_60px]
       "
     >
       {/* # Column */}
