@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from 'react';
 
 interface Props {
-  title: string;
+  title: React.ReactNode;
   children: React.ReactNode;
   onShowAll?: () => void;
 }
@@ -14,12 +14,18 @@ export default function HorizontalScrollRow({
   onShowAll,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [isScrollable, setIsScrollable] = useState(false); // ✅ NEW
 
   const updateScrollState = () => {
     const el = scrollRef.current;
     if (!el) return;
+
+    const hasOverflow = el.scrollWidth > el.clientWidth + 5;
+
+    setIsScrollable(hasOverflow); // ✅ KEY LOGIC
 
     setCanScrollLeft(el.scrollLeft > 0);
     setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 5);
@@ -39,6 +45,7 @@ export default function HorizontalScrollRow({
 
   useEffect(() => {
     updateScrollState();
+
     const el = scrollRef.current;
     if (!el) return;
 
@@ -49,18 +56,21 @@ export default function HorizontalScrollRow({
       el.removeEventListener('scroll', updateScrollState);
       window.removeEventListener('resize', updateScrollState);
     };
-  }, []);
+  }, [children]); // ✅ important so it recalculates when items change
 
   return (
     <section className="space-y-2">
       {/* HEADER */}
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold text-white">{title}</h2>
+        <h2 className="text-lg font-bold text-white">
+          {title}
+        </h2>
 
-        {onShowAll && (
+        {/* ✅ ONLY SHOW IF SCROLL EXISTS */}
+        {onShowAll && isScrollable && (
           <button
             onClick={onShowAll}
-            className="text-sm text-neutral-400 hover:text-white"
+            className="text-sm text-neutral-400 hover:text-white transition"
           >
             Show all
           </button>

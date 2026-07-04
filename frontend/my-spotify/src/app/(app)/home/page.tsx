@@ -11,7 +11,7 @@ import ExclusiveRow from '@/components/ExclusiveRow';
 import ItemRow from '@/components/ItemRow';
 import ShowAll from '@/components/ShowAll';
 
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, History, Flame, Disc } from 'lucide-react';
 
 type RowKey = 'recentlyPlayed' | 'trendingSongs' | 'recentAlbums';
 type ViewMode = 'dashboard' | RowKey;
@@ -22,7 +22,6 @@ export default function HomePage() {
   const [view, setView] = useState<ViewMode>('dashboard');
   const router = useRouter();
 
-  // Handle data fetching based on the verified auth state
   useEffect(() => {
     if (!authUser) return;
 
@@ -31,7 +30,6 @@ export default function HomePage() {
       .catch(console.error);
   }, [authUser]);
 
-  // Fallback safety guard if no user is present in memory
   if (!authUser) {
     return (
       <div className="h-screen flex items-center justify-center text-neutral-500 text-sm bg-black">
@@ -48,7 +46,10 @@ export default function HomePage() {
     );
   }
 
-  const viewConfigs: Record<RowKey, { title: string; type: 'playlist' | 'song' | 'album'; items: any[] }> = {
+  const viewConfigs: Record<
+    RowKey,
+    { title: string; type: 'playlist' | 'song' | 'album'; items: any[] }
+  > = {
     recentlyPlayed: {
       title: 'All Playlists',
       type: 'playlist',
@@ -67,7 +68,7 @@ export default function HomePage() {
   };
 
   return (
-    <main className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto relative">
+    <main className="p-4 md:p-8 space-y-8 w-full max-w-7xl mx-auto relative overflow-x-hidden">
       <ProfileHeader user={authUser} />
 
       {view !== 'dashboard' && (
@@ -85,7 +86,12 @@ export default function HomePage() {
           <ExclusiveRow user={authUser} data={data} />
 
           <ItemRow
-            title="Recently Played Playlists"
+            title={
+              <div className="flex items-center gap-2 text-white font-bold text-xl tracking-tight">
+                <History className="w-5 h-5 text-neutral-400" />
+                <span>Recently Played Playlists</span>
+              </div>
+            }
             type="playlist"
             items={data.recentlyPlayed}
             user={authUser}
@@ -93,7 +99,12 @@ export default function HomePage() {
           />
 
           <ItemRow
-            title="Trending Songs"
+            title={
+              <div className="flex items-center gap-2 text-white font-bold text-xl tracking-tight">
+                <Flame className="w-5 h-5 text-amber-500" />
+                <span>Trending Songs</span>
+              </div>
+            }
             type="song"
             items={data.trendingSongs}
             user={authUser}
@@ -101,7 +112,12 @@ export default function HomePage() {
           />
 
           <ItemRow
-            title="Recently Released Albums"
+            title={
+              <div className="flex items-center gap-2 text-white font-bold text-xl tracking-tight">
+                <Disc className="w-5 h-5 text-green-400" />
+                <span>Recently Released Albums</span>
+              </div>
+            }
             type="album"
             items={data.recentAlbums}
             user={authUser}
