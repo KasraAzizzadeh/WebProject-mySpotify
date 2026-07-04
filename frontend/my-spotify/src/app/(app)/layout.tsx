@@ -12,9 +12,11 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
         <Sidebar />
         
         {/* Main Content Container wrapping dashboard and streaming pages.
-          Added md:pb-28 so content doesn't get hidden behind the fixed desktop player bar.
+          - Removed md:ml-64 because the sidebar is now part of the flex flow.
+          - Added min-w-0 (CRITICAL): This prevents horizontal scrolling rows inside 
+            from blowing out the width of the page on desktop.
         */}
-        <div className="flex-1 md:ml-64 pb-24 md:pb-28 transition-all duration-300">
+        <div className="flex-1 min-w-0 pb-24 md:pb-28 transition-all duration-300">
           {children}
         </div>
 
