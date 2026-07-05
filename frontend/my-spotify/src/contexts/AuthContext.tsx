@@ -1,4 +1,3 @@
-// src/contexts/AuthContext.tsx
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -8,10 +7,11 @@ import { UserProfile } from "@/types";
 type AuthContextType = {
   user: UserProfile | null;
   token: string | null;
-  isLoading: boolean; //  Track if storage is loading
+  isLoading: boolean;
   loginUser: (user: UserProfile, token: string) => void;
   updateUser: (user: UserProfile) => void;
   logoutUser: () => void;
+  deleteUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -19,7 +19,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Start out as true
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.error("Auth initialization error:", e);
     } finally {
-      setIsLoading(false); // Initialization is complete
+      setIsLoading(false);
     }
   }, []);
 
@@ -54,9 +54,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/login");
   };
 
+  const deleteUser = async () => {
+    setUser(null);
+    setToken(null);
+    
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("setting_notification_limit");
+    localStorage.removeItem("setting_system_voice");
+    localStorage.removeItem("setting_interface_language");
+    
+    router.push("/login");
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, loginUser, updateUser, logoutUser }}>
-      {/* Block rendering children until user has been verified from localStorage */}
+    <AuthContext.Provider value={{ user, token, isLoading, loginUser, updateUser, logoutUser, deleteUser }}>
       {!isLoading ? children : (
         <div className="h-screen bg-black flex items-center justify-center text-neutral-500 text-sm">
           Resuming secure session...

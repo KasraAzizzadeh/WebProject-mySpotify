@@ -11,9 +11,10 @@ import ProfileCard from '@/components/profile/ProfileCard';
 import ProfileStats from '@/components/profile/ProfileStats';
 import ProfileDetails from '@/components/profile/ProfileDetails';
 import ProfileDiscography from '@/components/profile/ProfileDiscography';
+import Message from '@/components/ui/Message';
 
 export default function ProfilePage() {
-  const { user: authUser } = useAuth();
+  const { user: authUser, refreshUser, logoutUser } = useAuth() as any;
   const params = useParams();
   
   const targetUserId = (params?.id as string) || authUser?.id;
@@ -23,6 +24,12 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  
+  // Modals Confirmation States
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
   
   // Form Track States
   const [displayName, setDisplayName] = useState('');
@@ -62,7 +69,60 @@ export default function ProfilePage() {
     };
   }, [targetUserId, authUser?.id]);
 
-  // 2. Handle Canceling Edits
+  const hasPremiumAvatarPermission = dbUser?.subscriptionType === 'silver' || dbUser?.subscriptionType === 'gold';
+
+  // 2. Direct Instant Upload Handlers
+  const handleAvatarDirectUpload = async (file: File) => {
+    if (!dbUser || !targetUserId || !hasPremiumAvatarPermission) return;
+
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+        
+        await userService.updateUserProfile(targetUserId, {
+          profilePictureUrl: base64String
+        });
+
+        setDbUser(prev => prev ? { ...prev, profilePictureUrl: base64String } : null);
+
+        if (refreshUser && isOwnProfile) {
+          await refreshUser();
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Failed compiling avatar upload data: ", err);
+    }
+  };
+
+  const handleAvatarRemoveClick = () => {
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmAvatarRemove = async () => {
+    if (!dbUser || !targetUserId || !hasPremiumAvatarPermission) return;
+
+    setIsDeletingPhoto(true);
+    try {
+      await userService.updateUserProfile(targetUserId, {
+        profilePictureUrl: "" 
+      });
+
+      setDbUser(prev => prev ? { ...prev, profilePictureUrl: "" } : null);
+
+      if (refreshUser && isOwnProfile) {
+        await refreshUser();
+      }
+    } catch (err) {
+      console.error("Failed removing profile avatar photo: ", err);
+    } finally {
+      setIsDeletingPhoto(false);
+      setIsDeleteModalOpen(false);
+    }
+  };
+
+  // 3. Handle Canceling Edits
   const handleCancelEdit = () => {
     if (dbUser) {
       setDisplayName(dbUser.displayName);
@@ -72,7 +132,7 @@ export default function ProfilePage() {
     setIsEditing(false);
   };
 
-  // 3. Handle Saving Profile
+  // 4. Handle Saving Profile
   const handleSaveProfile = async () => {
     if (!dbUser || !targetUserId) return;
     
@@ -91,13 +151,60 @@ export default function ProfilePage() {
       }
 
       await userService.updateUserProfile(targetUserId, updates);
-      
       setDbUser({ ...dbUser, ...updates } as UserProfile);
       setIsEditing(false);
+
+      if (refreshUser && isOwnProfile) {
+        await refreshUser();
+      }
     } catch (error) {
-      console.error('Failed to save profile:', error);
+      console.error('Failed to save profile details:', error);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // 5. Handle Follow Toggle Functionality
+  const handleFollowToggle = async () => {
+    if (!authUser || !dbUser || isOwnProfile || followLoading) return;
+
+    setFollowLoading(true);
+    try {
+      const rawUsers = localStorage.getItem('app_users');
+      if (!rawUsers) return;
+
+      const parsedUsers = JSON.parse(rawUsers);
+
+      const targetUserIndex = parsedUsers.findIndex((u: any) => u.id === dbUser.id);
+      const authUserIndex = parsedUsers.findIndex((u: any) => u.id === authUser.id);
+
+      if (targetUserIndex === -1 || authUserIndex === -1) return;
+
+      let updatedTargetFollowers = [...(parsedUsers[targetUserIndex].followers || [])];
+      let updatedAuthFollowing = [...(parsedUsers[authUserIndex].following || [])];
+
+      if (isFollowing) {
+        updatedTargetFollowers = updatedTargetFollowers.filter(id => id !== authUser.id);
+        updatedAuthFollowing = updatedAuthFollowing.filter(id => id !== dbUser.id);
+      } else {
+        if (!updatedTargetFollowers.includes(authUser.id)) updatedTargetFollowers.push(authUser.id);
+        if (!updatedAuthFollowing.includes(dbUser.id)) updatedAuthFollowing.push(dbUser.id);
+      }
+
+      parsedUsers[targetUserIndex].followers = updatedTargetFollowers;
+      parsedUsers[authUserIndex].following = updatedAuthFollowing;
+      localStorage.setItem('app_users', JSON.stringify(parsedUsers));
+
+      setDbUser(prev => prev ? { ...prev, followers: updatedTargetFollowers } : null);
+      setIsFollowing(!isFollowing);
+
+      if (refreshUser) {
+        await refreshUser();
+      }
+    } catch (err) {
+      console.error("Critical issue toggling following metrics: ", err);
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -127,16 +234,17 @@ export default function ProfilePage() {
   return (
     <main className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
       
+      {/* ProfileCard handles the logout trigger hook */}
       <ProfileCard 
         dbUser={dbUser}
         isOwnProfile={isOwnProfile}
-        isEditing={isEditing}
-        isSaving={isSaving}
         isFollowing={isFollowing}
-        setIsEditing={setIsEditing}
-        setIsFollowing={setIsFollowing}
-        handleCancelEdit={handleCancelEdit}
-        handleSaveProfile={handleSaveProfile}
+        handleFollowToggle={handleFollowToggle}
+        followLoading={followLoading}
+        hasAvatarPermission={hasPremiumAvatarPermission}
+        onAvatarDirectUpload={handleAvatarDirectUpload}
+        onAvatarRemove={handleAvatarRemoveClick}
+        onLogoutTrigger={() => setIsLogoutModalOpen(true)}
       />
 
       <ProfileStats 
@@ -159,6 +267,9 @@ export default function ProfilePage() {
         setEmail={setEmail}
         bioText={bioText}
         setBioText={setBioText}
+        setIsEditing={setIsEditing}
+        handleCancelEdit={handleCancelEdit}
+        handleSaveProfile={handleSaveProfile}
       />
 
       {dbUser.role === 'artist' && (
@@ -168,6 +279,31 @@ export default function ProfilePage() {
           mockArtistAlbums={mockArtistAlbums}
         />
       )}
+
+      {/* Confirmation Message Popup for Photo Deletion */}
+      <Message 
+        isOpen={isDeleteModalOpen}
+        title="Delete Profile Picture"
+        description="Are you sure you want to delete your profile picture?"
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDangerous={true}
+        isLoading={isDeletingPhoto}
+        type="confirm"
+        onConfirm={handleConfirmAvatarRemove}
+        onCancel={() => setIsDeleteModalOpen(false)}
+      />
+
+      {/* Confirmation Message Popup for Account Log Out - Destructive Red */}
+      <Message
+        isOpen={isLogoutModalOpen}
+        title="Log Out"
+        description="Are you sure you want to log out? You will need to sign in again to access your account."
+        confirmLabel="Log Out"
+        isDangerous={true}
+        onConfirm={logoutUser}
+        onCancel={() => setIsLogoutModalOpen(false)}
+      />
       
     </main>
   );

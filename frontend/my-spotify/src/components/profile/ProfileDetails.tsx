@@ -1,4 +1,7 @@
-import Input from '@/components/ui/Input'; // <-- New Import
+'use client';
+
+import Input from '@/components/ui/Input';
+import Button from '@/components/ui/Button';
 import { UserProfile } from '@/types';
 
 interface ProfileDetailsProps {
@@ -12,6 +15,9 @@ interface ProfileDetailsProps {
   setEmail: (val: string) => void;
   bioText: string;
   setBioText: (val: string) => void;
+  setIsEditing: (val: boolean) => void;
+  handleCancelEdit: () => void;
+  handleSaveProfile: () => void;
 }
 
 export default function ProfileDetails({
@@ -25,10 +31,51 @@ export default function ProfileDetails({
   setEmail,
   bioText,
   setBioText,
+  setIsEditing,
+  handleCancelEdit,
+  handleSaveProfile,
 }: ProfileDetailsProps) {
   return (
     <section className="bg-neutral-900/30 border border-neutral-800/50 p-6 md:p-8 rounded-3xl space-y-6">
-      <h2 className="text-xl font-bold text-white tracking-tight">Profile Details</h2>
+      
+      <div className="flex items-center justify-between gap-4 pb-2 border-b border-neutral-800/60">
+        <h2 className="text-xl font-bold text-white tracking-tight">Profile Details</h2>
+        
+        {isOwnProfile && (
+          <div className="flex items-center gap-2 transform -translate-y-[2px]">
+            {isEditing ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={handleCancelEdit}
+                  disabled={isSaving}
+                  className="px-4 text-xs h-9 flex items-center justify-center"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                  className="px-4 text-xs h-9 flex items-center justify-center"
+                >
+                  {isSaving ? 'Saving...' : 'Save'}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => setIsEditing(true)}
+                  className="px-4 text-xs h-9 border border-neutral-700 hover:bg-neutral-800 flex items-center justify-center"
+                >
+                  Edit Profile
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
         <div className="space-y-2">
