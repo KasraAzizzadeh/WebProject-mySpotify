@@ -14,25 +14,33 @@ interface SongCardProps {
   songsContext?: SongItem[];
 }
 
-export default function SongCard({ song, subscriptionType, songsContext = [song]}: SongCardProps) {
+export default function SongCard({
+  song,
+  subscriptionType,
+  songsContext = [song],
+}: SongCardProps) {
   const currentSong = usePlayerStore((s) => s.currentSong);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const togglePlayPause = usePlayerStore((s) => s.togglePlayPause);
-  const playSong = usePlayerStore((s) => s.playSong);
   const setQueue = usePlayerStore((s) => s.setQueue);
-
-  const isCurrentSongActive = currentSong?.id === song.id;
+  const addToQueue = usePlayerStore((s) => s.addToQueue);
 
   const { user } = useAuth();
-  const addToQueue = usePlayerStore((s) => s.addToQueue);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  const isCurrentSongActive = currentSong?.id === song.id;
+  const showImage = song.imageUrl && !imgError;
 
   const handleCardClick = () => {
     if (isCurrentSongActive) {
       togglePlayPause();
     } else {
-      // Automatically treats the current view grid list as the active play queue
-      setQueue([song], {type: "single", id: song.id}, song)
+      setQueue(
+        songsContext,
+        { type: 'single', id: song.id },
+        song
+      );
     }
   };
 
@@ -42,24 +50,40 @@ export default function SongCard({ song, subscriptionType, songsContext = [song]
       className={`
         p-4 rounded-xl border transition-all cursor-pointer group
         flex flex-col justify-between h-full
-        ${isCurrentSongActive 
-          ? 'bg-neutral-800/90 border-green-500/30 shadow-[0_4px_20px_rgba(34,197,94,0.1)]' 
+        ${isCurrentSongActive
+          ? 'bg-neutral-800/90 border-green-500/30 shadow-[0_4px_20px_rgba(34,197,94,0.1)]'
           : 'bg-neutral-900/60 hover:bg-neutral-800/80 border-neutral-800/40'
         }
       `}
     >
       <div>
-        <div className="w-full aspect-square bg-neutral-800 rounded-lg mb-4 flex items-center justify-center relative shadow-inner group-hover:scale-[1.02] transition-transform overflow-hidden">
-          <span className="text-3xl select-none">🎵</span>
+        {/* IMAGE */}
+        <div className="w-full aspect-square bg-neutral-800 rounded-lg mb-4 relative overflow-hidden shadow-inner group-hover:scale-[1.02] transition-transform">
 
-          <div className="absolute bottom-2 right-2 flex flex-row gap-2 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200">
+          {showImage ? (
+            <img
+              src={song.imageUrl}
+              alt={song.title}
+              className="w-full h-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-neutral-400 text-3xl">
+              🎵
+            </div>
+          )}
+
+          {/* ACTIONS (IMPORTANT FIX) */}
+          <div
+            className="absolute bottom-2 right-2 flex gap-2 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 z-20 pointer-events-auto"
+          >
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                addToQueue([song], {
-                  type: "single",
-                  id: song.id,
-                });
+                addToQueue(
+                  [song],
+                  { type: "single", id: song.id }
+                );
               }}
               className="w-8 h-8 rounded-full bg-black/70 backdrop-blur flex items-center justify-center text-neutral-300 hover:text-green-400 hover:bg-black/90 transition"
               title="Add to queue"
@@ -78,35 +102,39 @@ export default function SongCard({ song, subscriptionType, songsContext = [song]
               <CirclePlus size={16} />
             </button>
           </div>
-          
-          {isCurrentSongActive && (
-            <div className="absolute inset-0 bg-green-500/10 flex items-center justify-center backdrop-blur-[1px]">
-              <div className="bg-black/60 rounded-full p-3 border border-green-500/30 text-green-500">
-                <span className="text-xs font-bold uppercase tracking-wider">
+
+          {/* PLAYING OVERLAY */}
+          <div className="pointer-events-none">
+            {isCurrentSongActive && (
+              <div className="absolute inset-0 bg-green-500/10 flex items-center justify-center backdrop-blur-[1px] z-10">
+                <div className="bg-black/60 rounded-full px-4 py-2 border border-green-500/30 text-green-500 text-xs font-bold uppercase tracking-wider">
                   {isPlaying ? 'Playing' : 'Paused'}
-                </span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        <div className="flex justify-between items-start gap-2">
-          <h4 className={`font-semibold truncate text-base flex-1 transition-colors ${isCurrentSongActive ? 'text-green-500' : 'text-white'}`}>
-            {song.title}
-          </h4>
-        </div>
+        {/* TITLE */}
+        <h4 className={`font-semibold truncate text-base transition-colors ${
+          isCurrentSongActive ? 'text-green-500' : 'text-white'
+        }`}>
+          {song.title}
+        </h4>
 
+        {/* ARTIST */}
         <p className="text-neutral-400 text-sm mt-0.5 truncate">
           By{' '}
           <Link
             href={`/artist/${song.artistId}`}
             onClick={(e) => e.stopPropagation()}
-            className="text-green-400 hover:underline inline"
+            className="text-green-400 hover:underline"
           >
             {song.artistName}
           </Link>
         </p>
 
+        {/* ALBUM */}
         <p className="text-xs text-neutral-500 mt-1 min-h-[18px]">
           {song.albumName ? (
             <>
@@ -125,6 +153,7 @@ export default function SongCard({ song, subscriptionType, songsContext = [song]
         </p>
       </div>
 
+      {/* MODAL */}
       {showPlaylistModal && user && (
         <AddToPlaylistModal
           songId={song.id}
@@ -132,7 +161,6 @@ export default function SongCard({ song, subscriptionType, songsContext = [song]
           onClose={() => setShowPlaylistModal(false)}
         />
       )}
-
     </div>
   );
 }
