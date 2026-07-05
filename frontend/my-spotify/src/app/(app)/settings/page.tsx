@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 
 import Alert from '@/components/ui/Alert';
 import Message from '@/components/ui/Message';
+import Button from '@/components/ui/Button';
 import PlansModal from '@/components/settings/PlansModal';
-
 import PreferencesForm from '@/components/settings/PreferencesForm';
 import { SettingsHeader, ProfilePanel, SubscriptionPanel } from '@/components/settings/Panels';
 
@@ -26,7 +26,7 @@ export default function SettingsPage() {
 
   if (!authUser) {
     return (
-      <div className="h-screen flex items-center justify-center text-neutral-500 text-sm bg-black">
+      <div className="h-screen flex items-center justify-center text-neutral-500 text-sm bg-[#121212]">
         Loading...
       </div>
     );
@@ -39,95 +39,127 @@ export default function SettingsPage() {
   };
 
   const handlePlanSelectionSave = (chosenPlan: 'basic' | 'silver' | 'gold') => {
-    // Currently logs the selection as requested before we implement backend hooks
-    console.log("User submitted subscription change target to: ", chosenPlan);
-    
-    setSuccessDescription(`Plan update pipeline to ${chosenPlan.toUpperCase()} initialized successfully.`);
+    console.log("Plan selected:", chosenPlan);
+
+    setSuccessDescription(
+      `Plan update to ${chosenPlan.toUpperCase()} started successfully.`
+    );
     setActiveModal('save_success');
   };
 
   const executeDeleteAccount = async () => {
     setErrorMessage(null);
     setIsProcessing(true);
+
     try {
       await deleteUser();
     } catch (error) {
       console.error(error);
-      setErrorMessage("Something went wrong. Could not delete your account.");
+      setErrorMessage("Could not delete account.");
       setIsProcessing(false);
       setActiveModal('none');
     }
   };
 
-  // Enforces fallback default fallback values if fields aren't initialized yet
   const activeSubscriptionType = authUser.subscriptionType || 'basic';
 
   return (
-    <main className="p-4 md:p-8 max-w-2xl mx-auto space-y-6 bg-black min-h-screen text-white relative">
-      
-      <SettingsHeader 
-        onBackClick={() => router.push('/home')} 
-      />
+    <main className="min-h-screen bg-[#121212] text-white p-4 md:p-8">
+      {/* Container scaled up to match the profile page structure and breathing room */}
+      <div className="max-w-4xl mx-auto space-y-8 md:space-y-12">
 
-      <Alert message={errorMessage} />
+        {/* Header */}
+        <SettingsHeader onBackClick={() => router.push('/home')} />
 
-      <ProfilePanel />
+        {/* Alert */}
+        <Alert message={errorMessage} />
 
-      <SubscriptionPanel 
-        user={authUser} 
-        onManageClick={() => setActiveModal('plans')}
-      />
+        {/* PROFILE */}
+        <section className="space-y-3">
+          <h2 className="text-[11px] tracking-[0.2em] text-neutral-500 uppercase">
+            Account
+          </h2>
+          <ProfilePanel onEditProfileClick={() => router.push('/profile')} />
+        </section>
 
-      <PreferencesForm 
-        onSaveSuccess={handlePreferencesSaved} 
-        onSaveFailure={(err) => setErrorMessage(err)} 
-      />
+        {/* SUBSCRIPTION */}
+        <section className="space-y-3">
+          <h2 className="text-[11px] tracking-[0.2em] text-neutral-500 uppercase">
+            Subscription
+          </h2>
+          <SubscriptionPanel
+            user={authUser}
+            onManageClick={() => setActiveModal('plans')}
+          />
+        </section>
 
-      {/* Account Deletion Panel */}
-      <div className="flex items-center justify-between border border-red-950/30 bg-red-950/5 rounded-2xl p-4 gap-4">
-        <button
-          type="button"
-          onClick={() => setActiveModal('delete')}
-          className="text-xs font-semibold text-red-400/80 hover:text-red-400 transition-all flex items-center gap-2 px-3 py-2 bg-transparent hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/40 rounded-xl shrink-0"
-        >
-          <Trash2 className="w-3.5 h-3.5 text-red-500/70" />
-          <span>Delete Account</span>
-        </button>
-        <div className="text-right">
-          <p className="text-xs text-neutral-400 leading-normal">
-            Permanently close your profile and erase your history data.
-          </p>
-        </div>
+        {/* PREFERENCES */}
+        <section className="space-y-3">
+          <h2 className="text-[11px] tracking-[0.2em] text-neutral-500 uppercase">
+            Preferences
+          </h2>
+          <PreferencesForm
+            onSaveSuccess={handlePreferencesSaved}
+            onSaveFailure={(err) => setErrorMessage(err)}
+          />
+        </section>
+
+        {/* DANGER ZONE */}
+        <section className="space-y-3">
+          <h2 className="text-[11px] tracking-[0.2em] text-red-400 uppercase">
+            Danger Zone
+          </h2>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-4 md:px-6 md:py-6">
+            <div>
+              <p className="text-sm text-red-300 font-medium">
+                Delete Account
+              </p>
+              <p className="text-xs text-neutral-400 mt-1 max-w-md">
+                Permanently remove your account and data.
+              </p>
+            </div>
+
+            <Button
+              onClick={() => setActiveModal('delete')}
+              variant="danger"
+              className="!w-auto px-4 !py-2 text-xs rounded-xl flex items-center justify-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </Button>
+          </div>
+        </section>
+
+        {/* MODALS */}
+        <PlansModal
+          isOpen={activeModal === 'plans'}
+          currentPlan={activeSubscriptionType}
+          onClose={() => setActiveModal('none')}
+          onSelectPlan={handlePlanSelectionSave}
+        />
+
+        <Message
+          isOpen={activeModal === 'save_success'}
+          title="Settings Saved"
+          description={successDescription}
+          confirmLabel="OK"
+          type="alert"
+          onConfirm={() => setActiveModal('none')}
+        />
+
+        <Message
+          isOpen={activeModal === 'delete'}
+          title="Delete Account?"
+          description="This action cannot be undone."
+          confirmLabel="Delete Account"
+          isDangerous
+          isLoading={isProcessing}
+          onConfirm={executeDeleteAccount}
+          onCancel={() => setActiveModal('none')}
+        />
+
       </div>
-
-      {/* Global Application Modals Overlays */}
-      <PlansModal
-        isOpen={activeModal === 'plans'}
-        currentPlan={activeSubscriptionType}
-        onClose={() => setActiveModal('none')}
-        onSelectPlan={handlePlanSelectionSave}
-      />
-
-      <Message
-        isOpen={activeModal === 'save_success'}
-        title="Settings Saved"
-        description={successDescription}
-        confirmLabel="OK"
-        type="alert"
-        onConfirm={() => setActiveModal('none')}
-      />
-
-      <Message
-        isOpen={activeModal === 'delete'}
-        title="Delete Account?"
-        description="Are you sure you want to delete your account? This will erase your settings and history data permanently. You cannot undo this action."
-        confirmLabel="Delete Account"
-        isDangerous={true}
-        isLoading={isProcessing}
-        onConfirm={executeDeleteAccount}
-        onCancel={() => setActiveModal('none')}
-      />
-
     </main>
   );
 }
