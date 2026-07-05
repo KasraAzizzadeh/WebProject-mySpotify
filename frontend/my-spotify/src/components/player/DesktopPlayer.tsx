@@ -187,14 +187,15 @@ export default function DesktopPlayer() {
               </div>
               
               <div className="flex flex-col gap-0.5 overflow-y-auto">
-                {queue.map((item, idx) => {
+                {queue.slice(currentIndex).map((item, idx) => {
                   const song = item.song;
-                  const isTrackActive = currentIndex === idx;
+                  const realIndex = currentIndex + idx;
+                  const isTrackActive = currentIndex === realIndex;
 
                   return (
                     <div
-                      key={`${song.id}-${idx}`}
-                      onClick={() => !isTrackActive && playSong(song, idx)}
+                      key={`${song.id}-${realIndex}`}
+                      onClick={() => !isTrackActive && playSong(song, realIndex)}
                       className={`flex items-center gap-3 p-2 rounded-lg transition-all ${
                         isTrackActive
                           ? "bg-neutral-900 border border-neutral-800/60"

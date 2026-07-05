@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { usePlayerStore } from '@/store/playerStore';
 import Cover from "@/components/ui/Cover";
 import { AlbumItem, PlaylistItem, PlaybackSource } from "@/types";
+import { deletePlaylist } from '@/services/mediaService';
 import { formatDuration } from "@/utils/mediaUtils";
 import { useAverageColor } from "@/hooks/useAverageColor";
 import { darken } from "@/utils/color";
-import { Shuffle, Play, Pause, Pen, Plus, ListMusic } from "lucide-react";
+import { Shuffle, Play, Pause, Pen, Plus, ListMusic, Trash2 } from "lucide-react";
+import { error } from 'console';
 
 type HeroProps =
   | {
@@ -52,6 +54,17 @@ export default function HeroCard(props: HeroProps) {
       : `/profile/${item.ownerId}`;
 
     const isThisPlayback = playbackSource?.id === item.id;
+
+    const handleDelete = async () => {
+        try {
+            const result = await deletePlaylist(item.id);
+            if (result === "success")
+                router.push("/playlists");
+        } catch (error) {
+            console.error("error");
+        }
+        
+    }
 
     return (
         <section
@@ -203,6 +216,20 @@ export default function HeroCard(props: HeroProps) {
                 >
                     <Pen size={16} />
                     <span>Edit</span>
+                </button>
+            )}
+
+            {type === "playlist" && props.edit && (
+                <button 
+                    className="flex items-center gap-2 rounded-full bg-red-500 border border-red-600 px-5 py-2.5 
+                                text-sm font-medium transition hover:border-red-600 text-neutral-200 hover:text-white"
+                    onClick={(e) => {
+                      e.preventDefault(); 
+                      handleDelete();
+                    }}
+                >
+                    <Trash2 size={16} />
+                    <span>Delete</span>
                 </button>
             )}
             </div>

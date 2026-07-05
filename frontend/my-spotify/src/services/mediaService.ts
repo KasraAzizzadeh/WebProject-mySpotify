@@ -1,4 +1,4 @@
-import { getAlbums, getSongs, getPlaylists, savePlaylists, getUsers, saveUsers } from "@/store/mockDb";
+import { getAlbums, getSongs, getPlaylists, getUsers, savePlaylists, saveSongs , saveUsers } from "@/store/mockDb";
 import { AlbumItem, SongItem, PlaylistItem, DiscoverData, DiscoverFilter } from "@/types";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -242,4 +242,43 @@ export const updatePlaylist = async (
   savePlaylists(allPlaylists);
 
   return allPlaylists[index];
+};
+
+export const deletePlaylist = async (
+  playlistId: string,
+): Promise<string> => {
+  await delay(100);
+
+  const allPlaylists = getPlaylists();
+
+  const updatedPlaylists = allPlaylists.filter(
+    (p) => p.id !== playlistId
+  );
+
+  savePlaylists(updatedPlaylists);
+
+  return "success";
+};
+
+export const updateStreams = async (
+  songId: string,
+): Promise<void> => {
+  await delay(100);
+
+  const allSongs = getSongs();
+
+  const index = allSongs.findIndex(
+    (s) => s.id === songId
+  );
+
+  if (index === -1) {
+    throw new Error("Song not found");
+  }
+
+  allSongs[index] = {
+    ...allSongs[index],
+    streams: allSongs[index].streams + 1
+  };
+
+  saveSongs(allSongs);
 };
