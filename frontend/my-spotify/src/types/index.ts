@@ -71,6 +71,8 @@ export interface SongItem {
   trackNumber?: number;
   songDurationMs?: number;
   audioUrl?: string;
+  lyrics?: string;
+  
 }
 
 export interface DashboardData {

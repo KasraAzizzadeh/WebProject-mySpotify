@@ -106,7 +106,9 @@ const SEED_PLAYLISTS: PlaylistItem[] = [
 // --------------------
 const SEED_SONGS: SongItem[] = [
   { id: "s1", title: "Midnight Pulse", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 1200000, releaseDate: "2026-06-01", songDurationMs: 155000, audioUrl: "/midnight-pulse.mp3" },
-  { id: "s2", title: "Ethereal Echoes", artistName: "Luna Eclipse", artistId: "art-le3", albumName: "Midnight Aurora", albumId: "a3", streams: 85000, releaseDate: "2025-12-15", songDurationMs: 272000, audioUrl: "/etheral-echoes.mp3" },
+  { id: "s2", title: "Ethereal Echoes", artistName: "Luna Eclipse", artistId: "art-le3", albumName: "Midnight Aurora", albumId: "a3", streams: 85000, releaseDate: "2025-12-15", songDurationMs: 272000, audioUrl: "/etheral-echoes.mp3",
+    lyrics: "I hear the night breathe through the walls\nA silver shimmer as silence falls\nYour voice returns like distant fire\nA fading spark that climbs higher\n\nCity lights dissolve to haze\nLost inside a dreamlike maze\nEvery shadow starts to speak\nCalling softly, bittersweet"
+  },
   { id: "s3", title: "Cosmic Drift", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 45000, releaseDate: "2026-02-10", songDurationMs: 196000 },
   { id: "s4", title: "Digital Rain", artistName: "Binary Soul", artistId: "art-bs9", albumName: "Echoes of Code", albumId: "a5", streams: 320000, releaseDate: "2026-01-12", songDurationMs: 231000 },
   { id: "s5", title: "Static Hearts", artistName: "Glitch Fox", artistId: "art-gf4", albumName: "Hyperdrive", albumId: "a2", streams: 540000, releaseDate: "2026-03-02", songDurationMs: 221000 },

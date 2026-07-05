@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { usePlayerStore } from '@/store/playerStore';
 import { useAverageColor } from '@/hooks/useAverageColor';
 import {
@@ -23,10 +23,13 @@ export default function MobilePlayer() {
   const currentSong = usePlayerStore((s) => s.currentSong);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const playbackSource = usePlayerStore((s) => s.playbackSource);
+  const queue = usePlayerStore((s) => s.playQueue);
+  const currentIndex = usePlayerStore((s) => s.currentIndex);
 
   const togglePlayPause = usePlayerStore((s) => s.togglePlayPause);
   const nextTrack = usePlayerStore((s) => s.nextTrack);
   const prevTrack = usePlayerStore((s) => s.prevTrack);
+  const playSong = usePlayerStore((s) => s.playSong);
 
   const progress = usePlayerStore((s) => s.progress);
   const duration = usePlayerStore((s) => s.duration);
@@ -41,6 +44,8 @@ export default function MobilePlayer() {
   const repeatMode = usePlayerStore((s) => s.repeatMode);
 
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [showQueue, setShowQueue] = useState(false);
 
   // Extract average color from album artwork
   const dominantColor = useAverageColor(currentSong?.imageUrl);
@@ -48,6 +53,26 @@ export default function MobilePlayer() {
   if (!currentSong) return null;
 
   const progressPercent = duration ? (progress / duration) * 100 : 0;
+  const volumePercent = volume * 100;
+
+  // Handler to close expanded view and reset states
+  const handleClose = () => {
+    setIsExpanded(false);
+    setShowLyrics(false);
+    setShowQueue(false);
+  };
+
+  // Handler for lyrics button - toggles between lyrics and cover
+  const handleLyricsToggle = () => {
+    setShowQueue(false);
+    setShowLyrics(!showLyrics);
+  };
+
+  // Handler for queue button - toggles between queue and cover
+  const handleQueueToggle = () => {
+    setShowLyrics(false);
+    setShowQueue(!showQueue);
+  };
 
   // ======================
   // EXPANDED PLAYER
@@ -57,7 +82,6 @@ export default function MobilePlayer() {
       <div 
         className="fixed inset-0 z-[100] flex flex-col p-6 text-white select-none transition-colors duration-700 ease-out animate-in slide-in-from-bottom duration-300 bg-[#0a0a0a]"
         style={{
-          // Separated background image from color to ensure opacity
           backgroundColor: '#0a0a0a',
           backgroundImage: `linear-gradient(to bottom, ${dominantColor}bf 0%, #0a0a0a 70%)`
         }}
@@ -65,7 +89,7 @@ export default function MobilePlayer() {
         {/* HEADER */}
         <div className="flex items-center justify-between mb-8 pt-2">
           <button 
-            onClick={() => setIsExpanded(false)}
+            onClick={handleClose}
             className="p-2 -ml-2 text-neutral-400 hover:text-white active:scale-90 transition-transform"
           >
             <ChevronDown size={28} />
@@ -85,19 +109,140 @@ export default function MobilePlayer() {
           <div className="w-11" />
         </div>
 
-        {/* COVER ART */}
-        <div className="w-full flex-1 flex items-center justify-center max-h-[40vh] mb-8">
-          <div 
-            className="w-full aspect-square max-w-[320px] relative rounded-xl overflow-hidden bg-neutral-800 border border-neutral-700/30 transition-shadow duration-700"
-            style={{ boxShadow: `0 25px 50px -12px ${dominantColor}66` }}
-          >
-            <Cover
-              src={currentSong.imageUrl}
-              alt={currentSong.title}
-              size={400}
-              className="w-full h-full object-cover"
-            />
-          </div>
+        {/* COVER ART / LYRICS / QUEUE */}
+        <div className="w-full flex-1 flex items-center justify-center mb-8">
+          {showLyrics ? (
+            <div className="w-full h-full max-h-[40vh] overflow-y-auto no-scrollbar pb-4">
+              {currentSong.lyrics ? (
+                <div className="text-center">
+                  <p className="text-lg md:text-xl font-medium text-white/90 whitespace-pre-wrap leading-loose">
+                    {currentSong.lyrics}
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full text-neutral-400">
+                  <p>No lyrics available for this song.</p>
+                </div>
+              )}
+            </div>
+          ) : showQueue ? (
+            <div className="w-full h-full max-h-[40vh] overflow-y-auto no-scrollbar pb-4 px-2">
+              <div className="sticky top-0 z-10 pb-3 mb-3 border-b backdrop-blur-sm" style={{ borderColor: `${dominantColor}30` }}>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-white font-bold text-sm tracking-wide">Next Up</h3>
+                  {playbackSource && (
+                    <span 
+                      className="text-[9px] font-bold tracking-widest uppercase px-2 py-1 rounded-md"
+                      style={{ 
+                        backgroundColor: `${dominantColor}20`, 
+                        color: dominantColor,
+                        border: `1px solid ${dominantColor}40`
+                      }}
+                    >
+                      {playbackSource.type}
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-1.5">
+                {queue.slice(currentIndex).map((item, idx) => {
+                  const song = item.song;
+                  const realIndex = currentIndex + idx;
+                  const isTrackActive = currentIndex === realIndex;
+
+                  return (
+                    <div
+                      key={`${song.id}-${realIndex}`}
+                      onClick={() => !isTrackActive && playSong(song, realIndex)}
+                      className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${
+                        isTrackActive
+                          ? "backdrop-blur-md"
+                          : "hover:bg-white/5 cursor-pointer active:scale-[0.98]"
+                      }`}
+                      style={isTrackActive ? {
+                        background: `linear-gradient(135deg, ${dominantColor}25 0%, ${dominantColor}08 100%)`,
+                        border: `1px solid ${dominantColor}40`,
+                        boxShadow: `0 4px 15px -3px ${dominantColor}30`
+                      } : undefined}
+                    >
+                      <div className="relative w-10 h-10 shrink-0">
+                        <Cover src={song.imageUrl} size={40} className="rounded-lg object-cover shadow-lg" alt={song.title} />
+
+                        {isTrackActive && isPlaying && (
+                          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center rounded-lg">
+                            <div className="flex items-end justify-center gap-[2px] h-3">
+                              <div 
+                                className="w-[3px] rounded-full animate-bounce" 
+                                style={{ 
+                                  backgroundColor: dominantColor,
+                                  height: '100%',
+                                  boxShadow: `0 0 8px ${dominantColor}80`
+                                }} 
+                              />
+                              <div 
+                                className="w-[3px] rounded-full animate-bounce [animation-delay:0.15s]" 
+                                style={{ 
+                                  backgroundColor: dominantColor,
+                                  height: '70%',
+                                  boxShadow: `0 0 8px ${dominantColor}80`
+                                }} 
+                              />
+                              <div 
+                                className="w-[3px] rounded-full animate-bounce [animation-delay:0.3s]" 
+                                style={{ 
+                                  backgroundColor: dominantColor,
+                                  height: '50%',
+                                  boxShadow: `0 0 8px ${dominantColor}80`
+                                }} 
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <p 
+                          className="text-sm font-semibold truncate transition-colors duration-300"
+                          style={{ color: isTrackActive ? dominantColor : '#e5e5e5' }}
+                        >
+                          {song.title}
+                        </p>
+                        <p className="text-xs text-neutral-500 truncate mt-0.5 font-medium">
+                          {song.artistName}
+                        </p>
+                      </div>
+
+                      {isTrackActive && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <div 
+                            className="w-1.5 h-1.5 rounded-full animate-pulse"
+                            style={{ backgroundColor: dominantColor }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div 
+              className="relative rounded-xl overflow-hidden transition-shadow duration-700"
+              style={{ 
+                boxShadow: `0 25px 50px -12px ${dominantColor}66`,
+                width: 'min(80vw, 320px)',
+                height: 'min(80vw, 320px)',
+                maxHeight: '40vh'
+              }}
+            >
+              <img
+                src={currentSong.imageUrl || '/placeholder.png'}
+                alt={currentSong.title}
+                className="w-full h-full object-contain rounded-xl"
+              />
+            </div>
+          )}
         </div>
 
         {/* SONG DETAILS */}
@@ -171,7 +316,11 @@ export default function MobilePlayer() {
 
         {/* BOTTOM UTILITIES */}
         <div className="mt-auto grid grid-cols-3 items-center text-neutral-400 pt-4 border-t border-neutral-900/60">
-          <button className="flex items-center justify-center gap-2 py-2 text-sm font-medium hover:text-white active:scale-95 transition-all">
+          <button 
+            onClick={handleQueueToggle}
+            className="flex items-center justify-center gap-2 py-2 text-sm font-medium hover:text-white active:scale-95 transition-all"
+            style={{ color: showQueue ? dominantColor : undefined }}
+          >
             <ListMusic size={18} />
             <span>Queue</span>
           </button>
@@ -183,9 +332,23 @@ export default function MobilePlayer() {
             >
               {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </button>
+            <div className="relative flex-1 flex items-center h-3 max-w-[80px]">
+              <input 
+                type="range" min="0" max="1" step="0.01" value={volume}
+                onChange={(e) => setVolume(Number(e.target.value))}
+                className="w-full h-1 rounded-full appearance-none cursor-pointer bg-neutral-800 focus:outline-none"
+                style={{
+                  background: `linear-gradient(to right, #ffffff 0%, #ffffff ${volumePercent}%, #262626 ${volumePercent}%, #262626 100%)`
+                }}
+              />
+            </div>
           </div>
 
-          <button className="flex items-center justify-center gap-2 py-2 text-sm font-medium hover:text-white active:scale-95 transition-all">
+          <button 
+            onClick={handleLyricsToggle}
+            className={`flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all active:scale-95 ${showLyrics ? 'text-white' : 'hover:text-white'}`}
+            style={{ color: showLyrics ? dominantColor : undefined }}
+          >
             <Mic2 size={18} />
             <span>Lyrics</span>
           </button>
@@ -202,9 +365,7 @@ export default function MobilePlayer() {
       className="fixed bottom-[calc(env(safe-area-inset-bottom)+68px)] md:bottom-[calc(env(safe-area-inset-bottom)+16px)] left-3 right-3 rounded-xl flex flex-col overflow-hidden shadow-2xl z-40 select-none border transition-all duration-300 ease-out bg-[#0a0a0a]"
       style={{ 
         borderColor: `${dominantColor}3b`,
-        // Ensures a solid black base layer
         backgroundColor: '#0a0a0a',
-        // Layers the semi-transparent gradient on top of the solid base
         backgroundImage: `linear-gradient(to right, ${dominantColor}40 0%, #0a0a0a 100%)`
       }}
     >

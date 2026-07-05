@@ -37,7 +37,9 @@ export default function DesktopPlayer() {
   const isGold = authUser?.subscriptionType?.toLowerCase() === 'gold';
 
   const [showQueue, setShowQueue] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
   const queueRef = useRef<HTMLDivElement>(null);
+  const lyricsRef = useRef<HTMLDivElement>(null);
 
   // Dynamic colors derived from the audio art
   const dominantColor = useAverageColor(currentSong?.imageUrl);
@@ -47,10 +49,13 @@ export default function DesktopPlayer() {
       if (queueRef.current && !queueRef.current.contains(e.target as Node)) {
         setShowQueue(false);
       }
+      if (lyricsRef.current && !lyricsRef.current.contains(e.target as Node)) {
+        setShowLyrics(false);
+      }
     };
-    if (showQueue) document.addEventListener('mousedown', handleClickOutside);
+    if (showQueue || showLyrics) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showQueue]);
+  }, [showQueue, showLyrics]);
 
   if (!currentSong) return null;
 
@@ -156,9 +161,41 @@ export default function DesktopPlayer() {
 
       {/* 3. RIGHT: AUDIO MIXER UTILITIES */}
       <div className="flex items-center justify-end gap-3.5 justify-self-end w-full max-w-[280px] text-neutral-400 relative">
-        <button className="p-1 hover:text-white active:scale-95 transition-all" title="Lyrics">
-          <Mic2 size={16} />
-        </button>
+        {/* Lyrics Button and Popup */}
+        <div className="relative flex items-center">
+          <button 
+            onClick={(e) => { e.stopPropagation(); setShowLyrics(!showLyrics); }}
+            className="p-1 transition-all active:scale-95 hover:text-white"
+            style={{ color: showLyrics ? dominantColor : '' }}
+            title="Lyrics"
+          >
+            <Mic2 size={16} />
+          </button>
+
+          {showLyrics && (
+            <div 
+              ref={lyricsRef} 
+              className="absolute bottom-14 right-0 w-80 max-h-[420px] bg-[#0a0a0a] rounded-xl flex flex-col z-50 p-4 border shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-200"
+              style={{ borderColor: `${dominantColor}4d` }}
+            >
+              <div className="sticky top-0 bg-[#0a0a0a] pb-3 mb-3 border-b border-neutral-900/60 z-10">
+                <h3 className="text-white font-bold text-sm tracking-wide">Lyrics</h3>
+              </div>
+              
+              <div className="overflow-y-auto">
+                {currentSong.lyrics ? (
+                  <p className="text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed">
+                    {currentSong.lyrics}
+                  </p>
+                ) : (
+                  <div className="flex items-center justify-center py-8 text-neutral-500">
+                    <p className="text-sm">No lyrics available for this song.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
         
         {/* Queue Drop Container */}
         <div className="relative flex items-center">
