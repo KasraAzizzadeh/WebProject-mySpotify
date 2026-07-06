@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { AuditingRecord } from '@/types';
 import { Lock } from 'lucide-react';
+import Message from '@/components/ui/Message';
 
 interface AuditingTabProps {
   auditingRecords: AuditingRecord[];
@@ -11,6 +12,17 @@ interface AuditingTabProps {
 }
 
 export default function AuditingTab({ auditingRecords, isSystemAdmin, onSettlePayment }: AuditingTabProps) {
+  // Holds the ID of the record that the admin wants to settle
+  const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
+
+  // Triggered from inside the Message component modal overlay
+  const handleConfirmSettlement = () => {
+    if (selectedRecordId) {
+      onSettlePayment(selectedRecordId);
+      setSelectedRecordId(null); // Close the modal
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
       <div className="mb-6">
@@ -53,7 +65,7 @@ export default function AuditingTab({ auditingRecords, isSystemAdmin, onSettlePa
                   {isSystemAdmin ? (
                     <button 
                       disabled={record.paymentStatus === 'Settled'}
-                      onClick={() => onSettlePayment(record.id)}
+                      onClick={() => setSelectedRecordId(record.id)}
                       className={`text-xs px-4 py-2 rounded-lg font-semibold transition-all ${
                         record.paymentStatus === 'Settled' 
                           ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
@@ -72,6 +84,20 @@ export default function AuditingTab({ auditingRecords, isSystemAdmin, onSettlePa
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* CONFIRMATION POPUP MODAL */}
+      <div className="[&_h2]:text-lg [&_p]:text-sm">
+        <Message
+          isOpen={selectedRecordId !== null}
+          title="Confirm Payment Settlement"
+          description="Are you sure you want to confirm the settlement?"
+          confirmLabel="Confirm"
+          cancelLabel="Cancel"
+          type="confirm"
+          onConfirm={handleConfirmSettlement}
+          onCancel={() => setSelectedRecordId(null)}
+        />
       </div>
     </div>
   );

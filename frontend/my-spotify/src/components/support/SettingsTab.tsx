@@ -1,131 +1,214 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CircleDollarSign, TrendingUp, Users, PieChart as ChartIcon, Sliders, DollarSign } from 'lucide-react';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import { Layers, HelpCircle, TrendingUp, Users, ArrowUpRight } from 'lucide-react';
 
 export default function SettingsTab() {
-  const [silverPrice, setSilverPrice] = useState<number>(4.99);
-  const [goldPrice, setGoldPrice] = useState<number>(9.99);
-  const [isUpdatingPrices, setIsUpdatingPrices] = useState(false);
+  const [isEditingPrices, setIsEditingPrices] = useState(false);
+  const [silverPrice, setSilverPrice] = useState('29.99');
+  const [goldPrice, setGoldPrice] = useState('79.99');
+
+  const monthlyGrossRevenue = 148520.00;
+  const activePremiumUsers = 12450;
+
+  const userDistribution = [
+    { tier: 'Free Tier', count: 45200, percentage: 72, color: 'bg-neutral-700' },
+    { tier: 'Silver Premium', count: 8900, percentage: 14, color: 'bg-neutral-400' },
+    { tier: 'Gold Premium', count: 3550, percentage: 14, color: 'bg-yellow-500' },
+  ];
 
   return (
-    <div className="space-y-8 animate-fade-in max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">Subscription Management & Revenue</h1>
-        <p className="text-sm text-neutral-500 mt-1">Monitor platform revenue metrics and configure global pricing tiers.</p>
+    <div className="w-full space-y-6 animate-fade-in max-w-7xl mx-auto pb-12 px-4 sm:px-6">
+      
+      {/* HEADER */}
+      <div>
+        <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+          System Settings & Analytics
+        </h1>
+        <p className="text-sm text-neutral-500 mt-1">
+          Monitor global workspace scale distributions and adjust active subscription tier modeling parameters.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="space-y-4">
-          <div className="bg-[#121212] border border-neutral-800/50 p-6 rounded-2xl flex items-center justify-between">
-            <div>
-              <p className="text-xs text-neutral-500 font-bold uppercase tracking-wider">Monthly Gross Revenue</p>
-              <h3 className="text-2xl font-black text-white mt-1">$14,845.50</h3>
-              <p className="text-[10px] text-green-400 flex items-center gap-1 mt-1">
-                <TrendingUp size={12} /> +12.4% from last month
+      {/* TWO COLUMN GRID LAYOUT (FIXES MOBILE SCROLL & DESKTOP ALIGNMENT) */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 xl:gap-8 items-start">
+
+        {/* LEFT COLUMN (Spans 2 columns on desktop) */}
+        <div className="xl:col-span-2 space-y-6 flex flex-col h-full">
+
+          {/* TOP CARDS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full">
+            
+            <div className="bg-[#121212] border border-neutral-800/50 rounded-2xl p-6 shadow-xl flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4 sm:gap-5">
+                <div className="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0">
+                  <TrendingUp className="text-green-500" size={22} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+                    Monthly Gross Revenue
+                  </p>
+                  <p className="text-xl sm:text-2xl font-black text-white mt-1">
+                    ${monthlyGrossRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full text-green-400 text-xs font-bold shrink-0">
+                <ArrowUpRight size={14} className="stroke-[3]" />
+                <span>+12.4%</span>
+              </div>
+            </div>
+
+            <div className="bg-[#121212] border border-neutral-800/50 rounded-2xl p-6 shadow-xl flex items-center gap-4 sm:gap-5">
+              <div className="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
+                <Users className="text-sky-400" size={22} />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+                  Active Premium Users
+                </p>
+                <p className="text-xl sm:text-2xl font-black text-white mt-1">
+                  {activePremiumUsers.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* USER DISTRIBUTION */}
+          <div className="bg-[#121212] border border-neutral-800/50 rounded-2xl p-6 sm:p-8 shadow-xl flex-1 flex flex-col justify-between">
+            <h3 className="text-base font-bold text-white tracking-tight border-b border-neutral-800 pb-4 mb-6">
+              User Base Distribution
+            </h3>
+
+            <div className="flex flex-col lg:flex-row items-center justify-around gap-8 py-4 flex-1">
+              
+              <div
+                className="relative w-40 h-40 sm:w-44 sm:h-44 rounded-full flex items-center justify-center shrink-0 shadow-2xl bg-neutral-900 border border-neutral-800"
+                style={{
+                  background: `conic-gradient(
+                    #eab308 0% 14%, 
+                    #a3a3a3 14% 28%, 
+                    #404040 28% 100%
+                  )`
+                }}
+              >
+                <div className="absolute inset-5 bg-[#121212] rounded-full flex flex-col items-center justify-center shadow-inner border border-neutral-800/40">
+                  <span className="text-xl font-black text-white">61.2K</span>
+                  <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mt-0.5 text-center px-2">
+                    Total Users
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex-1 max-w-md w-full space-y-3 sm:space-y-4">
+                {userDistribution.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 rounded-xl bg-neutral-950/40 border border-neutral-900"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className={`w-3 h-3 rounded-full shrink-0 ${item.color}`} />
+                      <span className="text-xs sm:text-sm font-semibold text-neutral-200">
+                        {item.tier}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs sm:text-sm font-bold text-white font-mono">
+                        {item.percentage}%
+                      </span>
+                      <p className="text-[10px] text-neutral-500 mt-0.5">
+                        {item.count.toLocaleString()} accounts
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        {/* RIGHT COLUMN (MATCHES GRID COLUMN TRACKING BOUNDS PERFECTLY) */}
+        <div className="bg-[#121212] border border-neutral-800/50 rounded-2xl p-6 shadow-xl flex flex-col justify-between xl:h-full">
+          
+          {/* TOP CONTENT */}
+          <div className="space-y-6">
+            <div className="border-b border-neutral-800 pb-4">
+              <div className="flex items-center gap-2.5">
+                <Layers size={18} className="text-neutral-400 shrink-0" />
+                <h3 className="text-base font-bold text-white tracking-tight">
+                  Platform Core Pricing Tiers
+                </h3>
+              </div>
+              <p className="text-xs text-neutral-500 mt-1">
+                Configure baseline subscription values used to calculate royalty distribution metrics.
               </p>
             </div>
-            <div className="p-3 bg-neutral-900 rounded-xl border border-neutral-800 text-neutral-400">
-              <CircleDollarSign size={20} />
+
+            <div className="space-y-5">
+              <Input
+                label="Silver Tier Pricing ($ / Month)"
+                type="text"
+                value={silverPrice}
+                onChange={(e) => setSilverPrice(e.target.value)}
+                disabled={!isEditingPrices}
+                className={!isEditingPrices ? 'opacity-60 text-neutral-400 cursor-not-allowed' : ''}
+              />
+
+              <Input
+                label="Gold Premium Tier Pricing ($ / Month)"
+                type="text"
+                value={goldPrice}
+                onChange={(e) => setGoldPrice(e.target.value)}
+                disabled={!isEditingPrices}
+                className={!isEditingPrices ? 'opacity-60 text-neutral-400 cursor-not-allowed' : ''}
+              />
+            </div>
+
+            <div className="pt-2">
+              {isEditingPrices ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setIsEditingPrices(false)}
+                    className="py-2.5 text-xs font-bold w-full"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => setIsEditingPrices(false)}
+                    className="py-2.5 text-xs font-bold w-full"
+                  >
+                    Save Prices
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="primary"
+                  onClick={() => setIsEditingPrices(true)}
+                  className="py-2.5 text-xs font-bold w-full"
+                >
+                  Edit Prices
+                </Button>
+              )}
             </div>
           </div>
 
-          <div className="bg-[#121212] border border-neutral-800/50 p-6 rounded-2xl flex items-center justify-between">
-            <div>
-              <p className="text-xs text-neutral-500 font-bold uppercase tracking-wider">Active Premium Tiers</p>
-              <h3 className="text-2xl font-black text-white mt-1">1,240 users</h3>
-              <p className="text-[10px] text-neutral-400 mt-1">Silver and Gold distributions</p>
-            </div>
-            <div className="p-3 bg-neutral-900 rounded-xl border border-neutral-800 text-neutral-400">
-              <Users size={20} />
-            </div>
+          {/* FOOTER (NATURALLY FLUID AND SCROLL-SAFE) */}
+          <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-900 flex gap-3 mt-8 xl:mt-auto">
+            <HelpCircle size={16} className="text-neutral-600 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-neutral-500 leading-relaxed">
+              Subscription billing adjustments update processing jobs across calculations immediately. Prior invoices remain compiled immutably inside ledger records.
+            </p>
           </div>
+
         </div>
 
-        <div className="bg-[#121212] border border-neutral-800/50 p-6 rounded-2xl flex flex-col justify-between">
-          <div className="flex items-center gap-2 mb-2">
-            <ChartIcon size={14} className="text-neutral-400" />
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">User Distribution</h4>
-          </div>
-          
-          <div className="flex items-center justify-center py-4">
-            <div className="relative w-28 h-28 rounded-full border-8 border-neutral-800 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full border-8 border-t-blue-500 border-r-amber-400 border-b-neutral-700 animate-spin-slow pointer-events-none" />
-              <span className="text-[10px] font-mono text-neutral-400">3 Tiers</span>
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center text-[10px] font-mono pt-2 border-t border-neutral-900">
-            <div className="flex items-center"><span className="inline-block w-2 h-2 rounded-full bg-neutral-600 mr-1" />Basic (65%)</div>
-            <div className="flex items-center"><span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1" />Silver (25%)</div>
-            <div className="flex items-center"><span className="inline-block w-2 h-2 rounded-full bg-amber-400 mr-1" />Gold (10%)</div>
-          </div>
-        </div>
-
-        <div className="bg-[#121212] border border-neutral-800/50 p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/[0.01] rounded-bl-full pointer-events-none" />
-          
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Sliders size={14} className="text-neutral-400" />
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">Price Settings</h4>
-              </div>
-              <span className="text-[9px] font-mono bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded-md border border-neutral-700/50">Live Matrix</span>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Silver Tier</label>
-                  <span className="text-[10px] text-neutral-600 font-mono">Current: $4.99</span>
-                </div>
-                <div className="relative flex items-center">
-                  <div className="absolute left-3.5 text-neutral-500">
-                    <DollarSign size={14} />
-                  </div>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    value={silverPrice}
-                    onChange={(e) => setSilverPrice(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-neutral-950 border border-neutral-800/80 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white font-mono font-bold focus:outline-none focus:border-neutral-700"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold text-amber-400/90 uppercase tracking-wide">Gold Tier</label>
-                  <span className="text-[10px] text-neutral-600 font-mono">Current: $9.99</span>
-                </div>
-                <div className="relative flex items-center">
-                  <div className="absolute left-3.5 text-amber-500/50">
-                    <DollarSign size={14} />
-                  </div>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    value={goldPrice}
-                    onChange={(e) => setGoldPrice(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-neutral-950 border border-neutral-800/80 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white font-mono font-bold focus:outline-none focus:border-neutral-700"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => {
-              setIsUpdatingPrices(true);
-              setTimeout(() => { setIsUpdatingPrices(false); }, 600);
-            }}
-            disabled={isUpdatingPrices}
-            className="w-full mt-5 bg-white text-black font-bold text-xs py-3 rounded-xl hover:bg-neutral-200 disabled:bg-neutral-700 transition-all shadow-lg flex items-center justify-center gap-2"
-          >
-            {isUpdatingPrices ? 'Syncing system ecosystem...' : 'Update Prices'}
-          </button>
-        </div>
       </div>
     </div>
   );
