@@ -1,8 +1,9 @@
 import { userService } from "./userService";
-import { ArtistApplicationTicket, SupportTicketLocal, TicketMessage } from "@/types";
+import { ArtistApplicationTicket, SupportTicketLocal, TicketMessage, AuditingRecord } from "@/types";
 import { getApplicaitonTickets, saveApplicationTickets, 
     getNotifications, saveNotifications,
     getSupportTickets, saveSupportTickets,
+    getAuditingRecords, saveAuditingRecords,
     User } from "@/store/mockDb";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -149,3 +150,52 @@ ${reply.content}`,
 
   return updated;
 };
+
+// audit records
+export const getAudits = async (
+    page: number, limit: number
+) : Promise<AuditingRecord[]> => {
+    await delay(100);
+
+    const allAuditS = getAuditingRecords();
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    return allAuditS.slice(start, end);
+}
+
+export const updateAuditRecord = async (
+    recordId: string
+) : Promise<void> => {
+    
+    const allAudits = getAuditingRecords();
+    
+    const updatedAudits = allAudits.map(rec =>
+        rec.id === recordId
+            ? { ...rec, paymentStatus: 'Settled' as const }
+            : rec
+    );
+    
+    saveAuditingRecords(updatedAudits);
+    
+    const record = updatedAudits.find(a => a.id === recordId)!;
+
+    // Push notification
+    const notifications = getNotifications();
+
+    notifications.push({
+        id: crypto.randomUUID(),
+        userId: record.artistId,
+        content: `Your monthly payout has been completed.
+
+Performance Summary
+• Total Streams: ${record.totalStreams}
+• Unique Listeners: ${record.uniqueListeners}
+
+$${record.calculatedReward.toFixed(2)} has been transferred to your account. Thank you for being part of the platform!`,
+        status: "unread",
+    });
+
+    saveNotifications(notifications);
+}

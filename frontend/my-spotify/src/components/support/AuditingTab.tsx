@@ -1,30 +1,61 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useAuditRecords } from '@/hooks/queries/support/useAuditRecords';
+import { useUpdateAuditRecord } from '@/hooks/queries/support/useUpdateAuditRecord';
 import { AuditingRecord } from '@/types';
 import { Lock } from 'lucide-react';
 import Message from '@/components/ui/Message';
 import Button from '@/components/ui/Button';
 
 interface AuditingTabProps {
-  auditingRecords: AuditingRecord[];
   isSystemAdmin: boolean;
-  onSettlePayment: (id: string) => void;
 }
 
+const LIMIT = 20;
+
 export default function AuditingTab({
-  auditingRecords,
   isSystemAdmin,
-  onSettlePayment,
 }: AuditingTabProps) {
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+
+  const {
+    data: auditingRecords = [],
+    isLoading,
+    error
+  } = useAuditRecords(page, LIMIT);
+
+  const updateAudit = useUpdateAuditRecord();
 
   const handleConfirmSettlement = () => {
-    if (selectedRecordId) {
-      onSettlePayment(selectedRecordId);
-      setSelectedRecordId(null);
-    }
+    if (!selectedRecordId)
+      return;
+
+    updateAudit.mutate({
+      id: selectedRecordId
+    }, {
+      onSuccess: () => {
+        setSelectedRecordId(null);
+      }
+    })
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-8 text-center text-neutral-400">
+        Loading auditing records...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center text-red-400">
+        Failed to load auditing records.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in w-full px-4 sm:px-0">
@@ -124,7 +155,7 @@ export default function AuditingTab({
                       <Button
                         variant="primary"
                         onClick={() => setSelectedRecordId(record.id)}
-                        disabled={record.paymentStatus === 'Settled'}
+                        disabled={record.paymentStatus === 'Settled' || updateAudit.isPending}
                         className={`
                           w-full sm:w-auto
                           !text-[10px] sm:!text-xs
@@ -139,8 +170,7 @@ export default function AuditingTab({
                         `}
                       >
                         {record.paymentStatus === 'Settled'
-                          ? 'Settled'
-                          : 'Confirm'}
+                          ? 'Settled' :"Confirm"}
                       </Button>
                     </div>
                   ) : (

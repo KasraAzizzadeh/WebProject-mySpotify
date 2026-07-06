@@ -3,12 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { AuditingRecord } from '@/types';
-
-import {
-  getAuditingRecords,
-  saveAuditingRecords
-} from '@/store/mockDb';
 
 import VerificationTab from '@/components/support/VerificationTab';
 import TicketsTab from '@/components/support/TicketsTab';
@@ -23,30 +17,9 @@ export default function SupportDashboardPage() {
 
   const activeTab = searchParams?.get('tab') || 'verification';
 
-  const [auditingRecords, setAuditingRecords] = useState<AuditingRecord[]>([]);
-
-  useEffect(() => {
-    refreshData();
-  }, [activeTab]);
-
-  const refreshData = () => {
-    setAuditingRecords(getAuditingRecords());
-  };
-
   const userRole = authUser?.role || 'admin';
   const isSystemAdmin = userRole === 'admin';
   const hasAccess = userRole === 'admin' || userRole === 'supporter';
-
-  const handleSettlePayment = (recordId: string) => {
-    const updated = getAuditingRecords().map(rec =>
-      rec.id === recordId
-        ? { ...rec, paymentStatus: 'Settled' as const }
-        : rec
-    );
-
-    saveAuditingRecords(updated);
-    setAuditingRecords(updated);
-  };
 
   if (!hasAccess) {
     return (
@@ -72,11 +45,7 @@ export default function SupportDashboardPage() {
         )}
 
         {activeTab === 'auditing' && (
-          <AuditingTab
-            auditingRecords={auditingRecords}
-            isSystemAdmin={isSystemAdmin}
-            onSettlePayment={handleSettlePayment}
-          />
+          <AuditingTab isSystemAdmin={isSystemAdmin} />
         )}
 
         {activeTab === 'settings' && isSystemAdmin && <SettingsTab />}
