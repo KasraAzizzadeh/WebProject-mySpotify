@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { userService } from '@/services/userService';
 import { UserProfile, SongItem, AlbumItem } from '@/types';
+import { getAlbums, getSongs } from '@/store/mockDb';
 
 // Modular Components
 import ProfileCard from '@/components/profile/ProfileCard';
@@ -26,6 +27,10 @@ export default function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   
+  // Real Database Discography States
+  const [artistSongs, setArtistSongs] = useState<SongItem[]>([]);
+  const [artistAlbums, setArtistAlbums] = useState<AlbumItem[]>([]);
+  
   // Modals Confirmation States
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -36,7 +41,7 @@ export default function ProfilePage() {
   const [email, setEmail] = useState('');
   const [bioText, setBioText] = useState('');
 
-  // 1. Fetch Profile Data via Service
+  // 1. Fetch Profile and Sync Real Discography via Database Core
   useEffect(() => {
     let isMounted = true;
 
@@ -56,9 +61,27 @@ export default function ProfilePage() {
             const followerList = freshUser.followers || [];
             setIsFollowing(followerList.includes(authUser.id));
           }
+
+          // Hydrate and filter real discography records from local DB storage
+          if (freshUser.role === 'artist') {
+            const allAlbums = getAlbums();
+            const allSongs = getSongs();
+
+            const allowedAlbumIds = freshUser.artistProfile?.albums || [];
+            const allowedSingleIds = freshUser.artistProfile?.singles || [];
+
+            // 1. Filter official published albums
+            const userAlbums = allAlbums.filter(album => allowedAlbumIds.includes(album.id));
+            
+            // 2. MODIFIED: Fetch ONLY standalone single tracks belonging directly to the user
+            const userSingles = allSongs.filter(song => allowedSingleIds.includes(song.id));
+
+            setArtistAlbums(userAlbums);
+            setArtistSongs(userSingles);
+          }
         }
       } catch (error) {
-        console.error('Failed to fetch user profile:', error);
+        console.error('Failed to fetch user profile or sync discography:', error);
       }
     }
 
@@ -219,17 +242,13 @@ export default function ProfilePage() {
   const followersCount = dbUser.followers?.length || 0;
   const followingCount = dbUser.following?.length || 0;
   const dailyStreams = 142;
-  const totalStreams = dbUser.artistProfile?.totalStreams || 0;
+  
+  // Calculate total streams based strictly on standalone track items
+  const totalStreams = dbUser.role === 'artist' 
+    ? artistSongs.reduce((sum, song) => sum + (song.streams || 0), 0) 
+    : 0;
+
   const shouldShowDailyStreams = isOwnProfile || dbUser.role === 'listener';
-
-  const mockArtistSongs: SongItem[] = [
-    { id: "s1", title: "Midnight Pulse", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 1200000, releaseDate: "2026-06-01", songDurationMs: 213000 },
-    { id: "s3", title: "Cosmic Drift", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 45000, releaseDate: "2026-02-10", songDurationMs: 196000 },
-  ];
-
-  const mockArtistAlbums: AlbumItem[] = [
-    { id: "a1", name: "Velvet Dreams", artistName: "The Soft Tones", artistId: "art-st1", listeners: 450000, releaseDate: "2026-04-12", songList: ["s1", "s3"] }
-  ];
 
   return (
     <main className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
@@ -275,8 +294,8 @@ export default function ProfilePage() {
       {dbUser.role === 'artist' && (
         <ProfileDiscography 
           subscriptionType={dbUser.subscriptionType} 
-          mockArtistSongs={mockArtistSongs} 
-          mockArtistAlbums={mockArtistAlbums}
+          mockArtistSongs={artistSongs} 
+          mockArtistAlbums={artistAlbums}
         />
       )}
 
