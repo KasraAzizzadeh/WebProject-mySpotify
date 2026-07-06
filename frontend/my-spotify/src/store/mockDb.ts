@@ -42,7 +42,7 @@ const SEED_USERS: User[] = [
     },
     artistProfile: {
       bio: "Electronic music producer",
-      verificationStatus: "pending",
+      verificationStatus: "approved",
       singles: ["s1", "s3"],
       albums: ["a1"],
       totalStreams: 120000,
@@ -291,4 +291,12 @@ export function getSongsByCollectionSource(type: 'album' | 'playlist', id: strin
 export function getSiblingSongsByAlbumId(albumId: string): SongItem[] {
   const allSongs = getSongs();
   return allSongs.filter(s => s.albumId === albumId);
+}
+
+export function deleteReleaseAndSongs(albumId: string): void {
+  const albums = getAlbums().filter(a => a.id !== albumId);
+  saveAlbums(albums);
+
+  const songs = getSongs().filter(s => s.albumId !== albumId);
+  saveSongs(songs);
 }
