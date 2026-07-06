@@ -3,21 +3,50 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { useUserDistribution } from '@/hooks/queries/support/useUserDistribution';
+import { useSubscriptionSettings } from '@/hooks/queries/support/useSubscriptionSetting';
+import { useUpdateSubscriptions } from '@/hooks/queries/support/useUpdateSubscriptions';
 import { Layers, HelpCircle, TrendingUp, Users } from 'lucide-react';
 
 export default function SettingsTab() {
   const [isEditingPrices, setIsEditingPrices] = useState(false);
-  const [silverPrice, setSilverPrice] = useState('29.99');
-  const [goldPrice, setGoldPrice] = useState('79.99');
+  const [silverPrice, setSilverPrice] = useState('');
+  const [goldPrice, setGoldPrice] = useState('');
 
-  const monthlyGrossRevenue = 148520.00;
-  const activePremiumUsers = 12450;
+  // const monthlyGrossRevenue = 148520.00;
+  // const activePremiumUsers = 12450;
 
-  const userDistribution = [
-    { tier: 'Free Tier', count: 45200, percentage: 72, color: 'bg-neutral-700' },
-    { tier: 'Silver Premium', count: 8900, percentage: 14, color: 'bg-neutral-400' },
-    { tier: 'Gold Premium', count: 3550, percentage: 14, color: 'bg-yellow-500' },
-  ];
+  // const userDistribution = [
+  //   { tier: 'Free Tier', count: 45200, percentage: 72, color: 'bg-neutral-700' },
+  //   { tier: 'Silver Premium', count: 8900, percentage: 14, color: 'bg-neutral-400' },
+  //   { tier: 'Gold Premium', count: 3550, percentage: 14, color: 'bg-yellow-500' },
+  // ];
+
+  const {
+    data: analytics,
+    isLoading,
+    error,
+  } = useUserDistribution();
+
+  const {
+    data: subscriptions = [],
+    isLoading: subsIsLoading,
+    error: subsError
+  } = useSubscriptionSettings();
+
+  const updateSubscriptions = useUpdateSubscriptions();
+
+  useEffect(() => {
+    if (!subscriptions.length) return;
+
+    setSilverPrice(
+      subscriptions.find(s => s.id === "silver")?.price.replace("$", "") ?? ""
+    );
+
+    setGoldPrice(
+      subscriptions.find(s => s.id === "gold")?.price.replace("$", "") ?? ""
+    );
+  }, [subscriptions]);
 
   // Programmatic detection of text line wrapping for the revenue value
   const revenueTextRef = useRef<HTMLParagraphElement>(null);
@@ -45,6 +74,42 @@ export default function SettingsTab() {
 
     return () => observer.disconnect();
   }, []);
+
+  const handleSave = () => {
+    updateSubscriptions.mutate(
+      [
+        {
+          id: "silver",
+          price: `$${silverPrice}`,
+        },
+        {
+          id: "gold",
+          price: `$${goldPrice}`,
+        },
+      ],
+      {
+        onSuccess: () => {
+          setIsEditingPrices(false);
+        },
+      }
+    );
+  }
+
+  if (isLoading || subsIsLoading) {
+      return (
+          <div className="p-8 text-center text-neutral-400">
+              Loading Anallytics
+          </div>
+      );
+  }
+
+  if (error || subsError) {
+      return (
+          <div className="p-8 text-center text-red-400">
+              Failed to Data.
+          </div>
+      );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-12">
@@ -84,7 +149,7 @@ export default function SettingsTab() {
                     revenueWrapped ? 'text-xl md:text-2xl' : 'text-2xl'
                   }`}
                 >
-                  ${monthlyGrossRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  ${analytics?.monthlyGrossRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </p>
               </div>
             </div>
@@ -98,7 +163,7 @@ export default function SettingsTab() {
                   Active Premium Users
                 </p>
                 <p className="text-2xl font-black text-white mt-1">
-                  {activePremiumUsers.toLocaleString()}
+                  {analytics?.activePremiumUsers.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -124,7 +189,7 @@ export default function SettingsTab() {
                 }}
               >
                 <div className="absolute inset-5 bg-[#121212] rounded-full flex flex-col items-center justify-center shadow-inner border border-neutral-800/40">
-                  <span className="text-xl font-black text-white">61.2K</span>
+                  <span className="text-xl font-black text-white">{analytics?.totalUsers}</span>
                   <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mt-0.5">
                     Total Users
                   </span>
@@ -132,7 +197,7 @@ export default function SettingsTab() {
               </div>
 
               <div className="flex-1 max-w-md w-full space-y-4">
-                {userDistribution.map((item, index) => (
+                {analytics?.distribution.map((item, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between p-3 rounded-xl bg-neutral-950/40 border border-neutral-900"
@@ -212,7 +277,7 @@ export default function SettingsTab() {
                   </Button>
                   <Button
                     variant="primary"
-                    onClick={() => setIsEditingPrices(false)}
+                    onClick={handleSave}
                     className="py-2.5 text-xs font-bold"
                   >
                     Save Prices

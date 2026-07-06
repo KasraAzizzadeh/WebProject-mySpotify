@@ -1,10 +1,12 @@
 import { userService } from "./userService";
-import { ArtistApplicationTicket, SupportTicketLocal, TicketMessage, AuditingRecord } from "@/types";
+import { ArtistApplicationTicket, SupportTicketLocal, TicketMessage, 
+    AuditingRecord, SubscriptionTier, SubscriptionType } from "@/types";
 import { getApplicaitonTickets, saveApplicationTickets, 
     getNotifications, saveNotifications,
     getSupportTickets, saveSupportTickets,
     getAuditingRecords, saveAuditingRecords,
-    User } from "@/store/mockDb";
+    getSubscriptions, saveSubscriptions,
+    getUsers, User } from "@/store/mockDb";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -199,3 +201,86 @@ $${record.calculatedReward.toFixed(2)} has been transferred to your account. Tha
 
     saveNotifications(notifications);
 }
+
+// Admin specific info
+export const getUserDistribution = async () => {
+  await delay(100);
+
+  const users = getUsers();
+  const subscriptions = getSubscriptions();
+
+  const basic = users.filter(u => u.subscriptionType === "basic").length;
+  const silver = users.filter(u => u.subscriptionType === "silver").length;
+  const gold = users.filter(u => u.subscriptionType === "gold").length;
+
+  const total = users.length;
+
+  const silverPrice = parseFloat(
+    subscriptions.find(t => t.id === "silver")?.price.replace("$", "") ?? "0"
+  );
+
+  const goldPrice = parseFloat(
+    subscriptions.find(t => t.id === "gold")?.price.replace("$", "") ?? "0"
+  );
+
+  return {
+    totalUsers: total,
+
+    activePremiumUsers: silver + gold,
+
+    monthlyGrossRevenue:
+      silver * silverPrice +
+      gold * goldPrice,
+
+    distribution: [
+      {
+        tier: "Free Tier",
+        count: basic,
+        percentage: total ? Math.round((basic / total) * 100) : 0,
+        color: "bg-neutral-700",
+      },
+      {
+        tier: "Silver Premium",
+        count: silver,
+        percentage: total ? Math.round((silver / total) * 100) : 0,
+        color: "bg-neutral-400",
+      },
+      {
+        tier: "Gold Premium",
+        count: gold,
+        percentage: total ? Math.round((gold / total) * 100) : 0,
+        color: "bg-yellow-500",
+      },
+    ],
+  };
+};
+
+export const getSubscriptionSettings = async (): Promise<SubscriptionTier[]> => {
+  await delay(100);
+
+  return getSubscriptions();
+};
+
+export const updateSubscriptionSettings = async (
+  updates: {
+    id: SubscriptionType;
+    price: string;
+  }[]
+): Promise<void> => {
+  await delay(100);
+
+  const subscriptions = getSubscriptions();
+
+  const updatedSubscriptions = subscriptions.map(sub => {
+    const update = updates.find(u => u.id === sub.id);
+
+    if (!update) return sub;
+
+    return {
+      ...sub,
+      price: update.price,
+    };
+  });
+
+  saveSubscriptions(updatedSubscriptions);
+};

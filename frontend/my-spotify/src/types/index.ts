@@ -93,16 +93,6 @@ export interface DiscoverData {
   playlists: PlaylistItem[];
 }
 
-export interface ArtistApplicationTicket {
-  id: string;
-  userId: string;
-  email: string;
-  artisticName: string;
-  samples: string[];
-  verificationStatus: VerificationStatus;
-  submittedAt: Date;
-}
-
 export interface OtpEntry {
   id: string;
   userId: string;
@@ -112,12 +102,29 @@ export interface OtpEntry {
   expiresAt: Date;
 }
 
+export interface Notifications {
+  id: string;
+  userId: string;
+  content: string;
+  status: "read" | "unread";
+}
+
 // ==========================================
 // SUPPORT INTERFACES & OPERATIONAL UI TYPES
 // ==========================================
 export type TicketStatus = 'Open' | 'Replied' | 'Closed';
 export type PaymentStatus = 'Pending Payment' | 'Settled';
 export type TabState = 'verification' | 'tickets' | 'auditing' | 'settings';
+
+export interface ArtistApplicationTicket {
+  id: string;
+  userId: string;
+  email: string;
+  artisticName: string;
+  samples: string[];
+  verificationStatus: VerificationStatus;
+  submittedAt: Date;
+}
 
 export interface TicketMessage {
   id: string;
@@ -145,4 +152,14 @@ export interface AuditingRecord {
   totalStreams: number;
   calculatedReward: number;
   paymentStatus: PaymentStatus;
+}
+
+type SubFeatures = {text: string; included: boolean;}
+
+export interface SubscriptionTier {
+  id: SubscriptionType;
+  name: string;
+  price: string;
+  period: "forever" | "per month";
+  features: SubFeatures[]
 }

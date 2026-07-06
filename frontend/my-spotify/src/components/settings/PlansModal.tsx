@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSubscriptionSettings } from "@/hooks/queries/support/useSubscriptionSetting";
 import { X, Check } from 'lucide-react';
 
 interface PlansModalProps {
@@ -13,54 +14,31 @@ interface PlansModalProps {
 export default function PlansModal({ isOpen, onClose, currentPlan, onSelectPlan }: PlansModalProps) {
   const [selected, setSelected] = useState<'basic' | 'silver' | 'gold'>(currentPlan);
 
+  const {
+    data: subscriptions = [],
+    isLoading,
+  } = useSubscriptionSettings();
+  
   if (!isOpen) return null;
 
-  const tiers = [
-    {
-      id: 'basic' as const,
-      name: 'Basic',
-      price: '$0',
-      period: 'forever',
-      features: [
-        { text: 'Daily stream limit: 60', included: true },
-        { text: 'Playlist limit: 6', included: true },
-        { text: 'Add profile picture', included: false },
-        { text: 'Download songs', included: false },
-        { text: 'Early access to new songs', included: false },
-        { text: 'View song stats & analytics', included: false },
-      ]
-    },
-    {
-      id: 'silver' as const,
-      name: 'Silver',
-      price: '$4.99',
-      period: 'mo',
-      features: [
-        { text: 'Unlimited daily streaming', included: true },
-        { text: 'Playlist limit: 100', included: true },
-        { text: 'Add profile picture', included: true },
-        { text: 'Download songs', included: true },
-        { text: 'Early access to new songs', included: false },
-        { text: 'View song stats & analytics', included: false },
-      ],
-      selectedBg: 'bg-neutral-950 border-neutral-400',
-    },
-    {
-      id: 'gold' as const,
-      name: 'Gold',
-      price: '$9.99',
-      period: 'mo',
-      features: [
-        { text: 'Unlimited daily streaming', included: true },
-        { text: 'Unlimited playlist layout', included: true },
-        { text: 'Add profile picture', included: true },
-        { text: 'Download songs', included: true },
-        { text: 'Early access to new songs', included: true },
-        { text: 'View song stats & analytics', included: true },
-      ],
-      selectedBg: 'bg-amber-950/10 border-amber-500/60',
-    },
-  ];
+  const backgrounds = {
+    basic: undefined,
+    silver: "bg-neutral-950 border-neutral-400",
+    gold: "bg-amber-950/10 border-amber-500/60",
+  } as const;
+
+  const tiers = subscriptions.map(subscription => ({
+    ...subscription,
+    selectedBg: backgrounds[subscription.id],
+  }));
+
+  if (isLoading) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/80">
+      <div className="text-neutral-400">Loading plans...</div>
+    </div>
+  );
+}
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">

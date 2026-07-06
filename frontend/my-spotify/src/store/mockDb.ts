@@ -7,7 +7,8 @@ import {
   OtpEntry,
   SupportTicketLocal,
   AuditingRecord,
-  Notifications
+  Notifications,
+  SubscriptionTier
 } from "@/types";
 
 // Database Keys
@@ -20,6 +21,7 @@ const OTPS_KEY = "app_otps";
 const SUPPORT_TICKET_KEY = "app_support_tickets";
 const AUDITING_KEY = "app_auditing_records";
 const NOTIFICATIONS_KEY = "app_notifications";
+const SUBSCRIPTIONS_KEY = "app_subsriptions";
 
 export type User = UserProfile & {
   password: string;
@@ -169,6 +171,53 @@ const SEED_ARTIST_TICKETS: ArtistApplicationTicket[] = [
   { id: 'v1', userId: 'user-1', email: 'contact@neonhorizon.com', artisticName: 'Neon Horizon', samples: ['https://link.to/track1', 'https://link.to/track2'], verificationStatus: 'pending', submittedAt: new Date('2026-07-01') },
   { id: 'v2', userId: 'user-new', email: 'mgmt@thesofttones.com', artisticName: 'The Soft Tones', samples: ['https://link.to/demo1'], verificationStatus: 'pending', submittedAt: new Date('2026-07-02') },
 ];
+
+const SEED_SUBSCRIPTIONS: SubscriptionTier[] = [
+  {
+    id: 'basic',
+    name: 'Basic',
+    price: '$0',
+    period: 'forever',
+    features: [
+        { text: 'Daily stream limit: 60', included: true },
+        { text: 'Playlist limit: 6', included: true },
+        { text: 'Add profile picture', included: false },
+        { text: 'Download songs', included: false },
+        { text: 'Early access to new songs', included: false },
+        { text: 'View song stats & analytics', included: false },
+    ]
+    },
+
+    {
+    id: 'silver',
+    name: 'Silver',
+    price: '$4.99',
+    period: 'mo',
+    features: [
+        { text: 'Unlimited daily streaming', included: true },
+        { text: 'Playlist limit: 100', included: true },
+        { text: 'Add profile picture', included: true },
+        { text: 'Download songs', included: true },
+        { text: 'Early access to new songs', included: false },
+        { text: 'View song stats & analytics', included: false },
+    ],
+    },
+
+    {
+    id: 'gold',
+    name: 'Gold',
+    price: '$9.99',
+    period: 'mo',
+    features: [
+        { text: 'Unlimited daily streaming', included: true },
+        { text: 'Unlimited playlist layout', included: true },
+        { text: 'Add profile picture', included: true },
+        { text: 'Download songs', included: true },
+        { text: 'Early access to new songs', included: true },
+        { text: 'View song stats & analytics', included: true },
+    ],
+    },
+]
 
 // --------------------
 // CORE DB MANAGEMENT METHODS
@@ -324,4 +373,17 @@ export function getNotifications(): Notifications[] {
 
 export function saveNotifications(notifs: Notifications[]): void {
   localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifs));
+}
+
+export function getSubscriptions(): SubscriptionTier[] {
+  const data = localStorage.getItem(SUBSCRIPTIONS_KEY);
+  if (!data) {
+    localStorage.setItem(SUBSCRIPTIONS_KEY, JSON.stringify(SEED_SUBSCRIPTIONS));
+    return SEED_SUBSCRIPTIONS;
+  }
+  return JSON.parse(data);
+}
+
+export function saveSubscriptions(records: SubscriptionTier[]): void {
+  localStorage.setItem(SUBSCRIPTIONS_KEY, JSON.stringify(records));
 }
