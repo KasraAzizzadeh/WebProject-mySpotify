@@ -5,6 +5,8 @@ import {
   PlaylistItem,
   SongItem,
   OtpEntry,
+  SupportTicketLocal,
+  AuditingRecord
 } from "@/types";
 
 // Database Keys
@@ -14,6 +16,8 @@ const SONGS_KEY = "app_songs";
 const PLAYLISTS_KEY = "app_playlists";
 const ARTIST_TICKET_KEY = "app_artist_tickets";
 const OTPS_KEY = "app_otps";
+const SUPPORT_TICKET_KEY = "app_support_tickets";
+const AUDITING_KEY = "app_auditing_records";
 
 export type User = UserProfile & {
   password: string;
@@ -23,6 +27,34 @@ export type User = UserProfile & {
 // SEED DATA (USERS)
 // --------------------
 const SEED_USERS: User[] = [
+  {
+    id: "user-admin",
+    email: "admin@gmail.com",
+    username: "system_admin",
+    displayName: "Admin Controller",
+    profilePictureUrl: undefined,
+    role: "admin",
+    subscriptionType: "gold",
+    createdAt: new Date(),
+    password: "Admin_1234",
+    followers: [],
+    following: [],
+    listenerProfile: { playlists: [], likedTracks: [], recentlyPlayed: [] },
+  },
+  {
+    id: "user-supporter",
+    email: "support@gmail.com",
+    username: "support_hero",
+    displayName: "Support Staff",
+    profilePictureUrl: undefined,
+    role: "supporter",
+    subscriptionType: "gold",
+    createdAt: new Date(),
+    password: "Support_1234",
+    followers: [],
+    following: [],
+    listenerProfile: { playlists: [], likedTracks: [], recentlyPlayed: [] },
+  },
   {
     id: "user-1",
     email: "alex@gmail.com",
@@ -35,11 +67,7 @@ const SEED_USERS: User[] = [
     password: "Alex_1234",
     followers: ["user-2"],
     following: [],
-    listenerProfile: {
-      playlists: [],
-      likedTracks: [],
-      recentlyPlayed: ["p1"],
-    },
+    listenerProfile: { playlists: [], likedTracks: [], recentlyPlayed: ["p1"] },
     artistProfile: {
       bio: "Electronic music producer",
       verificationStatus: "pending",
@@ -61,11 +89,7 @@ const SEED_USERS: User[] = [
     password: "J123_abcd",
     followers: [],
     following: ["user-1"],
-    listenerProfile: {
-      playlists: ["p1", "p5", "p6"],
-      likedTracks: [],
-      recentlyPlayed: ["p1"],
-    },
+    listenerProfile: { playlists: ["p1", "p5", "p6"], likedTracks: [], recentlyPlayed: ["p1"] },
   },
 ];
 
@@ -73,9 +97,9 @@ const SEED_USERS: User[] = [
 // SEED DATA (ALBUMS)
 // --------------------
 const SEED_ALBUMS: AlbumItem[] = [
-  { id: "a1", name: "Velvet Dreams", artistName: "The Soft Tones", artistId: "art-st1", listeners: 450000, releaseDate: "2026-04-12", songList: ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"], imageUrl:"/pic2.jpg" },
+  { id: "a1", name: "Velvet Dreams", artistName: "The Soft Tones", artistId: "art-st1", listeners: 450000, releaseDate: "2026-04-12", songList: ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"], imageUrl: "/pic2.jpg" },
   { id: "a2", name: "Hyperdrive", artistName: "Glitch Fox", artistId: "art-gf4", listeners: 890000, releaseDate: "2026-05-20", songList: ["s2"] },
-  { id: "a3", name: "Midnight Aurora", artistName: "Luna Eclipse", artistId: "art-le3", listeners: 1200000, releaseDate: "2025-11-10", songList: ["s3", "s4", "s5"], imageUrl:"/pic3.png" },
+  { id: "a3", name: "Midnight Aurora", artistName: "Luna Eclipse", artistId: "art-le3", listeners: 1200000, releaseDate: "2025-11-10", songList: ["s3", "s4", "s5"], imageUrl: "/pic3.png" },
   { id: "a4", name: "Solar Drift", artistName: "Neon Horizon", artistId: "user-1", listeners: 670000, releaseDate: "2026-01-08", songList: [] },
   { id: "a5", name: "Echoes of Code", artistName: "Binary Soul", artistId: "art-bs9", listeners: 340000, releaseDate: "2026-03-15", songList: ["s7"] },
   { id: "a6", name: "Dreamstate", artistName: "Cloud Atlas", artistId: "art-ca2", listeners: 510000, releaseDate: "2026-02-22", songList: ["s9"] },
@@ -89,7 +113,7 @@ const SEED_ALBUMS: AlbumItem[] = [
 // SEED DATA (PLAYLISTS)
 // --------------------
 const SEED_PLAYLISTS: PlaylistItem[] = [
-  { id: "p1", name: "Chill Lo-Fi Beats", ownerId: "user-2", isPrivate: false, songList: ["s1", "s2", "s3"], imageUrl:"/pic4.jpg" },
+  { id: "p1", name: "Chill Lo-Fi Beats", ownerId: "user-2", isPrivate: false, songList: ["s1", "s2", "s3"], imageUrl: "/pic4.jpg" },
   { id: "p2", name: "Coding Session Intensity", ownerId: "user-2", songList: ["s4", "s5"] },
   { id: "p3", name: "Night Drive Vibes", ownerId: "user-2", songList: ["s6", "s7", "s8"] },
   { id: "p4", name: "Deep Focus Flow", ownerId: "user-2", songList: ["s9", "s10"] },
@@ -106,9 +130,7 @@ const SEED_PLAYLISTS: PlaylistItem[] = [
 // --------------------
 const SEED_SONGS: SongItem[] = [
   { id: "s1", title: "Midnight Pulse", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 1200000, releaseDate: "2026-06-01", songDurationMs: 155000, audioUrl: "/midnight-pulse.mp3" },
-  { id: "s2", title: "Ethereal Echoes", artistName: "Luna Eclipse", artistId: "art-le3", albumName: "Midnight Aurora", albumId: "a3", streams: 85000, releaseDate: "2025-12-15", songDurationMs: 272000, audioUrl: "/etheral-echoes.mp3",
-    lyrics: "I hear the night breathe through the walls\nA silver shimmer as silence falls\nYour voice returns like distant fire\nA fading spark that climbs higher\n\nCity lights dissolve to haze\nLost inside a dreamlike maze\nEvery shadow starts to speak\nCalling softly, bittersweet"
-  },
+  { id: "s2", title: "Ethereal Echoes", artistName: "Luna Eclipse", artistId: "art-le3", albumName: "Midnight Aurora", albumId: "a3", streams: 85000, releaseDate: "2025-12-15", songDurationMs: 272000, audioUrl: "/etheral-echoes.mp3", lyrics: "I hear the night breathe through the walls\nA silver shimmer as silence falls..." },
   { id: "s3", title: "Cosmic Drift", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 45000, releaseDate: "2026-02-10", songDurationMs: 196000 },
   { id: "s4", title: "Digital Rain", artistName: "Binary Soul", artistId: "art-bs9", albumName: "Echoes of Code", albumId: "a5", streams: 320000, releaseDate: "2026-01-12", songDurationMs: 231000 },
   { id: "s5", title: "Static Hearts", artistName: "Glitch Fox", artistId: "art-gf4", albumName: "Hyperdrive", albumId: "a2", streams: 540000, releaseDate: "2026-03-02", songDurationMs: 221000 },
@@ -120,34 +142,48 @@ const SEED_SONGS: SongItem[] = [
 ];
 
 // --------------------
-//  CORE: AUTO IMAGE INHERITANCE
+// SEED DATA (OPERATIONAL SUPPORT TIERS)
 // --------------------
+const SEED_TICKETS: SupportTicketLocal[] = [
+  { 
+    id: 'TKT-8041', username: 'jane_doe', subject: 'Cannot access my gold features', dateSubmitted: '2026-07-03', status: 'Open', 
+    messages: [{ id: 'm1', senderId: 'user-2', senderName: 'jane_doe', senderRole: 'user', content: 'Hi, I upgraded to Gold yesterday but I still see ads?', timestamp: '2026-07-03 10:00 AM' }] 
+  },
+  { 
+    id: 'TKT-8042', username: 'alex99', subject: 'Royalties calculation inquiry', dateSubmitted: '2026-07-02', status: 'Replied', 
+    messages: [
+      { id: 'm1', senderId: 'user-1', senderName: 'alex99', senderRole: 'user', content: 'When do we get the payout for June?', timestamp: '2026-07-02 09:00 AM' },
+      { id: 'm2', senderId: 'support_hero', senderName: 'Support Team', senderRole: 'support', content: 'Payouts are processed on the 5th of every month.', timestamp: '2026-07-02 11:30 AM' }
+    ] 
+  },
+];
 
-function enrichSongsWithAlbumImages(
-  songs: SongItem[],
-  albums: AlbumItem[]
-): SongItem[] {
+const SEED_AUDITING: AuditingRecord[] = [
+  { id: 'aud1', artistName: 'Neon Horizon', artistId: 'user-1', uniqueListeners: 45000, totalStreams: 1200000, calculatedReward: 3450.00, paymentStatus: 'Pending Payment' },
+  { id: 'aud2', artistName: 'The Soft Tones', artistId: 'art-st1', uniqueListeners: 12000, totalStreams: 450000, calculatedReward: 1250.50, paymentStatus: 'Settled' },
+];
+
+const SEED_ARTIST_TICKETS: ArtistApplicationTicket[] = [
+  { id: 'v1', userId: 'user-1', email: 'contact@neonhorizon.com', artisticName: 'Neon Horizon', samples: ['https://link.to/track1', 'https://link.to/track2'], verificationStatus: 'pending', submittedAt: new Date('2026-07-01') },
+  { id: 'v2', userId: 'user-new', email: 'mgmt@thesofttones.com', artisticName: 'The Soft Tones', samples: ['https://link.to/demo1'], verificationStatus: 'pending', submittedAt: new Date('2026-07-02') },
+];
+
+// --------------------
+// CORE DB MANAGEMENT METHODS
+// --------------------
+function enrichSongsWithAlbumImages(songs: SongItem[], albums: AlbumItem[]): SongItem[] {
   return songs.map((song) => {
     const album = albums.find((a) => a.id === song.albumId);
-
-    return {
-      ...song,
-      imageUrl: album?.imageUrl ?? song.imageUrl, // fallback chain
-    };
+    return { ...song, imageUrl: album?.imageUrl ?? song.imageUrl };
   });
 }
 
-// --------------------
-// USERS
-// --------------------
 export function getUsers(): User[] {
   const data = localStorage.getItem(USERS_KEY);
-
   if (!data) {
     localStorage.setItem(USERS_KEY, JSON.stringify(SEED_USERS));
     return SEED_USERS;
   }
-
   return JSON.parse(data).map((user: any) => ({
     ...user,
     createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),
@@ -159,17 +195,12 @@ export function saveUsers(users: User[]): void {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
-// --------------------
-// ALBUMS
-// --------------------
 export function getAlbums(): AlbumItem[] {
   const data = localStorage.getItem(ALBUMS_KEY);
-
   if (!data) {
     localStorage.setItem(ALBUMS_KEY, JSON.stringify(SEED_ALBUMS));
     return SEED_ALBUMS;
   }
-
   return JSON.parse(data);
 }
 
@@ -177,17 +208,12 @@ export function saveAlbums(albums: AlbumItem[]): void {
   localStorage.setItem(ALBUMS_KEY, JSON.stringify(albums));
 }
 
-// --------------------
-// PLAYLISTS
-// --------------------
 export function getPlaylists(): PlaylistItem[] {
   const data = localStorage.getItem(PLAYLISTS_KEY);
-
   if (!data) {
     localStorage.setItem(PLAYLISTS_KEY, JSON.stringify(SEED_PLAYLISTS));
     return SEED_PLAYLISTS;
   }
-
   return JSON.parse(data);
 }
 
@@ -195,66 +221,72 @@ export function savePlaylists(playlists: PlaylistItem[]): void {
   localStorage.setItem(PLAYLISTS_KEY, JSON.stringify(playlists));
 }
 
-// --------------------
-// SONGS (AUTO-INHERITED IMAGES)
-// --------------------
 export function getSongs(): SongItem[] {
   const data = localStorage.getItem(SONGS_KEY);
-
   const albums = getAlbums();
-
   if (!data) {
     const enriched = enrichSongsWithAlbumImages(SEED_SONGS, albums);
     localStorage.setItem(SONGS_KEY, JSON.stringify(enriched));
     return enriched;
   }
-
-  const parsed = JSON.parse(data);
-  return enrichSongsWithAlbumImages(parsed, albums);
+  return enrichSongsWithAlbumImages(JSON.parse(data), albums);
 }
 
 export function saveSongs(songs: SongItem[]): void {
   localStorage.setItem(SONGS_KEY, JSON.stringify(songs));
 }
 
-// --------------------
-// ARTIST APPLICATION TICKETS
-// --------------------
 export function getApplicaitonTickets(): ArtistApplicationTicket[] {
   const data = localStorage.getItem(ARTIST_TICKET_KEY);
-
-  if (!data) return [];
-
+  if (!data) {
+    localStorage.setItem(ARTIST_TICKET_KEY, JSON.stringify(SEED_ARTIST_TICKETS));
+    return SEED_ARTIST_TICKETS;
+  }
   return JSON.parse(data).map((t: any) => ({
     ...t,
     submittedAt: t.submittedAt ? new Date(t.submittedAt) : new Date(),
   }));
 }
 
-export function saveApplicationTickets(
-  tickets: ArtistApplicationTicket[]
-): void {
+export function saveApplicationTickets(tickets: ArtistApplicationTicket[]): void {
   localStorage.setItem(ARTIST_TICKET_KEY, JSON.stringify(tickets));
 }
 
-// --------------------
-// OTPS
-// --------------------
 export function getOtps(): OtpEntry[] {
   const data = localStorage.getItem(OTPS_KEY);
-
-  if (!data) return [];
-
-  return JSON.parse(data);
+  return data ? JSON.parse(data) : [];
 }
 
 export function saveOtps(otps: OtpEntry[]): void {
   localStorage.setItem(OTPS_KEY, JSON.stringify(otps));
 }
 
-/**
- * Resolves full SongItem records for a specific Album or Playlist container string ID
- */
+export function getSupportTickets(): SupportTicketLocal[] {
+  const data = localStorage.getItem(SUPPORT_TICKET_KEY);
+  if (!data) {
+    localStorage.setItem(SUPPORT_TICKET_KEY, JSON.stringify(SEED_TICKETS));
+    return SEED_TICKETS;
+  }
+  return JSON.parse(data);
+}
+
+export function saveSupportTickets(tickets: SupportTicketLocal[]): void {
+  localStorage.setItem(SUPPORT_TICKET_KEY, JSON.stringify(tickets));
+}
+
+export function getAuditingRecords(): AuditingRecord[] {
+  const data = localStorage.getItem(AUDITING_KEY);
+  if (!data) {
+    localStorage.setItem(AUDITING_KEY, JSON.stringify(SEED_AUDITING));
+    return SEED_AUDITING;
+  }
+  return JSON.parse(data);
+}
+
+export function saveAuditingRecords(records: AuditingRecord[]): void {
+  localStorage.setItem(AUDITING_KEY, JSON.stringify(records));
+}
+
 export function getSongsByCollectionSource(type: 'album' | 'playlist', id: string): SongItem[] {
   const allSongs = getSongs();
   const albums = getAlbums();
@@ -262,33 +294,19 @@ export function getSongsByCollectionSource(type: 'album' | 'playlist', id: strin
   if (type === 'album') {
     const album = albums.find(a => a.id === id);
     if (!album) return [];
-
-    const songs = album.songList
-      .map(songId => allSongs.find(s => s.id === songId))
-      .filter((s): s is SongItem => !!s);
-
+    const songs = album.songList.map(sId => allSongs.find(s => s.id === sId)).filter((s): s is SongItem => !!s);
     return enrichSongsWithAlbumImages(songs, albums);
   }
 
   if (type === 'playlist') {
-    const playlists = getPlaylists();
-    const playlist = playlists.find(p => p.id === id);
+    const playlist = getPlaylists().find(p => p.id === id);
     if (!playlist) return [];
-
-    const songs = playlist.songList
-      .map(songId => allSongs.find(s => s.id === songId))
-      .filter((s): s is SongItem => !!s);
-
+    const songs = playlist.songList.map(sId => allSongs.find(s => s.id === sId)).filter((s): s is SongItem => !!s);
     return enrichSongsWithAlbumImages(songs, albums);
   }
-
   return [];
 }
 
-/**
- * Fallback contextual lookup to find all sibling songs matching a song's album field
- */
 export function getSiblingSongsByAlbumId(albumId: string): SongItem[] {
-  const allSongs = getSongs();
-  return allSongs.filter(s => s.albumId === albumId);
+  return getSongs().filter(s => s.albumId === albumId);
 }

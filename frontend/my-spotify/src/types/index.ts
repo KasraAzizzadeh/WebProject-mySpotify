@@ -26,7 +26,7 @@ interface ArtistProfile {
   albums?: string[];
   totalStreams: number;
   uniqueListener?: number;
- }
+}
 
 interface ListenerProfile {
   playlists?: string[];
@@ -51,7 +51,6 @@ export interface AlbumItem {
   artistName: string;
   artistId: string;
   listeners: number;
-  // change to date
   releaseDate: string;
   imageUrl?: string;
   description?: string;
@@ -72,7 +71,6 @@ export interface SongItem {
   songDurationMs?: number;
   audioUrl?: string;
   lyrics?: string;
-  
 }
 
 export interface DashboardData {
@@ -82,10 +80,7 @@ export interface DashboardData {
   earlyAccess?: AlbumItem[]; 
 }
 
-export type DiscoverFilter =
-  | "latest"
-  | "most-streamed"
-  | "oldest";
+export type DiscoverFilter = "latest" | "most-streamed" | "oldest";
 
 export interface PlaybackSource {
   type: 'album' | 'playlist' | 'single';
@@ -93,19 +88,19 @@ export interface PlaybackSource {
 }
 
 export interface DiscoverData {
-    songs: SongItem[];
-    albums: AlbumItem[];
-    playlists: PlaylistItem[];
+  songs: SongItem[];
+  albums: AlbumItem[];
+  playlists: PlaylistItem[];
 }
 
 export interface ArtistApplicationTicket {
-    id: string;
-    userId: string;
-    email: string;
-    artisticName: string;
-    samples: string[];
-    verificationStatus: VerificationStatus;
-    submittedAt: Date;
+  id: string;
+  userId: string;
+  email: string;
+  artisticName: string;
+  samples: string[];
+  verificationStatus: VerificationStatus;
+  submittedAt: Date;
 }
 
 export interface OtpEntry {
@@ -115,4 +110,39 @@ export interface OtpEntry {
   otpCode: string;
   createdAt: Date;
   expiresAt: Date;
+}
+
+// ==========================================
+// SUPPORT INTERFACES & OPERATIONAL UI TYPES
+// ==========================================
+export type TicketStatus = 'Open' | 'Replied' | 'Closed';
+export type PaymentStatus = 'Pending Payment' | 'Settled';
+export type TabState = 'verification' | 'tickets' | 'auditing' | 'settings';
+
+export interface TicketMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: 'user' | 'support';
+  content: string;
+  timestamp: string;
+}
+
+export interface SupportTicketLocal {
+  id: string;
+  username: string;
+  subject: string;
+  dateSubmitted: string;
+  status: TicketStatus;
+  messages: TicketMessage[];
+}
+
+export interface AuditingRecord {
+  id: string;
+  artistName: string;
+  artistId: string;
+  uniqueListeners: number;
+  totalStreams: number;
+  calculatedReward: number;
+  paymentStatus: PaymentStatus;
 }
