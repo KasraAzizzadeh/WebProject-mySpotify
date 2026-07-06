@@ -12,7 +12,7 @@ import Message from '@/components/ui/Message';
 const LIMIT = 20;
 
 export default function VerificationTab() {
-  const [selectedVerification, setSelectedVerification] = useState<ArtistApplicationTicket | null>(null);
+  const [selectedVerificationId, setSelectedVerificationId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [isRejecting, setIsRejecting] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
@@ -30,6 +30,8 @@ export default function VerificationTab() {
     error,
   } = useArtistApplications(page, LIMIT);
 
+  const selectedVerification = verifications.find(v => v.id === selectedVerificationId)
+
   const updateApplication = useUpdateApplication();
 
   // Clean up audio context instantly if navigating away
@@ -41,7 +43,7 @@ export default function VerificationTab() {
     setPlayingSampleIdx(null);
     setAudioDurations({});
     setCurrentTime(0);
-    setSelectedVerification(null);
+    setSelectedVerificationId(null);
     setIsRejecting(false);
     setRejectReason('');
     setIsApproveModalOpen(false);
@@ -352,8 +354,9 @@ export default function VerificationTab() {
                   <td className="px-4 sm:px-6 py-4 text-right">
                     <div className="inline-block">
                       <Button 
+                        disabled={req.verificationStatus !== "pending"}
                         variant="primary"
-                        onClick={() => setSelectedVerification(req)}
+                        onClick={() => setSelectedVerificationId(req.id)}
                         className="!text-[10px] sm:!text-xs !px-2.5 sm:!px-4 !py-1.5 sm:!py-2 font-semibold shadow-sm"
                       >
                         View Portfolio

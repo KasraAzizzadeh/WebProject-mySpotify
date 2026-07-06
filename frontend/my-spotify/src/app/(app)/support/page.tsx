@@ -3,13 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArtistApplicationTicket, SupportTicketLocal, AuditingRecord } from '@/types';
+import { AuditingRecord } from '@/types';
 
 import {
-  getApplicaitonTickets,
-  saveApplicationTickets,
-  getSupportTickets,
-  saveSupportTickets,
   getAuditingRecords,
   saveAuditingRecords
 } from '@/store/mockDb';
@@ -27,8 +23,6 @@ export default function SupportDashboardPage() {
 
   const activeTab = searchParams?.get('tab') || 'verification';
 
-  const [verifications, setVerifications] = useState<ArtistApplicationTicket[]>([]);
-  const [tickets, setTickets] = useState<SupportTicketLocal[]>([]);
   const [auditingRecords, setAuditingRecords] = useState<AuditingRecord[]>([]);
 
   useEffect(() => {
@@ -36,66 +30,12 @@ export default function SupportDashboardPage() {
   }, [activeTab]);
 
   const refreshData = () => {
-    setVerifications(
-      getApplicaitonTickets().filter(t => t.verificationStatus === 'pending')
-    );
-    setTickets(getSupportTickets());
     setAuditingRecords(getAuditingRecords());
   };
 
   const userRole = authUser?.role || 'admin';
   const isSystemAdmin = userRole === 'admin';
   const hasAccess = userRole === 'admin' || userRole === 'supporter';
-
-  const handleApproveArtist = (ticketId: string) => {
-    const all = getApplicaitonTickets().map(t =>
-      t.id === ticketId
-        ? { ...t, verificationStatus: 'approved' as const }
-        : t
-    );
-    saveApplicationTickets(all);
-    refreshData();
-  };
-
-  const handleRejectArtist = (ticketId: string) => {
-    const all = getApplicaitonTickets().map(t =>
-      t.id === ticketId
-        ? { ...t, verificationStatus: 'rejected' as const }
-        : t
-    );
-    saveApplicationTickets(all);
-    refreshData();
-  };
-
-  const handleSendReply = (
-    ticketId: string,
-    replyText: string,
-    currentActiveSetter: (t: SupportTicketLocal) => void
-  ) => {
-    const updated = getSupportTickets().map(t => {
-      if (t.id === ticketId) {
-        const messages = [
-          ...t.messages,
-          {
-            id: `m-local-${Date.now()}`,
-            senderId: authUser?.id || 'support-agent',
-            senderName: authUser?.displayName || 'Support Team',
-            senderRole: 'support' as const,
-            content: replyText,
-            timestamp: new Date().toLocaleString()
-          }
-        ];
-        return { ...t, status: 'Replied' as const, messages };
-      }
-      return t;
-    });
-
-    saveSupportTickets(updated);
-    setTickets(updated);
-
-    const active = updated.find(t => t.id === ticketId);
-    if (active) currentActiveSetter(active);
-  };
 
   const handleSettlePayment = (recordId: string) => {
     const updated = getAuditingRecords().map(rec =>
@@ -128,7 +68,7 @@ export default function SupportDashboardPage() {
         )}
 
         {activeTab === 'tickets' && (
-          <TicketsTab tickets={tickets} onReply={handleSendReply} />
+          <TicketsTab user={authUser}/>
         )}
 
         {activeTab === 'auditing' && (

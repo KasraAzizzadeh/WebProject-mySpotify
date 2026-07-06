@@ -1,17 +1,62 @@
 'use client';
 
 import React, { useState } from 'react';
-import { SupportTicketLocal, TicketStatus } from '@/types';
+import { useSupportTickets } from '@/hooks/queries/support/useSupportTickets';
+import { useUpdateSupportTicket } from '@/hooks/queries/support/useUpdateSupportTicket';
+import { SupportTicketLocal, TicketStatus, UserProfile } from '@/types';
 import { X, CheckCircle, MessageSquarePlus } from 'lucide-react';
 
-interface TicketsTabProps {
-  tickets: SupportTicketLocal[];
-  onReply: (ticketId: string, text: string, currentActiveSetter: (t: SupportTicketLocal) => void) => void;
-}
+const LIMIT = 20;
 
-export default function TicketsTab({ tickets, onReply }: TicketsTabProps) {
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicketLocal | null>(null);
+export default function TicketsTab({user} : {user: UserProfile}) {
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [ticketReply, setTicketReply] = useState('');
+  const [page, setPage] = useState(1);
+
+  const {
+    data: tickets = [],
+    isLoading,
+    error,
+  } = useSupportTickets(page, LIMIT);
+
+  const selectedTicket = tickets.find(t => t.id === selectedTicketId)
+
+  const updateTicket = useUpdateSupportTicket();
+
+  const handleReply = () => {
+    if (!selectedTicket || !ticketReply.trim())
+      return;
+
+    updateTicket.mutate({
+      ticketId: selectedTicket.id,
+      reply: {
+        senderId: user.id,
+        senderName: user.displayName,
+        content: ticketReply
+      }
+    }, {
+      onSuccess: () => {
+            setTicketReply("");
+        },
+    }
+  )
+  }
+
+  if (isLoading) {
+      return (
+          <div className="p-8 text-center text-neutral-400">
+              Loading tickets...
+          </div>
+      );
+  }
+
+  if (error) {
+      return (
+          <div className="p-8 text-center text-red-400">
+              Failed to load tickets.
+          </div>
+      );
+  }
 
   if (selectedTicket) {
     const originalInquiry = selectedTicket.messages.find(m => m.senderRole === 'user') || selectedTicket.messages[0];
@@ -31,7 +76,7 @@ export default function TicketsTab({ tickets, onReply }: TicketsTabProps) {
             </p>
           </div>
           <button 
-            onClick={() => { setSelectedTicket(null); setTicketReply(''); }} 
+            onClick={() => { setSelectedTicketId(null); setTicketReply(''); }} 
             className="p-2 hover:bg-neutral-900 rounded-xl text-neutral-400 hover:text-white transition-all border border-transparent hover:border-neutral-800/60 shrink-0"
           >
             <X size={18} />
@@ -72,6 +117,7 @@ export default function TicketsTab({ tickets, onReply }: TicketsTabProps) {
             
             <textarea
               value={ticketReply}
+              disabled={updateTicket.isPending}
               onChange={(e) => setTicketReply(e.target.value)}
               placeholder="Type your formal solution/response to the user here..."
               className="w-full min-h-[140px] bg-neutral-950 border border-neutral-800/60 rounded-xl p-4 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-700 transition-colors resize-none leading-relaxed"
@@ -81,9 +127,9 @@ export default function TicketsTab({ tickets, onReply }: TicketsTabProps) {
               <button
                 onClick={() => {
                   if (!ticketReply.trim()) return;
-                  onReply(selectedTicket.id, ticketReply, setSelectedTicket);
+                  handleReply();
                 }}
-                disabled={!ticketReply.trim()}
+                disabled={!ticketReply.trim() || updateTicket.isPending}
                 className="w-full sm:w-auto px-5 py-2.5 bg-white text-black font-bold text-xs rounded-xl hover:bg-neutral-200 disabled:bg-neutral-800 disabled:text-neutral-500 transition-all shadow-md"
               >
                 Submit Resolution
@@ -120,7 +166,7 @@ export default function TicketsTab({ tickets, onReply }: TicketsTabProps) {
               {tickets.map((ticket) => (
                 <tr 
                   key={ticket.id} 
-                  onClick={() => setSelectedTicket(ticket)}
+                  onClick={() => setSelectedTicketId(ticket.id)}
                   className="hover:bg-neutral-900/50 transition-colors cursor-pointer group"
                 >
                   <td className="px-4 py-4 font-mono text-xs text-neutral-500 group-hover:text-neutral-300 transition-colors hidden md:table-cell truncate">

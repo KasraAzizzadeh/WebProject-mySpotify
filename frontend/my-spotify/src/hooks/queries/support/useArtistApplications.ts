@@ -1,5 +1,3 @@
-// hooks/useArtistApplications.ts
-
 import { useQuery } from "@tanstack/react-query";
 import { getApplications } from "@/services/supportService";
 

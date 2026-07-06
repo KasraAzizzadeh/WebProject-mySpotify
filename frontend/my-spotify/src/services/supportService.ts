@@ -1,9 +1,13 @@
 import { userService } from "./userService";
-import { ArtistApplicationTicket } from "@/types";
-import { getApplicaitonTickets, saveApplicationTickets, getNotifications, saveNotifications, User } from "@/store/mockDb";
+import { ArtistApplicationTicket, SupportTicketLocal, TicketMessage } from "@/types";
+import { getApplicaitonTickets, saveApplicationTickets, 
+    getNotifications, saveNotifications,
+    getSupportTickets, saveSupportTickets,
+    User } from "@/store/mockDb";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// applications
 export const getApplications = async (
     page: number, limit: number
 ) : Promise<ArtistApplicationTicket[]> => {
@@ -74,4 +78,74 @@ export const updateApplication = async (
     });
 
     saveNotifications(notifications);
+};
+
+// tickets
+export const getTickets = async (
+    page: number, limit: number
+) : Promise<SupportTicketLocal[]> => {
+    await delay(100);
+
+    const allTickets = getSupportTickets();
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    return allTickets.slice(start, end);
+}
+
+export const updateTicket = async (
+  ticketId: string,
+  reply: {
+    senderId: string;
+    senderName: string;
+    content: string;
+  }
+): Promise<SupportTicketLocal> => {
+  await delay(100);
+
+  const tickets = getSupportTickets();
+
+  const supportMessage: TicketMessage = {
+    id: crypto.randomUUID(),
+    senderId: reply.senderId,
+    senderName: reply.senderName,
+    senderRole: "support",
+    content: reply.content,
+    timestamp: new Date().toLocaleString(),
+  };
+
+  const updatedTickets = tickets.map(ticket => {
+    if (ticket.id !== ticketId) return ticket;
+
+    return {
+      ...ticket,
+      status: "Replied" as const,
+      messages: [...ticket.messages, supportMessage],
+    };
+  });
+
+  saveSupportTickets(updatedTickets);
+
+  const updated = updatedTickets.find(t => t.id === ticketId)!;
+
+  // Push notification
+  const notifications = getNotifications();
+
+  notifications.push({
+    id: crypto.randomUUID(),
+    userId: updated.messages.find(m => m.senderRole === "user")!.senderId,
+    content: `Your support question has been answered.
+
+Question:
+${updated.subject}
+
+Reply:
+${reply.content}`,
+    status: "unread",
+  });
+
+  saveNotifications(notifications);
+
+  return updated;
 };
