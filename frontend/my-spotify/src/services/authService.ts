@@ -1,6 +1,7 @@
 import { UserProfile, ArtistApplicationTicket, OtpEntry } from "@/types";
 import { getUsers, saveUsers, User } from "@/store/mockDb";
 import { getApplicaitonTickets, saveApplicationTickets } from "@/store/mockDb";
+import { getNotifications, saveNotifications } from "@/store/mockDb";
 import { getOtps, saveOtps } from "@/store/mockDb";
 
 type LoginResponse = {
@@ -118,6 +119,24 @@ export async function applyArtist(
         submittedAt: new Date(),
     }
     saveApplicationTickets([...tickets, newApplication]);
+
+    const notifications = getNotifications();
+
+    const supportNotifications = allUsers
+    .filter(
+        u => u.role === "admin" || u.role === "supporter"
+    )
+    .map(user => ({
+        id: crypto.randomUUID(),
+        userId: user.id,
+        content: `New artist verification request from ${updatedUser.displayName}.`,
+        status: "unread" as const,
+    }));
+
+    saveNotifications([
+    ...notifications,
+    ...supportNotifications,
+    ]);
 
     const { password, ...updatedProfile } = updatedUser;
     return updatedProfile;

@@ -10,6 +10,7 @@ export interface UserProfile {
   profilePictureUrl?: string;
   role: UserRole;
   subscriptionType: SubscriptionType;
+  subValidUntil?: Date;
   gender?: string;
   birthDate?: Date;
   createdAt?: Date;
@@ -160,6 +161,6 @@ export interface SubscriptionTier {
   id: SubscriptionType;
   name: string;
   price: string;
-  period: "forever" | "per month";
+  period: "forever" | "mo";
   features: SubFeatures[]
 }

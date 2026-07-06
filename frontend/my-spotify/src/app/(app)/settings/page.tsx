@@ -104,6 +104,32 @@ export default function SettingsPage() {
           />
         </section>
 
+        {/* SUPPORT */}
+        <section className="space-y-3">
+          <h2 className="text-[11px] tracking-[0.2em] text-neutral-500 uppercase">
+            Support
+          </h2>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-neutral-800 bg-neutral-900/30 px-4 py-4 md:px-6 md:py-6">
+            <div>
+              <p className="text-sm text-white font-medium">
+                Need Help?
+              </p>
+              <p className="text-xs text-neutral-400 mt-1 max-w-md">
+                Send a question to our support team and we'll get back to you as soon as possible.
+              </p>
+            </div>
+
+            <Button
+              variant="primary"
+              onClick={() => router.push('/ask-support')}
+              className="!w-auto px-5 !py-2 text-xs rounded-xl"
+            >
+              Contact Support
+            </Button>
+          </div>
+        </section>
+
         {/* DANGER ZONE */}
         <section className="space-y-3">
           <h2 className="text-[11px] tracking-[0.2em] text-red-400 uppercase">
