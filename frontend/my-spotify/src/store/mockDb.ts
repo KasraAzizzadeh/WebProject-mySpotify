@@ -43,7 +43,7 @@ const SEED_USERS: User[] = [
     artistProfile: {
       bio: "Electronic music producer",
       verificationStatus: "approved",
-      singles: ["s1", "s3"],
+      singles: ["s2"],
       albums: ["a1"],
       totalStreams: 120000,
       uniqueListener: 8200,
@@ -73,10 +73,10 @@ const SEED_USERS: User[] = [
 // SEED DATA (ALBUMS)
 // --------------------
 const SEED_ALBUMS: AlbumItem[] = [
-  { id: "a1", name: "Velvet Dreams", artistName: "The Soft Tones", artistId: "art-st1", listeners: 450000, releaseDate: "2026-04-12", songList: ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"], imageUrl:"/pic2.jpg" },
+  { id: "a1", name: "Velvet Dreams", artistName: "Alex Carter", artistId: "user-1", listeners: 450000, releaseDate: "2026-04-12", songList: ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"], imageUrl:"/pic2.jpg", genre: "Hip Hop" },
   { id: "a2", name: "Hyperdrive", artistName: "Glitch Fox", artistId: "art-gf4", listeners: 890000, releaseDate: "2026-05-20", songList: ["s2"] },
   { id: "a3", name: "Midnight Aurora", artistName: "Luna Eclipse", artistId: "art-le3", listeners: 1200000, releaseDate: "2025-11-10", songList: ["s3", "s4", "s5"], imageUrl:"/pic3.png" },
-  { id: "a4", name: "Solar Drift", artistName: "Neon Horizon", artistId: "user-1", listeners: 670000, releaseDate: "2026-01-08", songList: [] },
+  { id: "a4", name: "Solar Drift", artistName: "Neon Horizon", artistId: "user-14", listeners: 670000, releaseDate: "2026-01-08", songList: [] },
   { id: "a5", name: "Echoes of Code", artistName: "Binary Soul", artistId: "art-bs9", listeners: 340000, releaseDate: "2026-03-15", songList: ["s7"] },
   { id: "a6", name: "Dreamstate", artistName: "Cloud Atlas", artistId: "art-ca2", listeners: 510000, releaseDate: "2026-02-22", songList: ["s9"] },
   { id: "a7", name: "Neon Abyss", artistName: "Void Runner", artistId: "art-vr7", listeners: 980000, releaseDate: "2025-09-30", songList: ["s10"] },
@@ -105,11 +105,11 @@ const SEED_PLAYLISTS: PlaylistItem[] = [
 // SEED DATA (SONGS)
 // --------------------
 const SEED_SONGS: SongItem[] = [
-  { id: "s1", title: "Midnight Pulse", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 1200000, releaseDate: "2026-06-01", songDurationMs: 155000, audioUrl: "/midnight-pulse.mp3" },
-  { id: "s2", title: "Ethereal Echoes", artistName: "Luna Eclipse", artistId: "art-le3", albumName: "Midnight Aurora", albumId: "a3", streams: 85000, releaseDate: "2025-12-15", songDurationMs: 272000, audioUrl: "/etheral-echoes.mp3",
+  { id: "s1", title: "Midnight Pulse", artistName: "Alex Carter", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 1200000, releaseDate: "2026-06-01", songDurationMs: 155000, audioUrl: "/midnight-pulse.mp3" },
+  { id: "s2", title: "Ethereal Echoes", artistName: "Luna Eclipse", artistId: "user-1", albumName: "Midnight Aurora", albumId: "a3", streams: 85000, releaseDate: "2025-12-15", songDurationMs: 272000, audioUrl: "/etheral-echoes.mp3", genre: "Ambient",
     lyrics: "I hear the night breathe through the walls\nA silver shimmer as silence falls\nYour voice returns like distant fire\nA fading spark that climbs higher\n\nCity lights dissolve to haze\nLost inside a dreamlike maze\nEvery shadow starts to speak\nCalling softly, bittersweet"
   },
-  { id: "s3", title: "Cosmic Drift", artistName: "Neon Horizon", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 45000, releaseDate: "2026-02-10", songDurationMs: 196000 },
+  { id: "s3", title: "Cosmic Drift", artistName: "Alex Carter", artistId: "user-1", albumName: "Velvet Dreams", albumId: "a1", streams: 45000, releaseDate: "2026-02-10", songDurationMs: 196000 },
   { id: "s4", title: "Digital Rain", artistName: "Binary Soul", artistId: "art-bs9", albumName: "Echoes of Code", albumId: "a5", streams: 320000, releaseDate: "2026-01-12", songDurationMs: 231000 },
   { id: "s5", title: "Static Hearts", artistName: "Glitch Fox", artistId: "art-gf4", albumName: "Hyperdrive", albumId: "a2", streams: 540000, releaseDate: "2026-03-02", songDurationMs: 221000 },
   { id: "s6", title: "Orbiting Silence", artistName: "Orbit Theory", artistId: "art-ot4", albumName: "Quantum Lullabies", albumId: "a9", streams: 610000, releaseDate: "2026-05-18", songDurationMs: 258000 },
@@ -117,6 +117,8 @@ const SEED_SONGS: SongItem[] = [
   { id: "s8", title: "Lost Frequency", artistName: "Dusk Signal", artistId: "art-ds6", albumName: "Afterlight", albumId: "a10", streams: 210000, releaseDate: "2026-04-04", songDurationMs: 239000 },
   { id: "s9", title: "Frozen Code", artistName: "Cloud Atlas", artistId: "art-ca2", albumName: "Dreamstate", albumId: "a6", streams: 430000, releaseDate: "2026-02-28", songDurationMs: 226000 },
   { id: "s10", title: "Broken Signal", artistName: "Static Bloom", artistId: "art-sb5", albumName: "Fragments", albumId: "a8", streams: 370000, releaseDate: "2026-06-10", songDurationMs: 244000 },
+  { id: "s11", title: "Chill Out", artistName: "Alex Carter", artistId: "art-sb5", albumName: "Fragments", albumId: "a8", streams: 370000, releaseDate: "2026-06-10", songDurationMs: 244000 },
+
 ];
 
 // --------------------
