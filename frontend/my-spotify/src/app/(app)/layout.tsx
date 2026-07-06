@@ -1,13 +1,28 @@
+'use client';
+
 import Sidebar from '@/components/Sidebar';
 import AudioManager from '@/components/player/AudioManager';
 import PlayerWrapper from '@/components/player/PlayerWrapper';
+import { usePathname } from 'next/navigation';
 
 export default function AppGroupLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  
+  // Detect if the user is currently on any support-related route dashboard panel
+  const isSupportRoute = pathname?.startsWith('/support');
+
   return (
     <>
       <AudioManager />
       
-      <div className="flex flex-col md:flex-row min-h-screen bg-[#121212]">
+      {/* FIX: Background color dynamically shifts from bg-[#121212] to bg-[#050505] 
+        when on support paths so that the 112px player padding area matches perfectly.
+      */}
+      <div 
+        className={`flex flex-col md:flex-row min-h-screen transition-colors duration-300 ${
+          isSupportRoute ? 'bg-[#050505]' : 'bg-[#121212]'
+        }`}
+      >
         {/* Sidebar Navigation Panel */}
         <Sidebar />
         

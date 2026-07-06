@@ -49,19 +49,38 @@ export default function Sidebar() {
     },
   ];
 
-  const showSupportMenu = hasSupportAccess && isCurrentlyOnSupportRoute && viewMode === 'support';
+  // The menu updates dynamically if the user is authorized AND has chosen support view mode
+  const showSupportMenu = hasSupportAccess && viewMode === 'support';
+
+  const toggleViewMode = () => {
+    setViewMode(prev => prev === 'app' ? 'support' : 'app');
+  };
 
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-56 lg:w-64 h-screen sticky top-0 shrink-0 bg-neutral-950 border-r border-neutral-800 justify-between">
+      <aside className="hidden lg:flex flex-col w-64 h-screen sticky top-0 shrink-0 bg-neutral-950 border-r border-neutral-800 justify-between">
         
         <div className="flex flex-col flex-1">
           {/* HEADER AREA */}
           <div className="px-6 pt-10 pb-6">
-            <div className="text-xl font-bold tracking-wider text-green-500">
-              SPOTIFY_DEV
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xl font-bold tracking-wider text-green-500 truncate">
+                SPOTIFY_DEV
+              </div>
+              {/* Desktop Workspace view switcher - Now stays visible if user has staff authorization */}
+              {hasSupportAccess && (
+                <button
+                  type="button"
+                  onClick={toggleViewMode}
+                  title={viewMode === 'app' ? 'Show Ops Panels' : 'Show App Navigation'}
+                  className="p-1.5 hover:bg-neutral-900 rounded-lg text-neutral-400 hover:text-white transition-colors border border-neutral-800 shrink-0"
+                >
+                  <ArrowLeftRight size={14} />
+                </button>
+              )}
             </div>
+            
             {showSupportMenu && (
               <p className="text-[10px] text-neutral-500 mt-1 uppercase tracking-widest font-mono">
                 {isSystemAdmin ? '🛡️ Admin Center' : '💼 Support Desk'}
@@ -86,7 +105,6 @@ export default function Sidebar() {
                 </Link>
               ))
             ) : (
-              /* CLEAN MONOCHROME PANEL ITEMS - NO COLOR, NO BORDERS */
               <>
                 <Link
                   href="/support?tab=verification"
@@ -142,44 +160,106 @@ export default function Sidebar() {
           </nav>
         </div>
 
-        {/* WORKSPACE TOGGLE SWITCH */}
-        {hasSupportAccess && (
+        {/* Dynamic Warning Alert Box Footer Link - Appears only when running app perspective but away from support domain */}
+        {hasSupportAccess && !isCurrentlyOnSupportRoute && viewMode === 'app' && (
           <div className="p-4 border-t border-neutral-900 bg-neutral-950/40 flex flex-col gap-2">
-            {isCurrentlyOnSupportRoute ? (
-              <button
-                onClick={() => setViewMode(prev => prev === 'app' ? 'support' : 'app')}
-                className="w-full py-2.5 px-3 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border border-neutral-800"
-              >
-                <ArrowLeftRight size={14} className="text-neutral-400" />
-                {viewMode === 'app' ? 'Show Ops Panels' : 'Show App Navigation'}
-              </button>
-            ) : (
-              <Link
-                href="/support"
-                className="w-full py-2.5 px-3 bg-neutral-900 hover:bg-red-950/20 text-neutral-400 hover:text-red-400 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border border-neutral-800/80 hover:border-red-900/50"
-              >
-                <ShieldAlert size={14} />
-                Open Staff Dashboard
-              </Link>
-            )}
+            <Link
+              href="/support"
+              className="w-full py-2.5 px-3 bg-neutral-900 hover:bg-red-950/20 text-neutral-400 hover:text-red-400 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border border-neutral-800/80 hover:border-red-900/50"
+            >
+              <ShieldAlert size={14} />
+              Open Staff Dashboard
+            </Link>
           </div>
         )}
       </aside>
 
       {/* Mobile Nav Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-neutral-950 border-t border-neutral-800 flex justify-around items-center z-50 px-2">
-        {appLinks.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`flex flex-col items-center justify-center text-neutral-400 hover:text-white transition-colors group ${
-              pathname === link.href ? 'text-white' : ''
-            }`}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-neutral-950 border-t border-neutral-800 flex justify-around items-center z-50 px-2">
+        {!showSupportMenu ? (
+          /* Render App Links layout ecosystem */
+          appLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`flex flex-col items-center justify-center text-neutral-400 hover:text-white transition-colors group ${
+                pathname === link.href ? 'text-white' : ''
+              }`}
+            >
+              <span className="text-lg flex items-center justify-center">{link.icon}</span>
+              <span className="text-[10px] mt-1 font-medium">{link.label}</span>
+            </Link>
+          ))
+        ) : (
+          /* Render Operations Tab control panels directly */
+          <>
+            <Link
+              href="/support?tab=verification"
+              className={`flex flex-col items-center justify-center transition-colors group ${
+                activeSupportTab === 'verification' ? 'text-white' : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <span className="text-lg flex items-center justify-center">
+                <Users size={18} />
+              </span>
+              <span className="text-[10px] mt-1 font-medium">Verify</span>
+            </Link>
+
+            <Link
+              href="/support?tab=tickets"
+              className={`flex flex-col items-center justify-center transition-colors group ${
+                activeSupportTab === 'tickets' ? 'text-white' : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <span className="text-lg flex items-center justify-center">
+                <TicketIcon size={18} />
+              </span>
+              <span className="text-[10px] mt-1 font-medium">Tickets</span>
+            </Link>
+
+            <Link
+              href="/support?tab=auditing"
+              className={`flex flex-col items-center justify-center transition-colors group ${
+                activeSupportTab === 'auditing' ? 'text-white' : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <span className="text-lg flex items-center justify-center">
+                <CircleDollarSign size={18} />
+              </span>
+              <span className="text-[10px] mt-1 font-medium">Auditing</span>
+            </Link>
+
+            {isSystemAdmin && (
+              <Link
+                href="/support?tab=settings"
+                className={`flex flex-col items-center justify-center transition-colors group ${
+                  activeSupportTab === 'settings' ? 'text-white' : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <span className="text-lg flex items-center justify-center">
+                  <Sliders size={18} />
+                </span>
+                <span className="text-[10px] mt-1 font-medium">Config</span>
+              </Link>
+            )}
+          </>
+        )}
+
+        {/* Workspace View Toggle Action Button - Stays permanently mounted for authorized staff */}
+        {hasSupportAccess && (
+          <button
+            type="button"
+            onClick={toggleViewMode}
+            className="flex flex-col items-center justify-center text-neutral-400 hover:text-white transition-colors group shrink-0"
           >
-            <span className="text-lg flex items-center justify-center">{link.icon}</span>
-            <span className="text-[10px] mt-1 font-medium">{link.label}</span>
-          </Link>
-        ))}
+            <span className="text-lg flex items-center justify-center">
+              <ArrowLeftRight size={18} className="text-neutral-400 group-hover:text-white transition-colors" />
+            </span>
+            <span className="text-[10px] mt-1 font-medium">
+              {viewMode === 'app' ? 'Ops View' : 'App View'}
+            </span>
+          </button>
+        )}
       </nav>
     </>
   );

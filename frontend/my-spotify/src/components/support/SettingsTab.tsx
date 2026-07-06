@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { Layers, HelpCircle, TrendingUp, Users, ArrowUpRight } from 'lucide-react';
+import { Layers, HelpCircle, TrendingUp, Users } from 'lucide-react';
 
 export default function SettingsTab() {
   const [isEditingPrices, setIsEditingPrices] = useState(false);
@@ -19,8 +19,35 @@ export default function SettingsTab() {
     { tier: 'Gold Premium', count: 3550, percentage: 14, color: 'bg-yellow-500' },
   ];
 
+  // Programmatic detection of text line wrapping for the revenue value
+  const revenueTextRef = useRef<HTMLParagraphElement>(null);
+  const [revenueWrapped, setRevenueWrapped] = useState(false);
+
+  useEffect(() => {
+    const el = revenueTextRef.current;
+    if (!el) return;
+
+    const checkWrapping = () => {
+      // If the number's offset height is greater than a standard single-line height (~36px), it has wrapped
+      if (el.offsetHeight > 36) {
+        setRevenueWrapped(true);
+      } else {
+        setRevenueWrapped(false);
+      }
+    };
+
+    checkWrapping();
+
+    const observer = new ResizeObserver(() => {
+      checkWrapping();
+    });
+    observer.observe(el);
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="w-full space-y-6 animate-fade-in max-w-7xl mx-auto pb-12 px-4 sm:px-6">
+    <div className="space-y-6 animate-fade-in max-w-7xl mx-auto pb-12">
       
       {/* HEADER */}
       <div>
@@ -32,45 +59,45 @@ export default function SettingsTab() {
         </p>
       </div>
 
-      {/* TWO COLUMN GRID LAYOUT (FIXES MOBILE SCROLL & DESKTOP ALIGNMENT) */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 xl:gap-8 items-start">
+      {/* TWO COLUMN LAYOUT (DYNAMIC BREAKPOINT DRIVEN BY THE REVENUE WRAP DETECTOR) */}
+      <div className={`flex gap-6 xl:gap-8 w-full items-stretch ${revenueWrapped ? 'flex-col' : 'flex-col xl:flex-row'}`}>
 
-        {/* LEFT COLUMN (Spans 2 columns on desktop) */}
-        <div className="xl:col-span-2 space-y-6 flex flex-col h-full">
+        {/* LEFT COLUMN */}
+        <div className={`space-y-6 flex flex-col justify-between ${revenueWrapped ? 'w-full' : 'xl:w-2/3'}`}>
 
           {/* TOP CARDS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full">
             
-            <div className="bg-[#121212] border border-neutral-800/50 rounded-2xl p-6 shadow-xl flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4 sm:gap-5">
-                <div className="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0">
-                  <TrendingUp className="text-green-500" size={22} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                    Monthly Gross Revenue
-                  </p>
-                  <p className="text-xl sm:text-2xl font-black text-white mt-1">
-                    ${monthlyGrossRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
+            <div className="bg-[#121212] border border-neutral-800/50 rounded-2xl p-6 shadow-xl flex items-center gap-5 min-w-0">
+              <div className="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0">
+                <TrendingUp className="text-green-500" size={22} />
               </div>
-
-              <div className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full text-green-400 text-xs font-bold shrink-0">
-                <ArrowUpRight size={14} className="stroke-[3]" />
-                <span>+12.4%</span>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">
+                  Monthly Gross Revenue
+                </p>
+                
+                {/* Revenue numerical value container that wraps dynamically */}
+                <p 
+                  ref={revenueTextRef} 
+                  className={`font-black text-white mt-1 transition-all leading-tight ${
+                    revenueWrapped ? 'text-xl md:text-2xl' : 'text-2xl'
+                  }`}
+                >
+                  ${monthlyGrossRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </p>
               </div>
             </div>
 
-            <div className="bg-[#121212] border border-neutral-800/50 rounded-2xl p-6 shadow-xl flex items-center gap-4 sm:gap-5">
+            <div className="bg-[#121212] border border-neutral-800/50 rounded-2xl p-6 shadow-xl flex items-center gap-5 min-w-0">
               <div className="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
                 <Users className="text-sky-400" size={22} />
               </div>
-              <div>
-                <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">
                   Active Premium Users
                 </p>
-                <p className="text-xl sm:text-2xl font-black text-white mt-1">
+                <p className="text-2xl font-black text-white mt-1">
                   {activePremiumUsers.toLocaleString()}
                 </p>
               </div>
@@ -78,15 +105,16 @@ export default function SettingsTab() {
           </div>
 
           {/* USER DISTRIBUTION */}
-          <div className="bg-[#121212] border border-neutral-800/50 rounded-2xl p-6 sm:p-8 shadow-xl flex-1 flex flex-col justify-between">
+          <div className="bg-[#121212] border border-neutral-800/50 rounded-2xl p-8 shadow-xl flex-1 flex flex-col justify-between">
+
             <h3 className="text-base font-bold text-white tracking-tight border-b border-neutral-800 pb-4 mb-6">
               User Base Distribution
             </h3>
 
-            <div className="flex flex-col lg:flex-row items-center justify-around gap-8 py-4 flex-1">
-              
+            <div className="flex flex-col md:flex-row items-center justify-around gap-8 py-4 flex-1">
+
               <div
-                className="relative w-40 h-40 sm:w-44 sm:h-44 rounded-full flex items-center justify-center shrink-0 shadow-2xl bg-neutral-900 border border-neutral-800"
+                className="relative w-44 h-44 rounded-full flex items-center justify-center shrink-0 shadow-2xl bg-neutral-900 border border-neutral-800"
                 style={{
                   background: `conic-gradient(
                     #eab308 0% 14%, 
@@ -97,26 +125,26 @@ export default function SettingsTab() {
               >
                 <div className="absolute inset-5 bg-[#121212] rounded-full flex flex-col items-center justify-center shadow-inner border border-neutral-800/40">
                   <span className="text-xl font-black text-white">61.2K</span>
-                  <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mt-0.5 text-center px-2">
+                  <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mt-0.5">
                     Total Users
                   </span>
                 </div>
               </div>
 
-              <div className="flex-1 max-w-md w-full space-y-3 sm:space-y-4">
+              <div className="flex-1 max-w-md w-full space-y-4">
                 {userDistribution.map((item, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between p-3 rounded-xl bg-neutral-950/40 border border-neutral-900"
                   >
                     <div className="flex items-center gap-3">
-                      <span className={`w-3 h-3 rounded-full shrink-0 ${item.color}`} />
-                      <span className="text-xs sm:text-sm font-semibold text-neutral-200">
+                      <span className={`w-3 h-3 rounded-full ${item.color}`} />
+                      <span className="text-sm font-semibold text-neutral-200">
                         {item.tier}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-xs sm:text-sm font-bold text-white font-mono">
+                      <span className="text-sm font-bold text-white font-mono">
                         {item.percentage}%
                       </span>
                       <p className="text-[10px] text-neutral-500 mt-0.5">
@@ -132,14 +160,17 @@ export default function SettingsTab() {
 
         </div>
 
-        {/* RIGHT COLUMN (MATCHES GRID COLUMN TRACKING BOUNDS PERFECTLY) */}
-        <div className="bg-[#121212] border border-neutral-800/50 rounded-2xl p-6 shadow-xl flex flex-col justify-between xl:h-full">
-          
+        {/* RIGHT COLUMN */}
+        <div className={`bg-[#121212] border border-neutral-800/50 rounded-2xl p-6 shadow-xl flex flex-col justify-between ${
+          revenueWrapped ? 'w-full mt-2' : 'xl:w-1/3'
+        }`}>
+
           {/* TOP CONTENT */}
-          <div className="space-y-6">
+          <div className="space-y-6 flex-1">
+
             <div className="border-b border-neutral-800 pb-4">
               <div className="flex items-center gap-2.5">
-                <Layers size={18} className="text-neutral-400 shrink-0" />
+                <Layers size={18} className="text-neutral-400" />
                 <h3 className="text-base font-bold text-white tracking-tight">
                   Platform Core Pricing Tiers
                 </h3>
@@ -175,14 +206,14 @@ export default function SettingsTab() {
                   <Button
                     variant="secondary"
                     onClick={() => setIsEditingPrices(false)}
-                    className="py-2.5 text-xs font-bold w-full"
+                    className="py-2.5 text-xs font-bold"
                   >
                     Cancel
                   </Button>
                   <Button
                     variant="primary"
                     onClick={() => setIsEditingPrices(false)}
-                    className="py-2.5 text-xs font-bold w-full"
+                    className="py-2.5 text-xs font-bold"
                   >
                     Save Prices
                   </Button>
@@ -191,18 +222,19 @@ export default function SettingsTab() {
                 <Button
                   variant="primary"
                   onClick={() => setIsEditingPrices(true)}
-                  className="py-2.5 text-xs font-bold w-full"
+                  className="py-2.5 text-xs font-bold"
                 >
                   Edit Prices
                 </Button>
               )}
             </div>
+
           </div>
 
-          {/* FOOTER (NATURALLY FLUID AND SCROLL-SAFE) */}
-          <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-900 flex gap-3 mt-8 xl:mt-auto">
+          {/* FOOTER */}
+          <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-900 flex gap-3 mt-6">
             <HelpCircle size={16} className="text-neutral-600 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-neutral-500 leading-relaxed">
+            <p className="text-[11px] text-neutral-500 leading-normal">
               Subscription billing adjustments update processing jobs across calculations immediately. Prior invoices remain compiled immutably inside ledger records.
             </p>
           </div>
