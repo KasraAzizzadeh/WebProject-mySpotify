@@ -6,7 +6,8 @@ import {
   SongItem,
   OtpEntry,
   SupportTicketLocal,
-  AuditingRecord
+  AuditingRecord,
+  Notifications
 } from "@/types";
 
 // Database Keys
@@ -18,6 +19,7 @@ const ARTIST_TICKET_KEY = "app_artist_tickets";
 const OTPS_KEY = "app_otps";
 const SUPPORT_TICKET_KEY = "app_support_tickets";
 const AUDITING_KEY = "app_auditing_records";
+const NOTIFICATIONS_KEY = "app_notifications";
 
 export type User = UserProfile & {
   password: string;
@@ -309,4 +311,17 @@ export function getSongsByCollectionSource(type: 'album' | 'playlist', id: strin
 
 export function getSiblingSongsByAlbumId(albumId: string): SongItem[] {
   return getSongs().filter(s => s.albumId === albumId);
+}
+
+export function getNotifications(): Notifications[] {
+  const data = localStorage.getItem(NOTIFICATIONS_KEY);
+  if (!data) {
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify([]));
+    return [];
+  }
+  return JSON.parse(data);
+}
+
+export function saveNotifications(notifs: Notifications[]): void {
+  localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifs));
 }

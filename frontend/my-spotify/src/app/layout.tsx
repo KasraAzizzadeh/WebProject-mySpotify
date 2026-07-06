@@ -1,5 +1,6 @@
 import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
+import TanstackProvider from '@/contexts/TanstackContext';
 
 import { Plus_Jakarta_Sans } from 'next/font/google';
 
@@ -21,7 +22,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={font.variable}>
       <body className="bg-neutral-900 text-neutral-100 min-h-screen font-sans">
-        <AuthProvider>{children}</AuthProvider>
+        <TanstackProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </TanstackProvider>
       </body>
     </html>
   );

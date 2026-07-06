@@ -124,11 +124,7 @@ export default function SupportDashboardPage() {
     <section className="flex-1 flex flex-col min-h-[calc(100vh-6rem)] md:min-h-[calc(100vh-7rem)] bg-[#050505] w-full">
       <div className="flex-1 p-4 md:p-8">
         {activeTab === 'verification' && (
-          <VerificationTab
-            verifications={verifications}
-            onApprove={handleApproveArtist}
-            onReject={handleRejectArtist}
-          />
+          <VerificationTab />
         )}
 
         {activeTab === 'tickets' && (

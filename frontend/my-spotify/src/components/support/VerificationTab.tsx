@@ -1,28 +1,36 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useArtistApplications } from '@/hooks/queries/support/useArtistApplications';
+import { useUpdateApplication } from '@/hooks/queries/support/useUpdateApplication';
 import { ArtistApplicationTicket, SongItem } from '@/types';
+import { statusStyles } from '@/utils/supportUtils';
 import { UserX, CheckCircle2, Play, Pause, Music } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Message from '@/components/ui/Message';
 
-interface VerificationTabProps {
-  verifications: ArtistApplicationTicket[];
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
-}
+const LIMIT = 20;
 
-export default function VerificationTab({ verifications, onApprove, onReject }: VerificationTabProps) {
+export default function VerificationTab() {
   const [selectedVerification, setSelectedVerification] = useState<ArtistApplicationTicket | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [isRejecting, setIsRejecting] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   // Audio Playback Tracking States
   const [playingSampleIdx, setPlayingSampleIdx] = useState<number | null>(null);
   const [audioDurations, setAudioDurations] = useState<{ [key: number]: number }>({});
   const [currentTime, setCurrentTime] = useState<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const {
+    data: verifications = [],
+    isLoading,
+    error,
+  } = useArtistApplications(page, LIMIT);
+
+  const updateApplication = useUpdateApplication();
 
   // Clean up audio context instantly if navigating away
   const resetSelection = () => {
@@ -111,11 +119,46 @@ export default function VerificationTab({ verifications, onApprove, onReject }: 
   };
 
   const handleExecuteApproval = () => {
-    if (selectedVerification) {
-      onApprove(selectedVerification.id);
-      resetSelection();
-    }
+    if (!selectedVerification) 
+      return;
+
+    updateApplication.mutate({
+      id: selectedVerification.id, 
+      status: "approved",
+      message: ""
+    }, {
+      onSuccess: () => {resetSelection();}
+    });
   };
+
+  const handleRejectApproval = () => {
+    if (!selectedVerification) 
+      return;
+
+    updateApplication.mutate({
+      id: selectedVerification.id, 
+      status: "rejected",
+      message: rejectReason
+    }, {
+      onSuccess: () => {resetSelection();}
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-8 text-center text-neutral-400">
+        Loading applications...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center text-red-400">
+        Failed to load applications.
+      </div>
+    );
+  }
 
   if (selectedVerification) {
     return (
@@ -210,6 +253,7 @@ export default function VerificationTab({ verifications, onApprove, onReject }: 
             {!isRejecting ? (
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button 
+                  disabled={updateApplication.isPending}
                   onClick={() => setIsRejecting(true)}
                   className="flex-1 py-3 text-sm font-bold text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 rounded-xl transition-all flex items-center justify-center gap-2 order-2 sm:order-1"
                 >
@@ -218,6 +262,7 @@ export default function VerificationTab({ verifications, onApprove, onReject }: 
                 <div className="flex-1 order-1 sm:order-2">
                   <Button 
                     variant="primary"
+                    disabled={updateApplication.isPending}
                     onClick={() => setIsApproveModalOpen(true)}
                     className="w-full !py-3 text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-lg"
                   >
@@ -237,7 +282,7 @@ export default function VerificationTab({ verifications, onApprove, onReject }: 
                 <div className="flex justify-end gap-3">
                   <button onClick={() => setIsRejecting(false)} className="px-4 py-2 text-xs font-bold text-neutral-400 hover:text-white transition-colors">Cancel</button>
                   <button 
-                    onClick={() => { onReject(selectedVerification.id); resetSelection(); }} 
+                    onClick={() => {handleRejectApproval();}} 
                     className="px-6 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
                   >
                     Confirm Rejection
@@ -278,10 +323,11 @@ export default function VerificationTab({ verifications, onApprove, onReject }: 
           <table className="w-full text-left text-sm text-neutral-400 table-fixed">
             <thead className="bg-neutral-900/50 text-xs uppercase font-semibold text-neutral-500 border-b border-neutral-800/50">
               <tr>
-                <th className="px-4 sm:px-6 py-4 w-[40%] md:w-[30%]">Stage Name</th>
-                <th className="px-6 py-4 w-[25%] hidden md:table-cell">Email</th>
-                <th className="px-4 sm:px-6 py-4 w-[35%] md:w-[25%]">Date Submitted</th>
-                <th className="px-4 sm:px-6 py-4 w-[25%] md:w-[20%] text-right">Action</th>
+                <th className="px-4 sm:px-6 py-4 w-[28%] md:w-[22%]">Stage Name</th>
+                <th className="px-6 py-4 w-[24%] hidden md:table-cell">Email</th>
+                <th className="px-4 sm:px-6 py-4 w-[30%] md:w-[22%]">Date Submitted</th>
+                <th className="px-4 sm:px-6 py-4 w-[18%] md:w-[16%]">Status</th>
+                <th className="px-4 sm:px-6 py-4 w-[24%] md:w-[16%] text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-800/50">
@@ -293,6 +339,15 @@ export default function VerificationTab({ verifications, onApprove, onReject }: 
                   <td className="px-6 py-4 hidden md:table-cell truncate">{req.email}</td>
                   <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-neutral-500 truncate">
                     {req.submittedAt.toLocaleDateString()}
+                  </td>
+                  <td className="px-4 sm:px-6 py-4">
+                    <span
+                      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] sm:text-xs font-semibold capitalize whitespace-nowrap ${
+                        statusStyles[req.verificationStatus]
+                      }`}
+                    >
+                      {req.verificationStatus}
+                    </span>
                   </td>
                   <td className="px-4 sm:px-6 py-4 text-right">
                     <div className="inline-block">
