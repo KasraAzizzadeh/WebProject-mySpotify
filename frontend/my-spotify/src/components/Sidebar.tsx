@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   Home, Search, Music, Settings, Users, 
   Ticket as TicketIcon, CircleDollarSign, 
-  Sliders, ShieldAlert, ArrowLeftRight 
+  Sliders, ShieldAlert, ArrowLeftRight, LayoutDashboard
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -23,15 +23,23 @@ export default function Sidebar() {
 
   const userRole = authUser?.role || 'user';
   const isSystemAdmin = userRole === 'admin';
+  const isArtist = userRole === 'artist';
   const hasSupportAccess = userRole === 'admin' || userRole === 'supporter';
   const isCurrentlyOnSupportRoute = pathname?.startsWith('/support');
 
+  // Base list of application layout route endpoints
   const appLinks = [
     {
       label: 'Home',
       href: '/home',
       icon: <Home size={18} className="text-emerald-400 group-hover:text-emerald-300 transition-colors" />,
     },
+    // Conditionally inject the Manage link right after Home for Artist roles
+    ...(isArtist ? [{
+      label: 'Artist Hub',
+      href: '/manage',
+      icon: <LayoutDashboard size={18} className="text-amber-400 group-hover:text-amber-300 transition-colors" />,
+    }] : []),
     {
       label: 'Discover',
       href: '/discover',
@@ -68,7 +76,7 @@ export default function Sidebar() {
               <div className="text-xl font-bold tracking-wider text-green-500 truncate">
                 SPOTIFY_DEV
               </div>
-              {/* Desktop Workspace view switcher - Now stays visible if user has staff authorization */}
+              {/* Desktop Workspace view switcher */}
               {hasSupportAccess && (
                 <button
                   type="button"
@@ -160,7 +168,7 @@ export default function Sidebar() {
           </nav>
         </div>
 
-        {/* Dynamic Warning Alert Box Footer Link - Appears only when running app perspective but away from support domain */}
+        {/* Dynamic Warning Alert Box Footer Link */}
         {hasSupportAccess && !isCurrentlyOnSupportRoute && viewMode === 'app' && (
           <div className="p-4 border-t border-neutral-900 bg-neutral-950/40 flex flex-col gap-2">
             <Link
@@ -245,7 +253,7 @@ export default function Sidebar() {
           </>
         )}
 
-        {/* Workspace View Toggle Action Button - Stays permanently mounted for authorized staff */}
+        {/* Workspace View Toggle Action Button */}
         {hasSupportAccess && (
           <button
             type="button"

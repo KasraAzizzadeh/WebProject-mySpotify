@@ -56,6 +56,11 @@ export interface AlbumItem {
   imageUrl?: string;
   description?: string;
   songList: string[];
+
+  // NEW METADATA FIELDS
+  genre?: string;
+  collaborators?: string;
+  releaseType?: 'single' | 'album';
 }
 
 export interface SongItem {
@@ -72,6 +77,10 @@ export interface SongItem {
   songDurationMs?: number;
   audioUrl?: string;
   lyrics?: string;
+  // NEW METADATA FIELDS
+  genre?: string;
+  collaborators?: string;
+  
 }
 
 export interface DashboardData {
