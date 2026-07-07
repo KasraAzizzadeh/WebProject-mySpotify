@@ -82,6 +82,8 @@ export const userService = {
           userId: staff.id,
           content: `New support ticket submitted by ${user.username}.`,
           status: "unread",
+          type: "ST",
+          createdAt: new Date()
         });
       });
 

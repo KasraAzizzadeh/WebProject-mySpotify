@@ -1,5 +1,6 @@
 import { getAlbums, getSongs, getPlaylists, getUsers, savePlaylists, saveSongs , saveUsers } from "@/store/mockDb";
 import { AlbumItem, SongItem, PlaylistItem, DiscoverData, DiscoverFilter } from "@/types";
+import { isSameDay } from "@/utils/mediaUtils";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -68,7 +69,7 @@ export const createPlaylist = async (name: string, userId: string): Promise<{ pl
   if (!targetUser) throw new Error("Authenticated session owner context not found");
 
   if (!targetUser.listenerProfile) {
-    targetUser.listenerProfile = { playlists: [], likedTracks: [], recentlyPlayed: [] };
+    targetUser.listenerProfile = { playlists: [], likedTracks: [], recentlyPlayed: [], dailyStreams: 0, lastStreamDate: new Date() };
   }
   if (!targetUser.listenerProfile.playlists) {
     targetUser.listenerProfile.playlists = [];
@@ -261,24 +262,56 @@ export const deletePlaylist = async (
 };
 
 export const updateStreams = async (
+  userId: string,
   songId: string,
 ): Promise<void> => {
   await delay(100);
 
+  // Update song streams
   const allSongs = getSongs();
 
-  const index = allSongs.findIndex(
-    (s) => s.id === songId
-  );
+  const songIndex = allSongs.findIndex((s) => s.id === songId);
 
-  if (index === -1) {
+  if (songIndex === -1) {
     throw new Error("Song not found");
   }
 
-  allSongs[index] = {
-    ...allSongs[index],
-    streams: allSongs[index].streams + 1
+  allSongs[songIndex] = {
+    ...allSongs[songIndex],
+    streams: allSongs[songIndex].streams + 1,
   };
 
   saveSongs(allSongs);
+
+  // Update user's daily streams
+  const today = new Date();
+
+  const allUsers = getUsers();
+
+  const updatedUsers = allUsers.map((u) => {
+    if (u.id !== userId) return u;
+
+    const profile = u.listenerProfile;
+
+    if (!profile) return u;
+
+    const listenedToday =
+      profile.lastStreamDate &&
+      isSameDay(new Date(profile.lastStreamDate), today);
+
+    return {
+      ...u,
+      listenerProfile: {
+        ...profile,
+        dailyStreams: listenedToday
+          ? profile.dailyStreams + 1
+          : 1,
+        lastStreamDate: today,
+      },
+    };
+  });
+
+  saveUsers(updatedUsers);
+
+  // add unique listeners update later
 };

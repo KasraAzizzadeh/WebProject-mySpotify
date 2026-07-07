@@ -1,3 +1,5 @@
+import { getUsers } from "@/store/mockDb";
+
 export const formatDuration = (ms?: number) => {
   if (!ms) return "--:--";
 
@@ -7,3 +9,35 @@ export const formatDuration = (ms?: number) => {
 
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
+
+export const isSameDay = (d1: Date, d2: Date) =>
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
+
+export const canPlaySong = (
+  userId: string
+): boolean => {
+
+  const users = getUsers();
+
+  const user = users.find(
+    u => u.id === userId
+  );
+
+  if (!user) {
+    return false;
+  }
+
+  const limit = 60;
+
+  if (user.subscriptionType !== "basic")
+    return true;
+
+  const dailyStreams =
+    user.listenerProfile?.dailyStreams ?? 0;
+
+  console.log("current streams:", dailyStreams);
+
+  return dailyStreams < limit;
+};

@@ -3,6 +3,7 @@ import { getUsers, saveUsers, User } from "@/store/mockDb";
 import { getApplicaitonTickets, saveApplicationTickets } from "@/store/mockDb";
 import { getNotifications, saveNotifications } from "@/store/mockDb";
 import { getOtps, saveOtps } from "@/store/mockDb";
+import { isSameDay } from "@/utils/mediaUtils";
 
 type LoginResponse = {
   token: string;
@@ -17,23 +18,85 @@ export async function login(
   email: string,
   password: string
 ): Promise<LoginResponse> {
+  // replace with actual api
+  await delay(100);
 
-    // replace with actual api
-    await delay(100);
+  const users = getUsers();
 
-    const users = getUsers();
-    const user = users.find(u =>
-        u.email === email && u.password === password
-    )
+  const index = users.findIndex(
+    (u) => u.email === email && u.password === password
+  );
 
-    if(!user) {
-        throw new Error("Invalid credentials");
+  if (index === -1) {
+    throw new Error("Invalid credentials");
+  }
+
+  const today = new Date();
+  let user = users[index];
+  let userUpdated = false;
+
+  // Reset daily streams if it's a new day
+  if (user.listenerProfile) {
+    const listenedToday =
+      user.listenerProfile.lastStreamDate &&
+      isSameDay(new Date(user.listenerProfile.lastStreamDate), today);
+
+    if (!listenedToday) {
+      users[index] = {
+        ...user,
+        listenerProfile: {
+          ...user.listenerProfile,
+          dailyStreams: 0,
+        },
+      };
+
+      user = users[index];
+      userUpdated = true;
     }
+  }
 
-    return {
-        token: `token-${user.username}`,
-        user: user
-    };
+  if (userUpdated) {
+    saveUsers(users);
+  }
+
+  // Check if subscription is about to expire
+  if (user.subValidUntil) {
+    const notifications = getNotifications();
+
+    const expiryDate = new Date(user.subValidUntil);
+    const msPerDay = 1000 * 60 * 60 * 24;
+
+    const remainingDays = Math.ceil(
+      (expiryDate.getTime() - today.getTime()) / msPerDay
+    );
+
+    if (remainingDays > 0 && remainingDays <= 2) {
+      const alreadyNotified = notifications.some(
+        (n) =>
+          n.userId === user.id &&
+          n.type === "ES" &&
+          isSameDay(new Date(n.createdAt), today)
+      );
+
+      if (!alreadyNotified) {
+        notifications.push({
+          id: crypto.randomUUID(),
+          userId: user.id,
+          content: `Your ${user.subscriptionType} subscription will expire in ${remainingDays} day${remainingDays === 1 ? "" : "s"}. Please renew to continue enjoying premium features.`,
+          status: "unread",
+          type: "ES",
+          createdAt: today,
+        });
+
+        saveNotifications(notifications);
+      }
+    }
+  }
+
+  return {
+    token: `token-${user.username}`,
+    user,
+  };
 }
 
 export async function register(
@@ -131,6 +194,8 @@ export async function applyArtist(
         userId: user.id,
         content: `New artist verification request from ${updatedUser.displayName}.`,
         status: "unread" as const,
+        type: "SA" as const,
+        createdAt: new Date()
     }));
 
     saveNotifications([

@@ -33,6 +33,8 @@ interface ListenerProfile {
   playlists?: string[];
   likedTracks: string[];
   recentlyPlayed: string[];
+  dailyStreams: number;
+  lastStreamDate: Date;
 }
 
 export interface PlaylistItem {
@@ -112,11 +114,23 @@ export interface OtpEntry {
   expiresAt: Date;
 }
 
+// ES = Expiring Subscription
+// SA = Support: Artist Application
+// AA = Artist Approved
+// AQ = Artist Rejected
+// ST = Support Ticket
+// AT = Audit
+// NA = New Album
+
+export type NotificationType = "NA" | "ES" | "AQ" | "AA" | "AT" | "SA" | "ST";
+
 export interface Notifications {
   id: string;
   userId: string;
   content: string;
   status: "read" | "unread";
+  type: NotificationType;
+  createdAt: Date;
 }
 
 // ==========================================
