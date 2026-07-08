@@ -1,10 +1,8 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from 'react';
-import { getDashboardData } from '@/services/homeService';
-import { DashboardData } from '@/types';
+import { useState } from 'react';
+import { useHomeDashboard } from '@/hooks/queries/home/useHomeDashboard';
 
 import ProfileHeader from '@/components/ProfileHeader';
 import ExclusiveRow from '@/components/ExclusiveRow';
@@ -18,17 +16,8 @@ type ViewMode = 'dashboard' | RowKey;
 
 export default function HomePage() {
   const { user: authUser } = useAuth();
-  const [data, setData] = useState<DashboardData | null>(null);
+  const { data, isLoading, isError } = useHomeDashboard(authUser?.subscriptionType, authUser?.id);
   const [view, setView] = useState<ViewMode>('dashboard');
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!authUser) return;
-
-    getDashboardData(authUser.subscriptionType)
-      .then(setData)
-      .catch(console.error);
-  }, [authUser]);
 
   if (!authUser) {
     return (
@@ -38,10 +27,18 @@ export default function HomePage() {
     );
   }
 
-  if (!data) {
+  if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center text-neutral-500 text-sm bg-black">
         Loading music environment...
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="h-screen flex items-center justify-center text-neutral-500 text-sm bg-black">
+        Failed to load home dashboard.
       </div>
     );
   }

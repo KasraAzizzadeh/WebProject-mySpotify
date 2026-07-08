@@ -43,7 +43,13 @@ const SEED_USERS: User[] = [
     password: "Admin_1234",
     followers: [],
     following: [],
-    listenerProfile: { playlists: [], likedTracks: [], recentlyPlayed: [], dailyStreams: 0, lastStreamDate: new Date() },
+    listenerProfile: { 
+      playlists: [],
+      likedTracks: [],
+      recentlyPlayed: ["p1", "p6", "p5", "p7"],
+      dailyStreams: 0,
+      lastStreamDate: new Date()
+    },
   },
   {
     id: "user-supporter",
@@ -57,7 +63,13 @@ const SEED_USERS: User[] = [
     password: "Support_1234",
     followers: [],
     following: [],
-    listenerProfile: { playlists: [], likedTracks: [], recentlyPlayed: [], dailyStreams: 0, lastStreamDate: new Date() },
+    listenerProfile: { 
+      playlists: [],
+      likedTracks: [],
+      recentlyPlayed: ["p1", "p6", "p5", "p7"],
+      dailyStreams: 0,
+      lastStreamDate: new Date()
+    },
   },
   {
     id: "user-1",
@@ -71,7 +83,13 @@ const SEED_USERS: User[] = [
     password: "Alex_1234",
     followers: ["user-2"],
     following: [],
-    listenerProfile: { playlists: [], likedTracks: [], recentlyPlayed: ["p1"], dailyStreams: 0, lastStreamDate: new Date() },
+    listenerProfile: { 
+      playlists: [],
+      likedTracks: [],
+      recentlyPlayed: ["p1", "p6", "p5", "p7"],
+      dailyStreams: 0,
+      lastStreamDate: new Date()
+    },
     artistProfile: {
       bio: "Electronic music producer",
       verificationStatus: "approved",
@@ -93,7 +111,11 @@ const SEED_USERS: User[] = [
     password: "J123_abcd",
     followers: [],
     following: ["user-1"],
-    listenerProfile: { playlists: ["p1", "p5", "p6"], likedTracks: [], recentlyPlayed: ["p1"], dailyStreams: 0, lastStreamDate: new Date() },
+    listenerProfile: { playlists: ["p1", "p5", "p6", "p7"],
+    likedTracks: [],
+    recentlyPlayed: ["p1", "p6", "p5", "p7"],
+    dailyStreams: 0,
+    lastStreamDate: new Date() },
   },
 ];
 
