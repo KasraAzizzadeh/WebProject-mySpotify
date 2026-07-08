@@ -12,6 +12,7 @@ import Alert from "@/components/ui/Alert";
 import DateInput from "@/components/ui/DateInput";
 import Select from "@/components/ui/Select";
 import Checkbox from "@/components/ui/Checkbox";
+import PrivacyModal from "@/components/PrivacyModal";
 
 type RegisterErrors = {
   displayNameError: string;
@@ -42,6 +43,8 @@ export default function LoginPage() {
     dateError: "",
     genderError: "",
   });
+
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const router = useRouter();
 
@@ -165,9 +168,30 @@ export default function LoginPage() {
         />
 
         <Checkbox
-            label="I want to apply as an artist"
-            checked={applyArtist}
-            onChange={(e) => setApplyArtist(e.target.checked)}
+            checked={acceptPolicy}
+            onChange={(e) => setAcceptPolicy(e.target.checked)}
+            label={
+                <>
+                    I agree to the{" "}
+                    <button
+                        type="button"
+                        onClick={() => setShowPrivacyModal(true)}
+                        className="text-green-400 underline hover:text-green-300"
+                    >
+                        Privacy Policy
+                    </button>
+                </>
+            }
+        />
+
+<PrivacyModal
+    isOpen={showPrivacyModal}
+    onClose={() => setShowPrivacyModal(false)}
+/>
+
+        <PrivacyModal
+            isOpen={showPrivacyModal}
+            onClose={() => setShowPrivacyModal(false)}
         />
 
         <Alert message={error}/>

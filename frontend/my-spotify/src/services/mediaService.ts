@@ -137,7 +137,8 @@ export const getMediaData = async (
   await delay(100);
 
   let songs = getSongs();
-  let albums = getAlbums();
+  // don't show singles in album section
+  let albums = getAlbums().filter(a => a.songList.length > 1);
   let playlists = getPlaylists();
 
   if (query.trim()) {
@@ -152,9 +153,7 @@ export const getMediaData = async (
     albums = albums.filter(
       (album) =>
         album.name.toLowerCase().includes(search) ||
-        album.artistName.toLowerCase().includes(search) ||
-        // don't show singles in album section
-        album.songList.length > 1
+        album.artistName.toLowerCase().includes(search)
     );
 
     playlists = playlists.filter((playlist) =>
