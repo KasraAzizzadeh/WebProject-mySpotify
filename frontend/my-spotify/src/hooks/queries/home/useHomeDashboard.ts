@@ -7,6 +7,6 @@ export function useHomeDashboard(subscriptionType?: SubscriptionType, userId?: s
     queryKey: ["homeDashboard", subscriptionType, userId],
     queryFn: () => getDashboardData(subscriptionType, userId),
     enabled: !!userId,
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 60 * 5,
   });
 }

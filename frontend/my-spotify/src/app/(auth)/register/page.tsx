@@ -51,7 +51,7 @@ export default function LoginPage() {
     const errors : RegisterErrors = {
         displayNameError: displayName.length < 64 ? 
             "" : "Display name should be at most 64 letters",
-        emailError: validateEmail(email),
+        emailError: validateEmail(email.toLocaleLowerCase()),
         passwordError: validatePassword(password),
         confirmPasswordError: validatePassword(confirmPassword),
         dateError: birthDate ? "" : "Please select a date",
@@ -73,12 +73,12 @@ export default function LoginPage() {
     }
 
     try {
-        const result = await register(displayName, email, password, birthDate, gender);
+        const result = await register(displayName, email.toLocaleLowerCase(), password, birthDate, gender);
         loginUser(result.user, result.token);
         if (applyArtist) {
             setTimeout(() => {
                 router.push("/apply-artist");
-            }, 1000);
+            }, 2000);
         }
         else {
             router.push("/")

@@ -1,5 +1,5 @@
 import { getAlbums, getSongs, getPlaylists, getUsers, savePlaylists, saveSongs , saveUsers } from "@/store/mockDb";
-import { AlbumItem, SongItem, PlaylistItem, DiscoverData, DiscoverFilter } from "@/types";
+import { AlbumItem, SongItem, PlaylistItem, DiscoverData, DiscoverFilter, PlaybackSource } from "@/types";
 import { isSameDay } from "@/utils/mediaUtils";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -152,7 +152,9 @@ export const getMediaData = async (
     albums = albums.filter(
       (album) =>
         album.name.toLowerCase().includes(search) ||
-        album.artistName.toLowerCase().includes(search)
+        album.artistName.toLowerCase().includes(search) ||
+        // don't show singles in album section
+        album.songList.length > 1
     );
 
     playlists = playlists.filter((playlist) =>
@@ -263,6 +265,7 @@ export const deletePlaylist = async (
 export const updateStreams = async (
   userId: string,
   songId: string,
+  playback: PlaybackSource
 ): Promise<void> => {
   await delay(100);
 
@@ -298,10 +301,22 @@ export const updateStreams = async (
       profile.lastStreamDate &&
       isSameDay(new Date(profile.lastStreamDate), today);
 
+    let recents = [...profile.recentlyPlayed];
+    if (playback.type === "playlist") {
+      recents = recents.filter(r => {
+        r !== playback.id
+      })
+      recents.unshift(playback.id);
+      if (recents.length > 20) {
+        recents.splice(20);
+      }
+    }
+
     return {
       ...u,
       listenerProfile: {
         ...profile,
+        recentlyPlayed: recents,
         dailyStreams: listenedToday
           ? profile.dailyStreams + 1
           : 1,

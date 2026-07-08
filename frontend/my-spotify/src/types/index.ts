@@ -18,6 +18,7 @@ export interface UserProfile {
   following: string[];
   listenerProfile?: ListenerProfile;
   artistProfile?: ArtistProfile;
+  settings?: UserSettings;
 }
 
 interface ArtistProfile {
@@ -35,6 +36,12 @@ interface ListenerProfile {
   recentlyPlayed: string[];
   dailyStreams: number;
   lastStreamDate: Date;
+}
+
+interface UserSettings {
+  notificationLimit: number;
+  systemVoice: string;
+  language: string;
 }
 
 export interface PlaylistItem {

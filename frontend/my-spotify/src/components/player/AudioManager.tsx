@@ -70,9 +70,9 @@ export default function AudioManager() {
                 alreadyUpdated.current = true;
 
                 const song = usePlayerStore.getState().currentSong;
-                if (song) {
-                    if (authUser)
-                        updateStreams(authUser?.id, song.id);
+                const playbackSource = usePlayerStore.getState().playbackSource;
+                if (song && authUser && playbackSource) {
+                    updateStreams(authUser?.id, song.id, playbackSource);
                 }
             }
         };

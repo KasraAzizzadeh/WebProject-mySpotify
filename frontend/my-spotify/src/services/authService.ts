@@ -129,7 +129,14 @@ export async function register(
         birthDate: new Date(birthDate),
         followers: [],
         following: [],
-        createdAt: new Date()
+        createdAt: new Date(),
+        listenerProfile: {
+            playlists: [],
+            recentlyPlayed: [],
+            likedTracks: [],
+            dailyStreams: 0,
+            lastStreamDate: new Date()
+        }
     }
 
     const newUser = {...newUserProfile, password};

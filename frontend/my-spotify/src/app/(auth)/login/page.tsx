@@ -32,14 +32,14 @@ export default function LoginPage() {
     e.preventDefault();
 
     const errors = {
-      emailError: validateEmail(email),
+      emailError: validateEmail(email.toLowerCase()),
       passwordError: validatePassword(password)
     }
     setLoginErrors(errors)
 
     if (!errors.emailError && !errors.passwordError) {
       try {
-        const result = await login(email, password);
+        const result = await login(email.toLocaleLowerCase(), password);
         loginUser(result.user, result.token);
         router.push("/");
       } catch {
