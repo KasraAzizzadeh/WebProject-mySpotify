@@ -243,6 +243,7 @@ export default function ProfilePage() {
 
   const followersCount = dbUser.followers?.length || 0;
   const followingCount = dbUser.following?.length || 0;
+  const shouldShowApplyArtistButton = isOwnProfile && dbUser.role === 'listener' && dbUser.artistProfile?.verificationStatus !== 'pending' && dbUser.artistProfile?.verificationStatus !== 'approved';
   
   // Calculate total streams based strictly on standalone track items
   const totalStreams = dbUser.role === 'artist' 
@@ -288,7 +289,7 @@ export default function ProfilePage() {
         handleSaveProfile={handleSaveProfile}
       />
 
-      {isOwnProfile && dbUser.role === 'listener' && (
+      {shouldShowApplyArtistButton && (
         <div className="w-full">
           <Button 
             variant="secondary" 
