@@ -109,6 +109,7 @@ const SEED_USERS: User[] = [
     subscriptionType: "basic",
     createdAt: new Date(),
     password: "J123_abcd",
+    subValidUntil: new Date("2026-07-09"),
     followers: [],
     following: ["user-1"],
     listenerProfile: { playlists: ["p1", "p5", "p6", "p7"],

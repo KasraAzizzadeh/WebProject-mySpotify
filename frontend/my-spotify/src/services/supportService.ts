@@ -70,17 +70,21 @@ export const updateApplication = async (
     // Notification
     const notifications = getNotifications();
 
-    notifications.push({
-        id: crypto.randomUUID(),
-        userId: application.userId,
-        content:
-        status === "approved"
-            ? "Congratulations! Your artist application has been approved."
-            : `Your artist application has been rejected for the following reason:\n ${message}`,
-        status: "unread",
-        type: "AA",
-        createdAt: new Date()
-    });
+    const shouldNotifyApplicant = user.role === "listener";
+
+    if (shouldNotifyApplicant) {
+        notifications.push({
+            id: crypto.randomUUID(),
+            userId: application.userId,
+            content:
+            status === "approved"
+                ? "Congratulations! Your artist application has been approved."
+                : `Your artist application has been rejected for the following reason:\n ${message}`,
+            status: "unread",
+            type: "AA",
+            createdAt: new Date()
+        });
+    }
 
     saveNotifications(notifications);
 };

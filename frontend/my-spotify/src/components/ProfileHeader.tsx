@@ -1,7 +1,11 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { Bell } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
+import NotificationModal from '@/components/NotificationModal';
+import { getNotifications } from '@/store/mockDb';
 import { UserProfile } from '@/types';
 
 interface Props {
@@ -9,6 +13,11 @@ interface Props {
 }
 
 export default function ProfileHeader({ user }: Props) {
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const hasUnreadNotifications = useMemo(() => {
+    return getNotifications().some((notification) => notification.userId === user.id && notification.status === 'unread');
+  }, [user.id, isNotificationOpen]);
+
   return (
     <header className="sticky top-0 z-40 w-full">
       
@@ -44,6 +53,22 @@ export default function ProfileHeader({ user }: Props) {
               </span>
             )}
 
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setIsNotificationOpen(true);
+              }}
+              className="relative rounded-full border border-neutral-800 bg-neutral-900 p-2 text-neutral-300 transition hover:border-neutral-600 hover:text-white"
+              aria-label="Open notifications"
+            >
+              <Bell className="h-5 w-5" />
+              {hasUnreadNotifications && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500" />
+              )}
+            </button>
+
             <Avatar
               src={user.profilePictureUrl}
               alt={user.displayName}
@@ -52,6 +77,11 @@ export default function ProfileHeader({ user }: Props) {
           </div>
         </Link>
 
+        <NotificationModal
+          isOpen={isNotificationOpen}
+          onClose={() => setIsNotificationOpen(false)}
+          user={user}
+        />
       </div>
     </header>
   );

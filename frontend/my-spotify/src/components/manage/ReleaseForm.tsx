@@ -7,6 +7,8 @@ import FileInput from '@/components/ui/FileInput';
 import RadioGroup from '@/components/ui/RadioGroup';
 import TrackFormItem from './TrackFormItem';
 
+type ReleaseFormErrors = Record<string, string>;
+
 export type ReleaseFormState = {
   releaseType: 'single' | 'album';
   title: string;
@@ -38,6 +40,7 @@ const initialFormState: ReleaseFormState = {
 
 export default function ReleaseForm({ onCancel, onSave }: ReleaseFormProps) {
   const [formData, setFormData] = useState<ReleaseFormState>(initialFormState);
+  const [errors, setErrors] = useState<ReleaseFormErrors>({});
 
   const handleUpdateTrack = (idx: number, fields: Partial<ReleaseFormState['tracks'][number]>) => {
     const updatedTracks = [...formData.tracks];
@@ -59,8 +62,41 @@ export default function ReleaseForm({ onCancel, onSave }: ReleaseFormProps) {
     });
   };
 
+  const handleFieldChange = (field: keyof ReleaseFormState, value: unknown) => {
+    setFormData({ ...formData, [field]: value as never });
+    setErrors((prev) => ({ ...prev, [field]: '' }));
+  };
+
+  const validateForm = () => {
+    const nextErrors: ReleaseFormErrors = {};
+
+    if (!formData.title.trim()) {
+      nextErrors.title = 'This field cannot be empty.';
+    }
+
+    if (formData.releaseType === 'single') {
+      if (formData.singleAudio.length === 0) {
+        nextErrors.singleAudio = 'That file cannot be empty.';
+      }
+    } else {
+      formData.tracks.forEach((track, index) => {
+        if (!track.title.trim()) {
+          nextErrors[`trackTitle-${index}`] = 'This field cannot be empty.';
+        }
+
+        if (track.audio.length === 0) {
+          nextErrors[`trackAudio-${index}`] = 'That file cannot be empty.';
+        }
+      });
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
     onSave(formData);
   };
 
@@ -87,9 +123,9 @@ export default function ReleaseForm({ onCancel, onSave }: ReleaseFormProps) {
             <Input 
               label={formData.releaseType === 'single' ? "Track Title *" : "Album Title *"} 
               value={formData.title}
-              onChange={e => setFormData({ ...formData, title: e.target.value })}
+              onChange={e => handleFieldChange('title', e.target.value)}
               placeholder="Enter title..." 
-              required
+              error={errors.title}
             />
             <Input 
               label="Primary Genre" 
@@ -115,7 +151,10 @@ export default function ReleaseForm({ onCancel, onSave }: ReleaseFormProps) {
             label="Cover Art (Square aspect ratio recommended)"
             accept="image/*"
             value={formData.coverImage}
-            onChange={(files) => setFormData({ ...formData, coverImage: files })}
+            onChange={(files) => {
+              setFormData({ ...formData, coverImage: files });
+              setErrors((prev) => ({ ...prev, coverImage: '' }));
+            }}
           />
         </div>
 
@@ -127,7 +166,11 @@ export default function ReleaseForm({ onCancel, onSave }: ReleaseFormProps) {
             <FileInput 
               value={formData.singleAudio}
               accept="audio/*"
-              onChange={(files) => setFormData({ ...formData, singleAudio: files })}
+              onChange={(files) => {
+                setFormData({ ...formData, singleAudio: files });
+                setErrors((prev) => ({ ...prev, singleAudio: '' }));
+              }}
+              error={errors.singleAudio}
             />
             <div>
               <label className="block text-sm text-neutral-400 mb-1">Track Lyrics (Optional)</label>
@@ -163,6 +206,8 @@ export default function ReleaseForm({ onCancel, onSave }: ReleaseFormProps) {
                 showRemove={formData.tracks.length > 1}
                 onUpdate={(fields) => handleUpdateTrack(idx, fields)}
                 onRemove={() => handleRemoveTrack(idx)}
+                titleError={errors[`trackTitle-${idx}`]}
+                audioError={errors[`trackAudio-${idx}`]}
               />
             ))}
           </div>

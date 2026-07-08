@@ -91,6 +91,20 @@ export async function createRelease(
   const releaseId =
     `${formData.releaseType === "single" ? "song" : "album"}-${Date.now()}`;
 
+  const releaseAlbum: AlbumItem = {
+    id: releaseId,
+    name: formData.title,
+    artistName: dbUser.displayName,
+    artistId: dbUser.id,
+    listeners: 0,
+    releaseDate: formData.releaseDate,
+    releaseType: formData.releaseType === "single" ? "single" : "album",
+    genre: formData.genre,
+    collaborators: formData.collaborators,
+    imageUrl: coverUrl,
+    songList: [],
+  };
+
   if (formData.releaseType === "single") {
     newSongs.push({
       id: releaseId,
@@ -111,52 +125,43 @@ export async function createRelease(
       imageUrl: coverUrl,
     });
   } else {
-    newSongs = formData.tracks.map((track, index) => ({
-      id: `song-${Date.now()}-${index}`,
-      title: track.title || `Track ${index + 1}`,
-      artistName: dbUser.displayName,
-      artistId: dbUser.id,
-      albumName: formData.title,
-      albumId: releaseId,
-      streams: 0,
-      releaseDate: formData.releaseDate,
-      genre: formData.genre,
-      collaborators: formData.collaborators,
-      audioUrl:
-        track.audio.length > 0
-            ? `/songs/${track.audio[0].name}`
-            : "",
-      lyrics: track.lyrics,
-      trackNumber: index + 1,
-      imageUrl: coverUrl,
-    }));
+    for (const [index, track] of formData.tracks.entries()) {
+      newSongs.push({
+        id: `song-${Date.now()}-${index}`,
+        title: track.title || `Track ${index + 1}`,
+        artistName: dbUser.displayName,
+        artistId: dbUser.id,
+        albumName: formData.title,
+        albumId: releaseId,
+        streams: 0,
+        releaseDate: formData.releaseDate,
+        genre: formData.genre,
+        collaborators: formData.collaborators,
+        audioUrl:
+          track.audio.length > 0
+              ? `/songs/${track.audio[0].name}`
+              : "",
+        lyrics: track.lyrics,
+        trackNumber: index + 1,
+        imageUrl: coverUrl,
+      });
+    }
   }
+
+  const updatedReleaseAlbum: AlbumItem = {
+    ...releaseAlbum,
+    songList: newSongs.map(song => song.id),
+  };
 
   saveSongs([
     ...getSongs(),
     ...newSongs,
   ]);
 
-  if (formData.releaseType === "album") {
-    const album: AlbumItem = {
-      id: releaseId,
-      name: formData.title,
-      artistName: dbUser.displayName,
-      artistId: dbUser.id,
-      listeners: 0,
-      releaseDate: formData.releaseDate,
-      releaseType: "album",
-      genre: formData.genre,
-      collaborators: formData.collaborators,
-      imageUrl: coverUrl,
-      songList: newSongs.map(s => s.id),
-    };
-
-    saveAlbums([
-      ...getAlbums(),
-      album,
-    ]);
-  }
+  saveAlbums([
+    ...getAlbums(),
+    updatedReleaseAlbum,
+  ]);
 
     const users = getUsers().map(user => {
         if (user.id !== dbUser.id) return user;
@@ -173,10 +178,7 @@ export async function createRelease(
                 ? [...user.artistProfile.singles, releaseId]
                 : user.artistProfile.singles,
 
-            albums:
-                formData.releaseType === "album"
-                ? [...user.artistProfile.albums, releaseId]
-                : user.artistProfile.albums,
+            albums: [...user.artistProfile.albums, releaseId],
             },
         };
     });
@@ -226,19 +228,22 @@ export async function updateRelease(
     imageUrl: updatedImageUrl,
   };
 
-  // Update album
-  if (finalRelease.releaseType !== "single") {
-    const albums = getAlbums().map(album =>
-      album.id === finalRelease.id
-        ? finalRelease
-        : album
-    );
+  const albums = getAlbums().map(album =>
+    album.id === finalRelease.id
+      ? finalRelease
+      : album
+  );
 
-    saveAlbums(albums);
+  if (!albums.some(album => album.id === finalRelease.id)) {
+    albums.push(finalRelease);
   }
 
-  // Update songs
-  const songs = getSongs().map(song => {
+  saveAlbums(albums);
+
+  const songs = getSongs();
+  const updatedSongs: SongItem[] = [];
+
+  for (const song of songs) {
     const trackUpdate = updatedTracks?.find(
       t => t.id === song.id
     );
@@ -250,7 +255,7 @@ export async function updateRelease(
         audioUrl = `/songs/${trackUpdate.audioFile.name}`;
       }
 
-      return {
+      updatedSongs.push({
         ...song,
         title: trackUpdate.title,
         lyrics: trackUpdate.lyrics,
@@ -258,35 +263,38 @@ export async function updateRelease(
         albumName: finalRelease.name,
         genre: finalRelease.genre,
         imageUrl: updatedImageUrl ?? song.imageUrl,
-      };
+      });
+      continue;
     }
 
     if (
       finalRelease.releaseType === "single" &&
       song.id === finalRelease.id
     ) {
-      return {
+      updatedSongs.push({
         ...song,
         title: finalRelease.name,
         albumName: finalRelease.name,
         genre: finalRelease.genre,
         imageUrl: updatedImageUrl ?? song.imageUrl,
-      };
+      });
+      continue;
     }
 
     if (song.albumId === finalRelease.id) {
-      return {
+      updatedSongs.push({
         ...song,
         albumName: finalRelease.name,
         genre: finalRelease.genre,
         imageUrl: updatedImageUrl ?? song.imageUrl,
-      };
+      });
+      continue;
     }
 
-    return song;
-  });
+    updatedSongs.push(song);
+  }
 
-  saveSongs(songs);
+  saveSongs(updatedSongs);
 }
 
 export const deleteRelease = async (
