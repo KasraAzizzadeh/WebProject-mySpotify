@@ -13,6 +13,7 @@ interface SongEntryProps {
   subscriptionType: SubscriptionType;
   hasPermission: boolean;
   showAlbum?: boolean;
+  showImage?: boolean;
   onAdd?: (id: string) => void;
   onRemove?: (id: string) => void;
   onQueue?: (song: SongItem) => void;
@@ -25,6 +26,7 @@ export default function SongEntry({
   subscriptionType,
   hasPermission,
   showAlbum = true,
+  showImage = true,
   onAdd,
   onRemove,
   onQueue,
@@ -78,9 +80,11 @@ export default function SongEntry({
 
       {/* Column 2: Details */}
       <div className="flex items-center gap-3 min-w-0">
-        <div className="shrink-0 shadow-md overflow-hidden rounded">
-          <Cover src={song.imageUrl} alt={song.title} size={40} />
-        </div>
+        {showImage && (
+          <div className="shrink-0 shadow-md overflow-hidden rounded">
+            <Cover src={song.imageUrl} alt={song.title} size={40} />
+          </div>
+        )}
         <div className="min-w-0 flex flex-col justify-center">
           <p className={`truncate font-semibold text-sm tracking-tight leading-snug ${isCurrentSongActive ? 'text-green-500' : 'text-white'}`}>
             {song.title}

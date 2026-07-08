@@ -123,15 +123,15 @@ const SEED_USERS: User[] = [
 // SEED DATA (ALBUMS)
 // --------------------
 const SEED_ALBUMS: AlbumItem[] = [
-  { id: "a1", name: "Velvet Dreams", artistName: "Alex Carter", artistId: "user-1", listeners: 450000, releaseDate: "2026-04-12", songList: ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"], imageUrl:"/pic2.jpg", genre: "Hip Hop" },
-  { id: "a2", name: "Hyperdrive", artistName: "Glitch Fox", artistId: "art-gf4", listeners: 890000, releaseDate: "2026-05-20", songList: ["s2"] },
-  { id: "a3", name: "Midnight Aurora", artistName: "Luna Eclipse", artistId: "art-le3", listeners: 1200000, releaseDate: "2025-11-10", songList: ["s3", "s4", "s5"], imageUrl:"/pic3.png" },
-  { id: "a4", name: "Solar Drift", artistName: "Neon Horizon", artistId: "user-14", listeners: 670000, releaseDate: "2026-01-08", songList: [] },
-  { id: "a5", name: "Echoes of Code", artistName: "Binary Soul", artistId: "art-bs9", listeners: 340000, releaseDate: "2026-03-15", songList: ["s7"] },
-  { id: "a6", name: "Dreamstate", artistName: "Cloud Atlas", artistId: "art-ca2", listeners: 510000, releaseDate: "2026-02-22", songList: ["s9"] },
+  { id: "a1", name: "Velvet Dreams", artistName: "Alex Carter", artistId: "user-1", listeners: 450000, releaseDate: "2026-04-12", songList: ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"], imageUrl:"/covers/pic2.jpg", genre: "Hip Hop" },
+  { id: "a2", name: "Hyperdrive", artistName: "Glitch Fox", artistId: "art-gf4", listeners: 890000, releaseDate: "2026-05-20", songList: ["s2"], imageUrl:"/covers/pic12.png" },
+  { id: "a3", name: "Midnight Aurora", artistName: "Luna Eclipse", artistId: "art-le3", listeners: 1200000, releaseDate: "2025-11-10", songList: ["s3", "s4", "s5"], imageUrl:"/covers/pic3.png" },
+  { id: "a4", name: "Solar Drift", artistName: "Neon Horizon", artistId: "user-14", listeners: 670000, releaseDate: "2026-01-08", songList: [], imageUrl: "/covers/pic15.jpg" },
+  { id: "a5", name: "Divinity Original Sin II OST", artistName: "Borislav Slavov", artistId: "art-bs9", listeners: 340000, releaseDate: "2026-03-15", songList: ["s12", "s13"], imageUrl:"/covers/pic5.jpg" },
+  { id: "a6", name: "Dreamstate", artistName: "Cloud Atlas", artistId: "art-ca2", listeners: 510000, releaseDate: "2026-02-22", songList: ["s9"], imageUrl:"/covers/pic14.jpg" },
   { id: "a7", name: "Neon Abyss", artistName: "Void Runner", artistId: "art-vr7", listeners: 980000, releaseDate: "2025-09-30", songList: ["s10"] },
-  { id: "a8", name: "Fragments", artistName: "Static Bloom", artistId: "art-sb5", listeners: 230000, releaseDate: "2026-06-01", songList: [] },
-  { id: "a9", name: "Quantum Lullabies", artistName: "Orbit Theory", artistId: "art-ot4", listeners: 760000, releaseDate: "2026-04-28", songList: ["s8"] },
+  { id: "a8", name: "Fragments", artistName: "Static Bloom", artistId: "art-sb5", listeners: 230000, releaseDate: "2026-06-01", songList: ["s10", "s9"], imageUrl:"/covers/pic7.png" },
+  { id: "a9", name: "Quantum Lullabies", artistName: "Orbit Theory", artistId: "art-ot4", listeners: 760000, releaseDate: "2026-04-28", songList: ["s8"], imageUrl:"/covers/pic13.jpg" },
   { id: "a10", name: "Afterlight", artistName: "Dusk Signal", artistId: "art-ds6", listeners: 410000, releaseDate: "2025-12-19", songList: ["s6"] },
 ];
 
@@ -139,15 +139,15 @@ const SEED_ALBUMS: AlbumItem[] = [
 // SEED DATA (PLAYLISTS)
 // --------------------
 const SEED_PLAYLISTS: PlaylistItem[] = [
-  { id: "p1", name: "Chill Lo-Fi Beats", ownerId: "user-2", isPrivate: false, songList: ["s1", "s2", "s3"], imageUrl: "/pic4.jpg" },
-  { id: "p2", name: "Coding Session Intensity", ownerId: "user-2", songList: ["s4", "s5"] },
-  { id: "p3", name: "Night Drive Vibes", ownerId: "user-2", songList: ["s6", "s7", "s8"] },
-  { id: "p4", name: "Deep Focus Flow", ownerId: "user-2", songList: ["s9", "s10"] },
-  { id: "p5", name: "Morning Energy Boost", ownerId: "user-2", songList: ["s1", "s5", "s9"] },
-  { id: "p6", name: "Cyberpunk Dreams", ownerId: "user-2", songList: ["s3", "s6", "s10"] },
-  { id: "p7", name: "Rainy Day Chill", ownerId: "user-2", songList: ["s2", "s8"] },
+  { id: "p1", name: "Chill Lo-Fi Beats", ownerId: "user-2", isPrivate: false, songList: ["s1", "s2", "s3"], imageUrl: "/covers/pic4.jpg" },
+  { id: "p2", name: "Coding Session Intensity", ownerId: "user-2", songList: ["s4", "s5"], imageUrl: "/covers/pic16.jpg" },
+  { id: "p3", name: "Night Drive Vibes", ownerId: "user-2", songList: ["s6", "s7", "s8"], imageUrl: "/covers/pic17.jpg" },
+  { id: "p4", name: "Deep Focus Flow", ownerId: "user-2", songList: ["s9", "s10"], imageUrl: "/covers/pic18.jpg" },
+  { id: "p5", name: "Morning Energy Boost", ownerId: "user-2", songList: ["s1", "s5", "s9"], imageUrl:"/covers/pic9.jpg" },
+  { id: "p6", name: "Cyberpunk Vibes", ownerId: "user-2", songList: ["s3", "s6", "s10"], imageUrl:"/covers/pic8.png" },
+  { id: "p7", name: "Rainy Day Chill", ownerId: "user-2", songList: ["s2", "s8"], imageUrl:"/covers/pic10.png" },
   { id: "p8", name: "Underground EDM", ownerId: "user-2", songList: ["s4", "s5", "s6", "s7"] },
-  { id: "p9", name: "Soft Acoustic Nights", ownerId: "user-2", songList: ["s1", "s2"] },
+  { id: "p9", name: "Soft Acoustic Nights", ownerId: "user-2", songList: ["s1", "s2"], imageUrl:"/covers/pic19.jpg" },
   { id: "p10", name: "Late Night Study", ownerId: "user-1", songList: ["s9", "s10", "s3"] },
 ];
 
@@ -168,7 +168,9 @@ const SEED_SONGS: SongItem[] = [
   { id: "s9", title: "Frozen Code", artistName: "Cloud Atlas", artistId: "art-ca2", albumName: "Dreamstate", albumId: "a6", streams: 430000, releaseDate: "2026-02-28", songDurationMs: 226000 },
   { id: "s10", title: "Broken Signal", artistName: "Static Bloom", artistId: "art-sb5", albumName: "Fragments", albumId: "a8", streams: 370000, releaseDate: "2026-06-10", songDurationMs: 244000 },
   { id: "s11", title: "Chill Out", artistName: "Alex Carter", artistId: "art-sb5", albumName: "Fragments", albumId: "a8", streams: 370000, releaseDate: "2026-06-10", songDurationMs: 244000 },
-
+  { id: "s12", title: "Divinity - Original Sin 2 (Main Theme)", artistName: "Borislav Slavov", artistId: "art-bs9", albumName: "Divinity Original Sin II OST", albumId: "a5", streams: 239000, releaseDate: "2026-06-10", songDurationMs: 239000, audioUrl: "/songs/01. Divinity - Original Sin 2 (Main Theme).mp3" },
+  { id: "s13", title: "Sing for Me (Lohne's Theme) (Bobby's Version)", artistName: "Borislav Slavov", artistId: "art-bs9", albumName: "Divinity Original Sin II OST", albumId: "a5", streams: 174000, releaseDate: "2026-06-10", songDurationMs: 174000, audioUrl: "/songs/Sing_for_Me_(Lohne's_Theme)(Bobby's_Version).mp3" },
+  
 ];
 
 // --------------------
