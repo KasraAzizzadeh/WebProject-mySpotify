@@ -125,7 +125,7 @@ const SEED_USERS: User[] = [
 // --------------------
 const SEED_ALBUMS: AlbumItem[] = [
   { id: "a1", name: "Velvet Dreams", artistName: "Alex Carter", artistId: "user-1", listeners: 450000, releaseDate: "2026-04-12", songList: ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"], imageUrl:"/covers/pic2.jpg", genre: "Hip Hop" },
-  { id: "a2", name: "Hyperdrive", artistName: "Glitch Fox", artistId: "art-gf4", listeners: 890000, releaseDate: "2026-05-20", songList: ["s2"], imageUrl:"/covers/pic12.png" },
+  { id: "a2", name: "Hyperdrive", artistName: "Glitch Fox", artistId: "art-gf4", listeners: 890000, releaseDate: "2026-06-20", songList: ["s2"], imageUrl:"/covers/pic12.png" },
   { id: "a3", name: "Midnight Aurora", artistName: "Luna Eclipse", artistId: "art-le3", listeners: 1200000, releaseDate: "2025-11-10", songList: ["s3", "s4", "s5"], imageUrl:"/covers/pic3.png" },
   { id: "a4", name: "Solar Drift", artistName: "Neon Horizon", artistId: "user-14", listeners: 670000, releaseDate: "2026-01-08", songList: [], imageUrl: "/covers/pic15.jpg" },
   { id: "a5", name: "Divinity Original Sin II OST", artistName: "Borislav Slavov", artistId: "art-bs9", listeners: 340000, releaseDate: "2026-03-15", songList: ["s12", "s13"], imageUrl:"/covers/pic5.jpg" },

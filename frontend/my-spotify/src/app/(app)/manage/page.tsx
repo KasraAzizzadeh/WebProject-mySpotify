@@ -189,7 +189,7 @@ export default function ManagePage() {
                     }}
                     tabIndex={0}
                     role="button"
-                    className="group cursor-pointer p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition select-none hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] hover:bg-neutral-900/40 focus:outline-none focus:ring-2 focus:ring-green-500/40"
+                    className="group cursor-pointer p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition select-none hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] hover:bg-neutral-900/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40"
                   >
                     <div className="flex items-center gap-4 w-full sm:w-auto min-w-0">
                       <div className="relative shrink-0 shadow-md overflow-hidden rounded">
