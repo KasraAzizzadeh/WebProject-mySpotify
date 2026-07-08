@@ -3,8 +3,6 @@ import { getUsers, getAlbums, getSongs, getPlaylists } from '@/store/mockDb';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-
-
 export async function getDashboardData(subscriptionType: SubscriptionType): Promise<DashboardData> {
   await delay(200);
 

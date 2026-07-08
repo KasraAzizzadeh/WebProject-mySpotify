@@ -43,7 +43,7 @@ const SEED_USERS: User[] = [
     password: "Admin_1234",
     followers: [],
     following: [],
-    listenerProfile: { playlists: [], likedTracks: [], recentlyPlayed: [] },
+    listenerProfile: { playlists: [], likedTracks: [], recentlyPlayed: [], dailyStreams: 0, lastStreamDate: new Date() },
   },
   {
     id: "user-supporter",
@@ -57,7 +57,7 @@ const SEED_USERS: User[] = [
     password: "Support_1234",
     followers: [],
     following: [],
-    listenerProfile: { playlists: [], likedTracks: [], recentlyPlayed: [] },
+    listenerProfile: { playlists: [], likedTracks: [], recentlyPlayed: [], dailyStreams: 0, lastStreamDate: new Date() },
   },
   {
     id: "user-1",
@@ -71,7 +71,7 @@ const SEED_USERS: User[] = [
     password: "Alex_1234",
     followers: ["user-2"],
     following: [],
-    listenerProfile: { playlists: [], likedTracks: [], recentlyPlayed: ["p1"] },
+    listenerProfile: { playlists: [], likedTracks: [], recentlyPlayed: ["p1"], dailyStreams: 0, lastStreamDate: new Date() },
     artistProfile: {
       bio: "Electronic music producer",
       verificationStatus: "approved",
@@ -93,7 +93,7 @@ const SEED_USERS: User[] = [
     password: "J123_abcd",
     followers: [],
     following: ["user-1"],
-    listenerProfile: { playlists: ["p1", "p5", "p6"], likedTracks: [], recentlyPlayed: ["p1"] },
+    listenerProfile: { playlists: ["p1", "p5", "p6"], likedTracks: [], recentlyPlayed: ["p1"], dailyStreams: 0, lastStreamDate: new Date() },
   },
 ];
 
@@ -392,10 +392,28 @@ export function saveSubscriptions(records: SubscriptionTier[]): void {
   localStorage.setItem(SUBSCRIPTIONS_KEY, JSON.stringify(records));
 }
 
-export function deleteReleaseAndSongs(albumId: string): void {
-  const albums = getAlbums().filter(a => a.id !== albumId);
-  saveAlbums(albums);
+export function deleteReleaseAndSongs(releaseId: string): void {
+  
+  const songsToDelete = getSongs().filter(
+    song => song.albumId === releaseId
+  );
 
-  const songs = getSongs().filter(s => s.albumId !== albumId);
-  saveSongs(songs);
+  const deletedSongIds = new Set(songsToDelete.map(song => song.id));
+
+  saveAlbums(
+    getAlbums().filter(album => album.id !== releaseId)
+  );
+  saveSongs(
+    getSongs().filter(song => song.albumId !== releaseId)
+  );
+
+  // Remove deleted songs from every playlist
+  const updatedPlaylists = getPlaylists().map(playlist => ({
+    ...playlist,
+    songList: playlist.songList.filter(
+      id => !deletedSongIds.has(id)
+    ),
+  }));
+
+  savePlaylists(updatedPlaylists);
 }

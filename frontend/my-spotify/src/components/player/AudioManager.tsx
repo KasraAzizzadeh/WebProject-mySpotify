@@ -7,7 +7,7 @@ import { updateStreams } from "@/services/mediaService";
 import { canPlaySong } from "@/utils/mediaUtils";
 import Message from "../ui/Message";
 
-const LISTEN_THRESHHOLD = 5;
+const LISTEN_THRESHHOLD = 45;
 
 export default function AudioManager() {
 

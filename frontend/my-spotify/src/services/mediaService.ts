@@ -229,8 +229,7 @@ export const updatePlaylist = async (
   let imageUrl = allPlaylists[index].imageUrl;
 
   if (updates.imageFile) {
-    imageUrl = URL.createObjectURL(updates.imageFile);
-    console.log(imageUrl);
+    imageUrl = `/covers/${updates.imageFile.name}`;
   }
 
   allPlaylists[index] = {

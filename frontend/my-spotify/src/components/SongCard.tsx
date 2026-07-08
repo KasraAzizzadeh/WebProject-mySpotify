@@ -126,7 +126,7 @@ export default function SongCard({
         <p className="text-neutral-400 text-sm mt-0.5 truncate">
           By{' '}
           <Link
-            href={`/artist/${song.artistId}`}
+            href={`/profile/${song.artistId}`}
             onClick={(e) => e.stopPropagation()}
             className="text-green-400 hover:underline"
           >
