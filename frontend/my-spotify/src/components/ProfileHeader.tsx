@@ -18,8 +18,12 @@ export default function ProfileHeader({ user }: Props) {
     return getNotifications().some((notification) => notification.userId === user.id && notification.status === 'unread');
   }, [user.id, isNotificationOpen]);
 
+  const showStreamLimitBadge = user.role === 'listener' && user.subscriptionType === 'basic';
+  const dailyStreams = user.listenerProfile?.dailyStreams ?? 0;
+  const streamLimit = 60;
+
   return (
-    <header className="sticky top-0 z-40 w-full">
+    <header className="sticky top-0 z-40 w-full md:max-w-[calc(100%-1rem)]">
       
       {/* This keeps alignment with dashboard rows */}
       <div className="w-full">
@@ -53,21 +57,29 @@ export default function ProfileHeader({ user }: Props) {
               </span>
             )}
 
-            <button
-              type="button"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                setIsNotificationOpen(true);
-              }}
-              className="relative rounded-full border border-neutral-800 bg-neutral-900 p-2 text-neutral-300 transition hover:border-neutral-600 hover:text-white"
-              aria-label="Open notifications"
-            >
-              <Bell className="h-5 w-5" />
-              {hasUnreadNotifications && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500" />
+            <div className="flex items-center gap-2">
+              {showStreamLimitBadge && (
+                <span className="rounded-full border border-neutral-800 bg-neutral-950/80 px-2.5 py-1 text-[11px] font-semibold text-neutral-400">
+                  {dailyStreams}/{streamLimit}
+                </span>
               )}
-            </button>
+
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setIsNotificationOpen(true);
+                }}
+                className="relative rounded-full border border-neutral-800 bg-neutral-900 p-2 text-neutral-300 transition hover:border-neutral-600 hover:text-white"
+                aria-label="Open notifications"
+              >
+                <Bell className="h-5 w-5" />
+                {hasUnreadNotifications && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500" />
+                )}
+              </button>
+            </div>
 
             <Avatar
               src={user.profilePictureUrl}
