@@ -63,6 +63,8 @@ interface PlayerStore {
     toggleRepeat: () => void;
 
     toggleShuffle: () => void;
+
+    resetPlayer: () => void;
 }
 
 const makeQueue = (songs: SongItem[], source: PlaybackSource) : QueueItem[] => {
@@ -293,6 +295,28 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
             currentSong,
             playbackSource: playQueue[newIndex].source
         });
-    }
+    }, 
+
+    resetPlayer: () => {
+        set({
+            currentSong: null,
+
+            originalQueue: [],
+            playQueue: [],
+            currentIndex: -1,
+
+            playbackSource: null,
+
+            isPlaying: false,
+
+            progress: 0,
+            duration: 0,
+
+            volume: 1,
+
+            repeatMode: "none",
+            isShuffle: false,
+        });
+    },
 
 }));

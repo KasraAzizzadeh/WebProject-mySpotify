@@ -1,6 +1,6 @@
 "use client";
 
-import { SelectHTMLAttributes } from "react";
+import { SelectHTMLAttributes, useId } from "react";
 
 type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   label?: string;
@@ -14,15 +14,18 @@ export default function Select({
   children,
   ...props
 }: SelectProps) {
+  const selectId = useId();
+
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm text-neutral-400 mb-1">
+        <label htmlFor={selectId} className="block text-sm text-neutral-400 mb-1">
           {label}
         </label>
       )}
 
       <select
+        id={selectId}
         {...props}
         className={`
           w-full p-3

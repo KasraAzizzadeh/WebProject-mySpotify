@@ -1,11 +1,27 @@
 'use client';
 
-import { useEffect, useRef } from "react";
-
+import { useEffect, useState, useRef } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { usePlayerStore } from "@/store/playerStore";
 import { updateStreams } from "@/services/mediaService";
+import { canPlaySong } from "@/utils/mediaUtils";
+import Message from "../ui/Message";
 
-const LISTEN_THRESHHOLD = 15;
+const LISTEN_THRESHHOLD = 45;
+
+async function playAudioSafely(audio: HTMLAudioElement) {
+    try {
+        await audio.play();
+    } catch (error) {
+        const isExpectedInterruption =
+            error instanceof DOMException &&
+            (error.name === "AbortError" || error.name === "NotAllowedError");
+
+        if (!isExpectedInterruption) {
+            console.warn("Audio playback could not start:", error);
+        }
+    }
+}
 
 export default function AudioManager() {
 
@@ -15,11 +31,27 @@ export default function AudioManager() {
     const streamRegistered = useRef(false);
     const alreadyUpdated = useRef(false);
 
+    const {user: authUser} = useAuth();
+    const [message, setMessage] = useState({
+        isOpen: false,
+        title: "",
+        description: "",
+    });
+
+    const closeMessage = () => {
+        setMessage({
+            isOpen: false,
+            title: "",
+            description: "",
+        });
+    };
+
     const currentSong = usePlayerStore(s => s.currentSong);
     const isPlaying = usePlayerStore(s => s.isPlaying);
     const volume = usePlayerStore(s => s.volume);
     const setProgress = usePlayerStore(s => s.setProgress);
     const setDuration = usePlayerStore(s => s.setDuration);
+    const resetPlayer = usePlayerStore(s => s.resetPlayer);
 
     // create audio once
 
@@ -52,8 +84,9 @@ export default function AudioManager() {
                 alreadyUpdated.current = true;
 
                 const song = usePlayerStore.getState().currentSong;
-                if (song) {
-                    updateStreams(song.id);
+                const playbackSource = usePlayerStore.getState().playbackSource;
+                if (song && authUser && playbackSource) {
+                    updateStreams(authUser?.id, song.id, playbackSource);
                 }
             }
         };
@@ -67,7 +100,7 @@ export default function AudioManager() {
 
             if (repeatMode === "one") {
                 audio.currentTime = 0;
-                audio.play();
+                void playAudioSafely(audio);
                 return;
             }
 
@@ -101,6 +134,20 @@ export default function AudioManager() {
         if (!audioRef.current || !currentSong)
             return;
 
+        if (isPlaying && authUser && !canPlaySong(authUser.id)) {
+            setMessage({
+                isOpen: true,
+                title: "Daily limit reached",
+                description:
+                    "You have reached your daily listening limit. Upgrade your subscription to continue listening.",
+            });
+
+            audioRef.current.pause();
+            resetPlayer();
+            return;
+        }
+
+
         audioRef.current.src =
             currentSong.audioUrl ??
             `/songs/${currentSong.id}.mp3`;
@@ -112,8 +159,10 @@ export default function AudioManager() {
         streamRegistered.current = false;
         alreadyUpdated.current = false;
 
-        if (isPlaying)
-            audioRef.current.play();
+
+        if (isPlaying) {
+            void playAudioSafely(audioRef.current);
+        }
 
     }, [currentSong]);
 
@@ -124,11 +173,11 @@ export default function AudioManager() {
         if (!audioRef.current)
             return;
 
-        if (isPlaying)
-            audioRef.current.play();
-
-        else
+        if (isPlaying) {
+            void playAudioSafely(audioRef.current);
+        } else {
             audioRef.current.pause();
+        }
 
     }, [isPlaying]);
 
@@ -157,5 +206,13 @@ export default function AudioManager() {
 
     }, [progress]);
 
-    return null;
+    return (
+        <Message
+            isOpen={message.isOpen}
+            title={message.title}
+            description={message.description}
+            type="alert"
+            onConfirm={closeMessage}
+        />
+    );
 }

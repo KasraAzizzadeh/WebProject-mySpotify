@@ -12,6 +12,7 @@ import Alert from "@/components/ui/Alert";
 import DateInput from "@/components/ui/DateInput";
 import Select from "@/components/ui/Select";
 import Checkbox from "@/components/ui/Checkbox";
+import PrivacyModal from "@/components/PrivacyModal";
 
 type RegisterErrors = {
   displayNameError: string;
@@ -43,6 +44,8 @@ export default function LoginPage() {
     genderError: "",
   });
 
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -51,7 +54,7 @@ export default function LoginPage() {
     const errors : RegisterErrors = {
         displayNameError: displayName.length < 64 ? 
             "" : "Display name should be at most 64 letters",
-        emailError: validateEmail(email),
+        emailError: validateEmail(email.toLocaleLowerCase()),
         passwordError: validatePassword(password),
         confirmPasswordError: validatePassword(confirmPassword),
         dateError: birthDate ? "" : "Please select a date",
@@ -73,12 +76,12 @@ export default function LoginPage() {
     }
 
     try {
-        const result = await register(displayName, email, password, birthDate, gender);
+        const result = await register(displayName, email.toLocaleLowerCase(), password, birthDate, gender);
         loginUser(result.user, result.token);
         if (applyArtist) {
             setTimeout(() => {
                 router.push("/apply-artist");
-            }, 1000);
+            }, 2000);
         }
         else {
             router.push("/")
@@ -165,9 +168,30 @@ export default function LoginPage() {
         />
 
         <Checkbox
-            label="I want to apply as an artist"
-            checked={applyArtist}
-            onChange={(e) => setApplyArtist(e.target.checked)}
+            checked={acceptPolicy}
+            onChange={(e) => setAcceptPolicy(e.target.checked)}
+            label={
+                <>
+                    I agree to the{" "}
+                    <button
+                        type="button"
+                        onClick={() => setShowPrivacyModal(true)}
+                        className="text-green-400 underline hover:text-green-300"
+                    >
+                        Privacy Policy
+                    </button>
+                </>
+            }
+        />
+
+<PrivacyModal
+    isOpen={showPrivacyModal}
+    onClose={() => setShowPrivacyModal(false)}
+/>
+
+        <PrivacyModal
+            isOpen={showPrivacyModal}
+            onClose={() => setShowPrivacyModal(false)}
         />
 
         <Alert message={error}/>

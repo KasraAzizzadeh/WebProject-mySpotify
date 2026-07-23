@@ -25,6 +25,8 @@ export default function StickyBar({
         border-b
         border-neutral-800
         z-50
+        md:left-64
+        md:w-[calc(100%-16rem)]
 
         transition-all
         duration-300
@@ -36,7 +38,7 @@ export default function StickyBar({
         }
       `}
     >
-      <div className="h-full flex items-center gap-4 px-6">
+      <div className="h-full flex items-center gap-4 px-4 md:px-6">
         <Cover
           src={album.imageUrl}
           alt={album.name}

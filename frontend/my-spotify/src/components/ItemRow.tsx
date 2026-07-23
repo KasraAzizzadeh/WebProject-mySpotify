@@ -8,7 +8,7 @@ import AlbumCard from '@/components/AlbumCard';
 type ItemType = 'playlist' | 'song' | 'album';
 
 interface ItemRowProps {
-  title: React.ReactNode; // ✅ FIXED (was string)
+  title: React.ReactNode; //  FIXED (was string)
   type: ItemType;
   items: any[];
   user: any;

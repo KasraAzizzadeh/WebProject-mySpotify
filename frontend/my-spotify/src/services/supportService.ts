@@ -70,15 +70,21 @@ export const updateApplication = async (
     // Notification
     const notifications = getNotifications();
 
-    notifications.push({
-        id: crypto.randomUUID(),
-        userId: application.userId,
-        content:
-        status === "approved"
-            ? "Congratulations! Your artist application has been approved."
-            : `Your artist application has been rejected for the following reason:\n ${message}`,
-        status: "unread",
-    });
+    const shouldNotifyApplicant = user.role === "listener";
+
+    if (shouldNotifyApplicant) {
+        notifications.push({
+            id: crypto.randomUUID(),
+            userId: application.userId,
+            content:
+            status === "approved"
+                ? "Congratulations! Your artist application has been approved."
+                : `Your artist application has been rejected for the following reason:\n ${message}`,
+            status: "unread",
+            type: "AA",
+            createdAt: new Date()
+        });
+    }
 
     saveNotifications(notifications);
 };
@@ -146,6 +152,8 @@ ${updated.subject}
 Reply:
 ${reply.content}`,
     status: "unread",
+    type: "AQ",
+    createdAt: new Date()
   });
 
   saveNotifications(notifications);
@@ -197,6 +205,8 @@ Performance Summary
 
 $${record.calculatedReward.toFixed(2)} has been transferred to your account. Thank you for being part of the platform!`,
         status: "unread",
+        type: "AT",
+        createdAt: new Date()
     });
 
     saveNotifications(notifications);

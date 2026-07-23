@@ -4,9 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlayerStore } from '@/store/playerStore';
-import { userService } from '@/services/userService';
 import { AlbumItem, SongItem, UserProfile, PlaybackSource } from '@/types';
-import { getAlbums, getSongs, saveAlbums, saveSongs, deleteReleaseAndSongs, getUsers, saveUsers } from '@/store/mockDb';
+
+import { useArtistDashboard } from "@/hooks/queries/artist/useArtistDashboard";
+import { useCreateRelease } from "@/hooks/queries/artist/useCreateRelease";
+import { useUpdateRelease } from "@/hooks/queries/artist/useUpdateRelease";
+import { useDeleteRelease } from '@/hooks/queries/artist/useDeleteRelease';
 
 import Button from '@/components/ui/Button';
 import Message from '@/components/ui/Message';
@@ -15,98 +18,37 @@ import ArtistAnalytics from '@/components/manage/ArtistAnalytics';
 import ReleaseForm, { ReleaseFormState } from '@/components/manage/ReleaseForm';
 import EditAlbumModal, { TrackEditData } from '@/components/music/EditAlbumModal';
 
-import { ShieldAlert, Plus, Trash2, Edit2, Music, ChevronLeft, Loader2, Play, Pause } from 'lucide-react';
+import { ShieldAlert, Plus, Trash2, Edit2, Music, ChevronLeft, Loader2 } from 'lucide-react';
 
 export default function ManagePage() {
   const router = useRouter();
   const { user: authUser } = useAuth() as any;
-  
-  const currentSong = usePlayerStore((s) => s.currentSong);
-  const isPlaying = usePlayerStore((s) => s.isPlaying);
-  const togglePlayPause = usePlayerStore((s) => s.togglePlayPause);
+
   const setQueue = usePlayerStore((s) => s.setQueue);
 
-  const [dbUser, setDbUser] = useState<UserProfile | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
-  
   const [viewState, setViewState] = useState<'dashboard' | 'create'>('dashboard');
-  
-  const [myReleases, setMyReleases] = useState<AlbumItem[]>([]);
-  const [mySongs, setMySongs] = useState<SongItem[]>([]);
-  
+
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingRelease, setEditingRelease] = useState<AlbumItem | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const {
+    data: dashboardData,
+    isLoading: isInitializing,
+  } = useArtistDashboard(authUser?.id);
 
-    async function initializeDashboard() {
-      if (!authUser?.id) return;
-      
-      try {
-        const freshUser = await userService.getUserProfile(authUser.id);
-        if (isMounted && freshUser) {
-          setDbUser(freshUser);
-          refreshData(freshUser);
-        }
-      } catch (error) {
-        console.error("Failed to load dashboard profile:", error);
-      } finally {
-        if (isMounted) setIsInitializing(false);
-      }
-    }
-
-    initializeDashboard();
-    return () => { isMounted = false; };
-  }, [authUser]);
-
-  const refreshData = (currentUser: UserProfile) => {
-    const allAlbums = getAlbums();
-    const allSongs = getSongs();
-
-    const allowedAlbumIds = currentUser.artistProfile?.albums || [];
-    const allowedSingleIds = currentUser.artistProfile?.singles || [];
-
-    const userAlbums = allAlbums.filter(album => allowedAlbumIds.includes(album.id));
-    const albumSongIds = userAlbums.flatMap(album => album.songList || []);
-    const totalTargetSongIds = [...new Set([...allowedSingleIds, ...albumSongIds])];
-
-    const userSongs = allSongs.filter(song => totalTargetSongIds.includes(song.id));
-
-    const virtualSingleAlbums: AlbumItem[] = allSongs
-      .filter(song => allowedSingleIds.includes(song.id))
-      .map(song => ({
-        id: song.id, 
-        name: song.title,
-        artistName: song.artistName,
-        artistId: song.artistId,
-        listeners: 0, 
-        releaseDate: song.releaseDate,
-        releaseType: 'single',
-        genre: song.genre,
-        collaborators: song.collaborators,
-        imageUrl: song.imageUrl,
-        songList: [song.id]
-      }));
-
-    const combinedReleases = [...userAlbums, ...virtualSingleAlbums];
-    const uniqueReleases = combinedReleases.filter((value, index, self) =>
-      index === self.findIndex((t) => t.id === value.id)
-    );
-
-    setMyReleases(uniqueReleases);
-    setMySongs(userSongs);
-  };
+  const dbUser = (dashboardData?.user ?? null) as UserProfile | null;
+  const myReleases: AlbumItem[] = dashboardData?.releases ?? [];
+  const mySongs: SongItem[] = dashboardData?.songs ?? [];
 
   const handlePlaySong = (song: SongItem) => {
     const sourceContext = 'album' as unknown as PlaybackSource;
     if (setQueue) {
       setQueue([song], sourceContext, song);
     } else {
-      usePlayerStore.setState({ 
+      usePlayerStore.setState({
         originalQueue: [{ song, source: sourceContext }],
         playQueue: [{ song, source: sourceContext }],
-        currentSong: song, 
+        currentSong: song,
         playbackSource: sourceContext,
         currentIndex: 0,
         isPlaying: true,
@@ -115,185 +57,59 @@ export default function ManagePage() {
     }
   };
 
-  // NEW: Deep Edit Processing Function
-  const handleUpdateRelease = (updatedRelease: AlbumItem, newImageFile?: File, updatedTracks?: TrackEditData[]) => {
-    let updatedImageUrl = updatedRelease.imageUrl;
-    if (newImageFile) {
-      updatedImageUrl = URL.createObjectURL(newImageFile);
-    }
+  const createRelease = useCreateRelease();
+  const updateRelease = useUpdateRelease();
+  const deleteRelease = useDeleteRelease();
 
-    const finalRelease = { ...updatedRelease, imageUrl: updatedImageUrl };
+  const handleSaveRelease = (formData: ReleaseFormState) => {
+    if (!dbUser) return;
 
-    // Update Albums Core DB
-    if (finalRelease.releaseType !== 'single') {
-      const allAlbums = getAlbums().map(album => 
-        album.id === finalRelease.id ? finalRelease : album
-      );
-      saveAlbums(allAlbums);
-    }
-
-    // Update Songs Core DB with nested track metadata
-    const allSongs = getSongs().map(song => {
-      // 1. Check if this specific song was modified in the carousel
-      const trackUpdate = updatedTracks?.find(t => t.id === song.id);
-      
-      if (trackUpdate) {
-        let newAudioUrl = song.audioUrl;
-        if (trackUpdate.audioFile) {
-          newAudioUrl = URL.createObjectURL(trackUpdate.audioFile);
-        }
-        return {
-          ...song,
-          title: trackUpdate.title,
-          lyrics: trackUpdate.lyrics,
-          audioUrl: newAudioUrl,
-          albumName: finalRelease.name,
-          genre: finalRelease.genre,
-          imageUrl: updatedImageUrl ?? song.imageUrl
-        };
+    createRelease.mutate(
+      {
+        dbUser,
+        formData,
+      },
+      {
+        onSuccess: () => {
+          setViewState("dashboard");
+        },
       }
-
-      // 2. Safely sync Single root song to act as the primary album record
-      if (finalRelease.releaseType === 'single' && song.id === finalRelease.id) {
-         return {
-            ...song,
-            title: finalRelease.name,
-            albumName: finalRelease.name,
-            genre: finalRelease.genre,
-            imageUrl: updatedImageUrl ?? song.imageUrl
-         };
-      }
-
-      // 3. Sync unmodified album songs to inherit the new album name/cover
-      if (song.albumId === finalRelease.id) {
-        return {
-          ...song,
-          albumName: finalRelease.name,
-          genre: finalRelease.genre,
-          imageUrl: updatedImageUrl ?? song.imageUrl
-        };
-      }
-
-      return song;
-    });
-
-    saveSongs(allSongs);
-
-    if (dbUser) refreshData(dbUser);
-    setEditingRelease(null);
+    );
   };
 
-  const handleSaveRelease = async (formData: ReleaseFormState) => {
-    if (!formData.title || !dbUser) return alert("Release title is required.");
-
-    const coverUrl = formData.coverImage.length > 0 
-      ? URL.createObjectURL(formData.coverImage[0]) 
-      : undefined;
-
-    let newSongs: SongItem[] = [];
-    const newReleaseId = `${formData.releaseType === 'single' ? 'song' : 'album'}-${Date.now()}`;
-
-    if (formData.releaseType === 'single') {
-      newSongs.push({
-        id: newReleaseId,
-        title: formData.title,
-        artistName: dbUser.displayName,
-        artistId: dbUser.id,
-        albumName: formData.title,
-        albumId: newReleaseId,
-        streams: 0,
-        releaseDate: formData.releaseDate,
-        genre: formData.genre,
-        collaborators: formData.collaborators,
-        audioUrl: formData.singleAudio.length > 0 ? URL.createObjectURL(formData.singleAudio[0]) : '',
-        lyrics: formData.singleLyrics,
-        imageUrl: coverUrl
-      });
-    } else {
-      newSongs = formData.tracks.map((t, idx) => ({
-        id: `song-${Date.now()}-${idx}`,
-        title: t.title || `Track ${idx + 1}`,
-        artistName: dbUser.displayName,
-        artistId: dbUser.id,
-        albumName: formData.title,
-        albumId: newReleaseId,
-        streams: 0,
-        releaseDate: formData.releaseDate,
-        genre: formData.genre,
-        collaborators: formData.collaborators,
-        audioUrl: t.audio.length > 0 ? URL.createObjectURL(t.audio[0]) : '',
-        lyrics: t.lyrics,
-        trackNumber: idx + 1,
-        imageUrl: coverUrl
-      }));
-    }
-
-    saveSongs([...getSongs(), ...newSongs]);
-
-    if (formData.releaseType === 'album') {
-      const newRelease: AlbumItem = {
-        id: newReleaseId,
-        name: formData.title,
-        artistName: dbUser.displayName,
-        artistId: dbUser.id,
-        listeners: 0,
-        releaseDate: formData.releaseDate,
-        releaseType: 'album',
-        genre: formData.genre,
-        collaborators: formData.collaborators,
-        imageUrl: coverUrl,
-        songList: newSongs.map(s => s.id)
-      };
-      saveAlbums([...getAlbums(), newRelease]);
-    }
-
-    const updatedUsers = getUsers().map((u: any) => {
-      if (u.id === dbUser.id) {
-        const currentProfile = u.artistProfile || { singles: [], albums: [] };
-        return {
-          ...u,
-          artistProfile: {
-            ...currentProfile,
-            singles: formData.releaseType === 'single' ? [...(currentProfile.singles || []), newReleaseId] : (currentProfile.singles || []),
-            albums: formData.releaseType === 'album' ? [...(currentProfile.albums || []), newReleaseId] : (currentProfile.albums || [])
-          }
-        };
+  const handleUpdateRelease = (
+    updatedRelease: AlbumItem,
+    newImageFile?: File,
+    updatedTracks?: TrackEditData[]
+  ) => {
+    updateRelease.mutate(
+      {
+        release: updatedRelease,
+        image: newImageFile,
+        tracks: updatedTracks,
+      },
+      {
+        onSuccess: () => {
+          setEditingRelease(null);
+        },
       }
-      return u;
-    });
-
-    saveUsers(updatedUsers);
-    
-    const reFetchedUser = updatedUsers.find((u: any) => u.id === dbUser.id) as UserProfile;
-    setDbUser(reFetchedUser);
-    refreshData(reFetchedUser);
-    setViewState('dashboard');
+    );
   };
 
   const executeDelete = () => {
     if (!deletingId || !dbUser) return;
-    deleteReleaseAndSongs(deletingId);
 
-    const updatedUsers = getUsers().map((u: any) => {
-      if (u.id === dbUser.id) {
-        return {
-          ...u,
-          artistProfile: {
-            ...u.artistProfile,
-            singles: (u.artistProfile?.singles || []).filter((id: string) => id !== deletingId),
-            albums: (u.artistProfile?.albums || []).filter((id: string) => id !== deletingId)
-          }
-        };
+    deleteRelease.mutate(
+      {
+        userId: dbUser.id,
+        releaseId: deletingId,
+      },
+      {
+        onSuccess: () => {
+          setDeletingId(null);
+        },
       }
-      return u;
-    });
-
-    saveUsers(updatedUsers);
-
-    const reFetchedUser = updatedUsers.find((u: any) => u.id === dbUser.id) as UserProfile;
-    setDbUser(reFetchedUser);
-    refreshData(reFetchedUser);
-    setDeletingId(null);
+    );
   };
 
   if (isInitializing) {
@@ -326,7 +142,7 @@ export default function ManagePage() {
             <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">Artist Hub</h1>
             <p className="text-sm text-neutral-500 mt-1">Manage your discography and track live publication analytics.</p>
           </div>
-          <Button 
+          <Button
             onClick={() => setViewState('create')}
             className="sm:w-auto !py-2.5 !px-6 flex items-center justify-center gap-2"
           >
@@ -340,7 +156,7 @@ export default function ManagePage() {
           <div className="p-5 border-b border-neutral-800/50">
             <h2 className="font-bold text-white tracking-tight">My Published Works</h2>
           </div>
-          
+
           {myReleases.length === 0 ? (
             <div className="p-12 text-center text-neutral-500 text-sm">
               <Music className="w-12 h-12 mx-auto mb-3 opacity-20" />
@@ -348,53 +164,41 @@ export default function ManagePage() {
             </div>
           ) : (
             <div className="divide-y divide-neutral-800/50">
-              {myReleases.map(release => {
-                const releaseStreams = release.songList.reduce((sum, id) => {
-                  const s = mySongs.find(song => song.id === id);
+              {myReleases.map((release: AlbumItem) => {
+                const releaseStreams = release.songList.reduce((sum: number, id: string) => {
+                  const s = mySongs.find((song: SongItem) => song.id === id);
                   return sum + (s?.streams || 0);
                 }, 0);
 
                 const isSingle = release.releaseType === 'single';
-                const singleTargetSong = isSingle ? mySongs.find(s => s.id === release.id) : null;
-                
-                const isCurrentSongActive = isSingle && singleTargetSong && currentSong?.id === singleTargetSong.id;
-                const isThisSpecificTrackPlaying = isCurrentSongActive && isPlaying;
+                const singleTargetSong = isSingle ? mySongs.find((s: SongItem) => s.id === release.id) : null;
 
-                const handleRowInteraction = () => {
-                  if (isSingle && singleTargetSong) {
-                    if (isCurrentSongActive) togglePlayPause();
-                    else handlePlaySong(singleTargetSong);
-                  } else {
-                    router.push(`/album/${release.id}`);
-                  }
+                const handleOpenRelease = () => {
+                  router.push(`/album/${release.id}`);
                 };
 
                 return (
-                  <div 
-                    key={release.id} 
-                    onClick={handleRowInteraction}
-                    className={`group p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition cursor-pointer select-none
-                      ${isCurrentSongActive ? 'bg-white/5 hover:bg-white/10' : 'hover:bg-neutral-900/30'}
-                    `}
+                  <div
+                    key={release.id}
+                    onClick={handleOpenRelease}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        handleOpenRelease();
+                      }
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    className="group cursor-pointer p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition select-none hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] hover:bg-neutral-900/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40"
                   >
                     <div className="flex items-center gap-4 w-full sm:w-auto min-w-0">
-                      
                       <div className="relative shrink-0 shadow-md overflow-hidden rounded">
                         <Cover src={release.imageUrl} alt={release.name} size={60} />
-                        {isSingle && (
-                          <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isCurrentSongActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                            {isThisSpecificTrackPlaying ? (
-                              <Pause size={18} className="fill-current text-green-500" />
-                            ) : (
-                              <Play size={18} className="fill-current text-white" />
-                            )}
-                          </div>
-                        )}
                       </div>
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className={`font-bold truncate ${isCurrentSongActive ? 'text-green-500' : 'text-white'}`}>
+                          <h3 className="font-bold truncate text-white">
                             {release.name}
                           </h3>
                           <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 shrink-0">
@@ -420,7 +224,7 @@ export default function ManagePage() {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <button 
+                        <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingRelease(release);
@@ -430,7 +234,7 @@ export default function ManagePage() {
                         >
                           <Edit2 size={16} />
                         </button>
-                        <button 
+                        <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setDeletingId(release.id);
@@ -462,7 +266,7 @@ export default function ManagePage() {
         {editingRelease && (
           <EditAlbumModal
             release={editingRelease}
-            releaseSongs={mySongs.filter((s) => editingRelease.songList.includes(s.id))}
+            releaseSongs={mySongs.filter((s: SongItem) => editingRelease.songList.includes(s.id))}
             onSave={handleUpdateRelease}
             onClose={() => setEditingRelease(null)}
           />
@@ -473,7 +277,7 @@ export default function ManagePage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-24 px-4 sm:px-6 mt-6 sm:mt-10">
-      <button 
+      <button
         onClick={() => setViewState('dashboard')}
         className="flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition"
       >

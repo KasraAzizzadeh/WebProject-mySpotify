@@ -240,6 +240,7 @@ export default function MobilePlayer() {
                 src={currentSong.imageUrl || '/placeholder.png'}
                 alt={currentSong.title}
                 className="w-full h-full object-contain rounded-xl"
+                loading="eager"
               />
             </div>
           )}

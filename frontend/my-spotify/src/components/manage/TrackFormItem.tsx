@@ -10,6 +10,8 @@ interface TrackFormItemProps {
   audio: File[];
   lyrics: string;
   showRemove: boolean;
+  titleError?: string;
+  audioError?: string;
   onUpdate: (fields: { title?: string; audio?: File[]; lyrics?: string }) => void;
   onRemove: () => void;
 }
@@ -20,6 +22,8 @@ export default function TrackFormItem({
   audio,
   lyrics,
   showRemove,
+  titleError,
+  audioError,
   onUpdate,
   onRemove,
 }: TrackFormItemProps) {
@@ -42,12 +46,14 @@ export default function TrackFormItem({
         placeholder="Track Title" 
         value={title}
         onChange={(e) => onUpdate({ title: e.target.value })}
+        error={titleError}
       />
       
       <FileInput 
         value={audio}
         accept="audio/*"
         onChange={(files) => onUpdate({ audio: files })}
+        error={audioError}
       />
 
       <textarea 

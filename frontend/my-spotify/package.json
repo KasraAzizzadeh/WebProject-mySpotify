@@ -2,11 +2,20 @@
   "name": "my-spotify",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.15.0"
+  },
+  "overrides": {
+    "eslint-visitor-keys": "4.2.1"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:pw": "playwright test",
+    "test:pw:repeat": "node scripts/repeat-e2e.mjs --framework playwright --repeat 3",
+    "test:cypress": "cypress run --browser electron"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
@@ -19,12 +28,15 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cypress": "^15.19.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "playwright": "^1.61.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

@@ -55,7 +55,7 @@ export default function PasswordResetPage() {
     const handleGenerateOtp = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const emailError = validateEmail(email);
+        const emailError = validateEmail(email.toLocaleLowerCase());
 
         setErrors((prev) => ({
             ...prev,
@@ -65,7 +65,7 @@ export default function PasswordResetPage() {
         if (emailError) return;
 
         try {
-            const result = await generateOtp(email);
+            const result = await generateOtp(email.toLocaleLowerCase());
             setOtpId(result);
 
             setOtp("");
@@ -112,7 +112,7 @@ export default function PasswordResetPage() {
 
     const handleResendOtp = async () => {
         try {
-            const result = await generateOtp(email);
+            const result = await generateOtp(email.toLocaleLowerCase());
             setOtpId(result);
 
             setOtp("");
@@ -148,7 +148,7 @@ export default function PasswordResetPage() {
         }
 
         try {
-            await changePassword(email, password);
+            await changePassword(email.toLocaleLowerCase(), password);
             router.push("/login");
         } catch (err) {
             if (err instanceof Error) {

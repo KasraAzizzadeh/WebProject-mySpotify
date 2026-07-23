@@ -1,6 +1,6 @@
 "use client";
 
-import { InputHTMLAttributes } from "react";
+import { InputHTMLAttributes, useId } from "react";
 
 type DateInputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
@@ -13,15 +13,18 @@ export default function DateInput({
   className = "",
   ...props
 }: DateInputProps) {
+  const inputId = useId();
+
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm text-neutral-400 mb-1">
+        <label htmlFor={inputId} className="block text-sm text-neutral-400 mb-1">
           {label}
         </label>
       )}
 
       <input
+        id={inputId}
         type="date"
         {...props}
         className={`

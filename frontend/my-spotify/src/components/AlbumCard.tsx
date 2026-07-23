@@ -34,7 +34,8 @@ export default function AlbumCard({
               src={album.imageUrl}
               alt={album.name}
               fill
-              sizes="180px" // ✅ FIXED: Silences console errors & requests proper thumbnail layout sizes
+              sizes="180px"
+              loading="eager"
               className="object-cover"
             />
           ) : (

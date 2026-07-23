@@ -65,6 +65,7 @@ export default function SongCard({
               src={song.imageUrl}
               alt={song.title}
               className="w-full h-full object-cover"
+              loading="eager"
               onError={() => setImgError(true)}
             />
           ) : (
@@ -126,7 +127,7 @@ export default function SongCard({
         <p className="text-neutral-400 text-sm mt-0.5 truncate">
           By{' '}
           <Link
-            href={`/artist/${song.artistId}`}
+            href={`/profile/${song.artistId}`}
             onClick={(e) => e.stopPropagation()}
             className="text-green-400 hover:underline"
           >

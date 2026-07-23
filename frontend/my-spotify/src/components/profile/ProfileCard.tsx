@@ -64,9 +64,9 @@ export default function ProfileCard({
             {dbUser.role === 'artist' && isVerified && (
               <span className="text-blue-400 text-sm">🔹</span>
             )}
-            {dbUser.role === 'artist' && isPending && isOwnProfile && (
+            {dbUser.role === 'listener' && isPending && isOwnProfile && (
               <span className="text-yellow-400 text-[10px] ml-2">
-                pending
+                Artist Pending
               </span>
             )}
           </span>

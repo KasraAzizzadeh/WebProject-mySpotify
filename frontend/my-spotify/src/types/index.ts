@@ -18,13 +18,14 @@ export interface UserProfile {
   following: string[];
   listenerProfile?: ListenerProfile;
   artistProfile?: ArtistProfile;
+  settings?: UserSettings;
 }
 
 interface ArtistProfile {
   bio?: string;
   verificationStatus: VerificationStatus;
-  singles?: string[];
-  albums?: string[];
+  singles: string[];
+  albums: string[];
   totalStreams: number;
   uniqueListener?: number;
 }
@@ -33,6 +34,14 @@ interface ListenerProfile {
   playlists?: string[];
   likedTracks: string[];
   recentlyPlayed: string[];
+  dailyStreams: number;
+  lastStreamDate: Date;
+}
+
+interface UserSettings {
+  notificationLimit: number;
+  systemVoice: string;
+  language: string;
 }
 
 export interface PlaylistItem {
@@ -90,6 +99,12 @@ export interface DashboardData {
   earlyAccess?: AlbumItem[]; 
 }
 
+export interface ArtistDashboard {
+  user: UserProfile;
+  releases: AlbumItem[];
+  songs: SongItem[];
+}
+
 export type DiscoverFilter = "latest" | "most-streamed" | "oldest";
 
 export interface PlaybackSource {
@@ -112,11 +127,24 @@ export interface OtpEntry {
   expiresAt: Date;
 }
 
+// ES = Expiring Subscription
+// SA = Support Artist Application
+// AA = Artist Approved
+// AQ = Answered Question
+// ST = Support Ticket
+// AT = Audit Transfer
+// NA = New Album
+
+export type NotificationType = "NA" | "ES" | "AQ" | "AA" | "AT" | "SA" | "ST";
+
 export interface Notifications {
   id: string;
   userId: string;
   content: string;
   status: "read" | "unread";
+  type: NotificationType;
+  redirectId?: string;
+  createdAt: Date;
 }
 
 // ==========================================

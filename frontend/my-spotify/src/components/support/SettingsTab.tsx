@@ -13,15 +13,6 @@ export default function SettingsTab() {
   const [silverPrice, setSilverPrice] = useState('');
   const [goldPrice, setGoldPrice] = useState('');
 
-  // const monthlyGrossRevenue = 148520.00;
-  // const activePremiumUsers = 12450;
-
-  // const userDistribution = [
-  //   { tier: 'Free Tier', count: 45200, percentage: 72, color: 'bg-neutral-700' },
-  //   { tier: 'Silver Premium', count: 8900, percentage: 14, color: 'bg-neutral-400' },
-  //   { tier: 'Gold Premium', count: 3550, percentage: 14, color: 'bg-yellow-500' },
-  // ];
-
   const {
     data: analytics,
     isLoading,
@@ -57,7 +48,6 @@ export default function SettingsTab() {
     if (!el) return;
 
     const checkWrapping = () => {
-      // If the number's offset height is greater than a standard single-line height (~36px), it has wrapped
       if (el.offsetHeight > 36) {
         setRevenueWrapped(true);
       } else {
@@ -95,20 +85,39 @@ export default function SettingsTab() {
     );
   }
 
+  // Helper method to parse out dynamic gradient positions from backend distribution stats
+  const getDynamicConicGradient = () => {
+    if (!analytics?.distribution) return '';
+
+    // Safeguard lookup to find user percentages dynamically by names matching original items
+    const goldPct = analytics.distribution.find(d => d.tier.toLowerCase().includes('gold'))?.percentage ?? 14;
+    const silverPct = analytics.distribution.find(d => d.tier.toLowerCase().includes('silver'))?.percentage ?? 14;
+
+    // Calculate sequential gradient cutoff checkpoints based on actual values
+    const goldStop = goldPct;
+    const silverStop = goldStop + silverPct;
+
+    return `conic-gradient(
+      #eab308 0% ${goldStop}%, 
+      #a3a3a3 ${goldStop}% ${silverStop}%, 
+      #404040 ${silverStop}% 100%
+    )`;
+  };
+
   if (isLoading || subsIsLoading) {
-      return (
-          <div className="p-8 text-center text-neutral-400">
-              Loading Anallytics
-          </div>
-      );
+    return (
+      <div className="p-8 text-center text-neutral-400">
+        Loading Analytics...
+      </div>
+    );
   }
 
   if (error || subsError) {
-      return (
-          <div className="p-8 text-center text-red-400">
-              Failed to Data.
-          </div>
-      );
+    return (
+      <div className="p-8 text-center text-red-400">
+        Failed to load database distribution statistics.
+      </div>
+    );
   }
 
   return (
@@ -124,7 +133,7 @@ export default function SettingsTab() {
         </p>
       </div>
 
-      {/* TWO COLUMN LAYOUT (DYNAMIC BREAKPOINT DRIVEN BY THE REVENUE WRAP DETECTOR) */}
+      {/* TWO COLUMN LAYOUT */}
       <div className={`flex gap-6 xl:gap-8 w-full items-stretch ${revenueWrapped ? 'flex-col' : 'flex-col xl:flex-row'}`}>
 
         {/* LEFT COLUMN */}
@@ -141,8 +150,6 @@ export default function SettingsTab() {
                 <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider whitespace-nowrap">
                   Monthly Gross Revenue
                 </p>
-                
-                {/* Revenue numerical value container that wraps dynamically */}
                 <p 
                   ref={revenueTextRef} 
                   className={`font-black text-white mt-1 transition-all leading-tight ${
@@ -178,18 +185,15 @@ export default function SettingsTab() {
 
             <div className="flex flex-col md:flex-row items-center justify-around gap-8 py-4 flex-1">
 
+              {/* DYNAMIC PIE GRAPH CONTAINER */}
               <div
                 className="relative w-44 h-44 rounded-full flex items-center justify-center shrink-0 shadow-2xl bg-neutral-900 border border-neutral-800"
                 style={{
-                  background: `conic-gradient(
-                    #eab308 0% 14%, 
-                    #a3a3a3 14% 28%, 
-                    #404040 28% 100%
-                  )`
+                  background: getDynamicConicGradient()
                 }}
               >
                 <div className="absolute inset-5 bg-[#121212] rounded-full flex flex-col items-center justify-center shadow-inner border border-neutral-800/40">
-                  <span className="text-xl font-black text-white">{analytics?.totalUsers}</span>
+                  <span className="text-xl font-black text-white">{analytics?.totalUsers?.toLocaleString()}</span>
                   <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mt-0.5">
                     Total Users
                   </span>

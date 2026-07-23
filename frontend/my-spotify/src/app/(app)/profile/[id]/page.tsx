@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation'; // Added useRouter
 import { userService } from '@/services/userService';
 import { UserProfile, SongItem, AlbumItem } from '@/types';
 import { getAlbums, getSongs } from '@/store/mockDb';
@@ -13,10 +13,12 @@ import ProfileStats from '@/components/profile/ProfileStats';
 import ProfileDetails from '@/components/profile/ProfileDetails';
 import ProfileDiscography from '@/components/profile/ProfileDiscography';
 import Message from '@/components/ui/Message';
+import Button from '@/components/ui/Button';
 
 export default function ProfilePage() {
   const { user: authUser, refreshUser, logoutUser } = useAuth() as any;
   const params = useParams();
+  const router = useRouter(); // Initialize router
   
   const targetUserId = (params?.id as string) || authUser?.id;
   const isOwnProfile = authUser?.id === targetUserId;
@@ -241,14 +243,12 @@ export default function ProfilePage() {
 
   const followersCount = dbUser.followers?.length || 0;
   const followingCount = dbUser.following?.length || 0;
-  const dailyStreams = 142;
+  const shouldShowApplyArtistButton = isOwnProfile && dbUser.role === 'listener' && dbUser.artistProfile?.verificationStatus !== 'pending' && dbUser.artistProfile?.verificationStatus !== 'approved';
   
   // Calculate total streams based strictly on standalone track items
   const totalStreams = dbUser.role === 'artist' 
     ? artistSongs.reduce((sum, song) => sum + (song.streams || 0), 0) 
     : 0;
-
-  const shouldShowDailyStreams = isOwnProfile || dbUser.role === 'listener';
 
   return (
     <main className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
@@ -271,8 +271,6 @@ export default function ProfilePage() {
         followersCount={followersCount}
         followingCount={followingCount}
         totalStreams={totalStreams}
-        dailyStreams={dailyStreams}
-        shouldShowDailyStreams={shouldShowDailyStreams}
       />
 
       <ProfileDetails 
@@ -290,6 +288,18 @@ export default function ProfilePage() {
         handleCancelEdit={handleCancelEdit}
         handleSaveProfile={handleSaveProfile}
       />
+
+      {shouldShowApplyArtistButton && (
+        <div className="w-full">
+          <Button 
+            variant="secondary" 
+            onClick={() => router.push('/apply-artist')}
+            className="border border-neutral-700 bg-neutral-800/80 text-base text-neutral-100 shadow-sm"
+          >
+            I want to apply as an artist
+          </Button>
+        </div>
+      )}
 
       {dbUser.role === 'artist' && (
         <ProfileDiscography 

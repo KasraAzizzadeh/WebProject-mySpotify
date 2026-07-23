@@ -21,7 +21,6 @@ export default function PlaylistPage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   
-  const playSong = usePlayerStore((s) => s.playSong);
   const setQueue = usePlayerStore((s) => s.setQueue);
   const addToQueue = usePlayerStore((s) => s.addToQueue);
 
@@ -166,7 +165,7 @@ export default function PlaylistPage() {
               <SongEntry
                 key={song.id}
                 song={song}
-                trackNumber={index + 1}
+                trackNumber={index}
                 hasPermission={isOwner}
                 subscriptionType={authUser?.subscriptionType || "basic"}
                 handlePlay={(song: SongItem) => {handlePlaySong(song);}}

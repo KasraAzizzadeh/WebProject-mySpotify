@@ -104,7 +104,7 @@ export default function AlbumPage() {
         `,
       }}
     >
-      {/* is buggy, needs to just be on top of album page */}
+      {/* Sticky top action row tracking block bar */}
       <StickyBar
         album={album}
         visible={showStickyBar}
@@ -134,6 +134,7 @@ export default function AlbumPage() {
               }
               handlePlay={(song: SongItem) => {handlePlaySong(song);}}
               showAlbum={false}
+              showImage={false}
               onAdd={(songId: string) => setSelectedSongId(songId)}
               onQueue={(song) => addToQueue([song], {type: "single", id: song.id,})}
             />

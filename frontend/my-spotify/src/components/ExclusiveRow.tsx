@@ -11,7 +11,11 @@ export default function ExclusiveRow({
   data: DashboardData;
   user: UserProfile;
 }) {
-  if (user.subscriptionType !== 'gold' || !data.earlyAccess) return null;
+  // Extract the single latest album from the recent albums array
+  const latestAlbum = data.recentAlbums?.[0];
+
+  // Safeguard: hide the row if the user isn't gold OR if there are no recent albums
+  if (user.subscriptionType !== 'gold' || !latestAlbum) return null;
 
   return (
     <section className="bg-gradient-to-br from-amber-950/20 to-neutral-900 p-5 rounded-2xl border border-amber-500/20 space-y-3">
@@ -20,11 +24,10 @@ export default function ExclusiveRow({
       </h2>
 
       <HorizontalScrollRow title="">
-        {data.earlyAccess.map((album) => (
-          <div key={album.id} className="min-w-[180px]">
-            <AlbumCard album={album} badge="New" />
-          </div>
-        ))}
+        {/* Removed the .map() loop since we are only rendering the single latest album */}
+        <div key={latestAlbum.id} className="min-w-[180px]">
+          <AlbumCard album={latestAlbum} badge="New" />
+        </div>
       </HorizontalScrollRow>
     </section>
   );

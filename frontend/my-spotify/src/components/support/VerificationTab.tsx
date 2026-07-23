@@ -105,6 +105,9 @@ export default function VerificationTab() {
       });
 
       audio.play().catch(err => {
+        if (err instanceof DOMException && (err.name === 'AbortError' || err.name === 'NotAllowedError')) {
+          return;
+        }
         console.error("Audio playback failed:", err);
         setPlayingSampleIdx(null);
       });
