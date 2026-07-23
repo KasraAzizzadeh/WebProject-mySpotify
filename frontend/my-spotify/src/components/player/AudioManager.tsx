@@ -9,6 +9,20 @@ import Message from "../ui/Message";
 
 const LISTEN_THRESHHOLD = 45;
 
+async function playAudioSafely(audio: HTMLAudioElement) {
+    try {
+        await audio.play();
+    } catch (error) {
+        const isExpectedInterruption =
+            error instanceof DOMException &&
+            (error.name === "AbortError" || error.name === "NotAllowedError");
+
+        if (!isExpectedInterruption) {
+            console.warn("Audio playback could not start:", error);
+        }
+    }
+}
+
 export default function AudioManager() {
 
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -86,7 +100,7 @@ export default function AudioManager() {
 
             if (repeatMode === "one") {
                 audio.currentTime = 0;
-                audio.play();
+                void playAudioSafely(audio);
                 return;
             }
 
@@ -146,8 +160,9 @@ export default function AudioManager() {
         alreadyUpdated.current = false;
 
 
-        if (isPlaying)
-            audioRef.current.play();
+        if (isPlaying) {
+            void playAudioSafely(audioRef.current);
+        }
 
     }, [currentSong]);
 
@@ -159,7 +174,7 @@ export default function AudioManager() {
             return;
 
         if (isPlaying) {
-            audioRef.current.play();
+            void playAudioSafely(audioRef.current);
         } else {
             audioRef.current.pause();
         }

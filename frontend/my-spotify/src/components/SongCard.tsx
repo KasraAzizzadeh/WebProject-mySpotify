@@ -65,6 +65,7 @@ export default function SongCard({
               src={song.imageUrl}
               alt={song.title}
               className="w-full h-full object-cover"
+              loading="eager"
               onError={() => setImgError(true)}
             />
           ) : (

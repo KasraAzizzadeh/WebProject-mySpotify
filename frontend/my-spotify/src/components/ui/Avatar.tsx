@@ -19,6 +19,7 @@ export default function Avatar({ src, alt, size = 48 }: AvatarProps) {
           fill 
           className="object-cover"
           sizes={`${size}px`}
+          loading="eager"
         />
       ) : (
         // Standard geometric icon fallback matching standard audio visual guidelines

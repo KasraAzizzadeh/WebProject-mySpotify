@@ -24,7 +24,8 @@ export default function PlaylistCard({
             src={playlist.imageUrl}
             alt={playlist.name}
             fill
-            sizes="180px" 
+            sizes="180px"
+            loading="eager"
             className="object-cover"
           />
         ) : (

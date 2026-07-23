@@ -1,6 +1,6 @@
 "use client";
 
-import { InputHTMLAttributes, useState } from "react";
+import { InputHTMLAttributes, useId, useState } from "react";
 import { Eye, EyeOff, Search } from "lucide-react";
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
@@ -21,13 +21,14 @@ export default function Input({
 }: InputProps) {
   const isPassword = type === "password";
   const isSearch = variant === "search";
+  const inputId = useId();
 
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="w-full">
       {label && !isSearch && (
-        <label className="block text-sm text-neutral-400 mb-1">
+        <label htmlFor={inputId} className="block text-sm text-neutral-400 mb-1">
           {label}
         </label>
       )}
@@ -35,6 +36,7 @@ export default function Input({
       <div className="relative">
         <input
           {...props}
+          id={inputId}
           type={isPassword && showPassword ? "text" : type}
           className={`
             w-full p-3
@@ -53,6 +55,7 @@ export default function Input({
           <button
             type="button"
             onClick={() => setShowPassword(prev => !prev)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-green-400 transition cursor-pointer"
           >
             {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}

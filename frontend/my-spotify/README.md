@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# my-spotify
 
-## Getting Started
-
-First, run the development server:
+## Run the app
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run the tests
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Playwright
 
-## Learn More
+Run once:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run test:pw
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Run repeatedly (3 times):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run test:pw:repeat
+```
 
-## Deploy on Vercel
+This uses the project repeat helper for a stable repeated run.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+You can also pass a specific spec:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npx playwright test tests/e2e/player-flow.spec.ts --reporter=list
+```
+
+### Cypress
+
+```bash
+npm run test:cypress
+```
+
+## Repeat-run helper
+
+A small helper script is available for repeated runs:
+
+```bash
+node scripts/repeat-e2e.mjs --framework playwright --repeat 3 --spec tests/e2e/auth-flow.spec.ts --spec tests/e2e/role-and-response.spec.ts --spec tests/e2e/player-flow.spec.ts
+```
+
+```bash
+node scripts/repeat-e2e.mjs --framework cypress --repeat 3 --spec cypress/e2e/ui-scenarios.cy.ts --spec cypress/e2e/player-flow.cy.ts
+```
