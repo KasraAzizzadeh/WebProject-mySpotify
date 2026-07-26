@@ -49,3 +49,7 @@ node scripts/repeat-e2e.mjs --framework playwright --repeat 3 --spec tests/e2e/a
 ```bash
 node scripts/repeat-e2e.mjs --framework cypress --repeat 3 --spec cypress/e2e/ui-scenarios.cy.ts --spec cypress/e2e/player-flow.cy.ts
 ```
+
+## Progressive Web App (PWA)
+
+To test the PWA, build and start the application using `npm run build` followed by `npm start`, then open it in a browser, then it can be installed using the browser's **Install App** option usually found near the address bar.
