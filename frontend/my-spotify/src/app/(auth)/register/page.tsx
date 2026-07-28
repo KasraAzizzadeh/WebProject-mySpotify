@@ -162,12 +162,6 @@ export default function LoginPage() {
 
         {/* add the privacy policy page */}
         <Checkbox
-            label="I agree to the Privacy Policy"
-            checked={acceptPolicy}
-            onChange={(e) => setAcceptPolicy(e.target.checked)}
-        />
-
-        <Checkbox
             checked={acceptPolicy}
             onChange={(e) => setAcceptPolicy(e.target.checked)}
             label={
@@ -182,6 +176,12 @@ export default function LoginPage() {
                     </button>
                 </>
             }
+        />
+
+        <Checkbox
+            label="I want to apply as an artist"
+            checked={applyArtist}
+            onChange={(e) => setApplyArtist(e.target.checked)}
         />
 
 <PrivacyModal
