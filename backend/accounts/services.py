@@ -1,18 +1,25 @@
 from datetime import timedelta
 
+from django.db import transaction
 from django.db.models.aggregates import Sum
 from django.utils import timezone
 
 from songs.models import PlayHistory
 from subscriptions.models import SubscriptionPlan
-from .models import Notification
+from .models import Notification, ArtistProfile, User
+
+from support.services import create_application
 
 # General Services
-def send_notification(user, type, content):
-    Notification.objects.create(
-        owner=user,
-        type=type,
-        content=content,
+def send_notification(user, notif_type, content):
+    Notification.objects.create(owner=user, type=notif_type, content=content)
+
+def send_bulk_notifications(users, notif_type, content):
+    Notification.objects.bulk_create(
+        [
+            Notification(owner=user, type=notif_type, content=content)
+            for user in users
+        ]
     )
 
 # Checks before login
@@ -59,12 +66,41 @@ def check_subscription(user):
     )
     send_notification(user, Notification.NotificationType.EXPIRING_SUB, message)
 
+# Artist Application Submission
+@transaction.atomic
+def submit_artist_application(user, artistic_name, samples):
+    artist_profile, _ = ArtistProfile.objects.get_or_create(
+        owner=user,
+        defaults={
+            "verification_status": ArtistProfile.VerificationStatus.PENDING,
+        },
+    )
+
+    artist_profile.verification_status = ArtistProfile.VerificationStatus.PENDING
+    artist_profile.save(update_fields=["verification_status"])
+
+    create_application(user, artistic_name, samples)
+
+    support_users = get_support_users()
+    message = (
+        f"New artist verification request from "
+        f"{user.display_name}."
+    )
+    send_bulk_notifications(support_users, Notification.NotificationType.SUPPORT_APP, message)
+
+    return user
+
 # General user helpers
 def get_user_followers(user):
     return list(user.followers.values_list("id", flat=True))
 
 def get_user_followings(user):
     return list(user.following.values_list("id", flat=True))
+
+def get_support_users():
+    return User.objects.filter(
+        role__in=[User.Roles.SUPPORT, User.Roles.ADMIN]
+    )
 
 # Listener profile helpers
 def get_user_daily_streams(user):

@@ -259,6 +259,87 @@ class LoginView(generics.CreateAPIView):
         )
 
 
+from django.db.models import Prefetch
+
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiExample,
+)
+
+from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from .models import User
+from .serializers import (
+    SubmitArtistApplicationSerializer,
+    AuthUserSerializer,
+)
+
+
+@extend_schema(
+    summary="Apply as an artist",
+    description=(
+        "Submits an artist verification request together with sample "
+        "audio files. A pending artist profile is created (or reset from "
+        "rejected), support staff are notified, and the updated user is "
+        "returned."
+    ),
+    request=SubmitArtistApplicationSerializer,
+    responses={
+        201: AuthUserSerializer,
+        400: OpenApiExample(
+            "Already pending",
+            value={
+                "non_field_errors": [
+                    "Your artist application is currently under review."
+                ]
+            },
+        ),
+    },
+    examples=[
+        OpenApiExample(
+            "Request",
+            request_only=True,
+            value={
+                "artistic_name": "DJ Eclipse",
+                "samples": [
+                    "<audio file>",
+                    "<audio file>",
+                ],
+            },
+        ),
+    ],
+)
+class SubmitArtistApplicationView(generics.CreateAPIView):
+    serializer_class = SubmitArtistApplicationSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.save()
+        user = (
+            User.objects
+            .select_related(
+                "subscription_plan",
+                "settings",
+                "artist_profile",
+            )
+            .prefetch_related(
+                "followers",
+                "following",
+                "playlists",
+            )
+            .get(pk=user.pk)
+        )
+
+        return Response(
+            AuthUserSerializer(user).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
 class UserProfileView(APIView):
 
     permission_classes = [

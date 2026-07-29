@@ -12,7 +12,8 @@ from songs.models import Song
 from subscriptions.models import SubscriptionPlan
 from .utils import generate_display_name
 from .services import get_artist_total_streams, get_artist_unique_listeners, get_recently_played, \
-    get_user_daily_streams, get_last_stream_date, get_user_followers, get_user_followings, prepare_user_for_login
+    get_user_daily_streams, get_last_stream_date, get_user_followers, get_user_followings, prepare_user_for_login, \
+    submit_artist_application
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -151,12 +152,6 @@ class UserSettingsSerializer(serializers.ModelSerializer):
             "notification_limit",
         ]
 
-
-from rest_framework import serializers
-
-from .models import User, ArtistProfile
-
-
 class AuthUserSerializer(serializers.ModelSerializer):
     subscription_type = serializers.CharField(source="subscription_plan.name", read_only=True)
     settings = UserSettingsSerializer(read_only=True)
@@ -206,6 +201,32 @@ class AuthResponseSerializer(serializers.Serializer):
     user = AuthUserSerializer()
     access = serializers.CharField()
     refresh = serializers.CharField()
+
+
+class SubmitArtistApplicationSerializer(serializers.Serializer):
+    artistic_name = serializers.CharField(max_length=64)
+    samples = serializers.ListField(child=serializers.FileField(), allow_empty=False, max_length=5,)
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+
+        if hasattr(user, "artist_profile"):
+            status = user.artist_profile.verification_status
+
+            if status == ArtistProfile.VerificationStatus.PENDING:
+                raise serializers.ValidationError("Your artist application is still pending.")
+
+            if status == ArtistProfile.VerificationStatus.ACCEPTED:
+                raise serializers.ValidationError("You are already a verified artist.")
+
+        return attrs
+
+    def create(self, validated_data):
+        return submit_artist_application(
+            user=self.context["request"].user,
+            artistic_name=validated_data["artistic_name"],
+            samples=validated_data["samples"],
+        )
 
 
 class UserPublicSerializer(serializers.ModelSerializer):
