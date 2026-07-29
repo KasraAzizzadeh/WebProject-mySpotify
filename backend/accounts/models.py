@@ -50,7 +50,7 @@ class UserSettings(models.Model):
         PERSIAN = "fa"
 
     language = models.CharField(choices=Languages.choices, default=Languages.ENGLISH, max_length=20)
-    system_voice = models.CharField(choices=SystemVoice.choices, default=Languages.ENGLISH, max_length=20)
+    system_voice = models.CharField(choices=SystemVoice.choices, default=SystemVoice.ENGLISH, max_length=20)
     notification_limit = models.PositiveIntegerField(default=10)
     owner = models.OneToOneField(User, on_delete=models.CASCADE, related_name="settings")
 
