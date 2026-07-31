@@ -2,6 +2,7 @@ import re
 
 from django.contrib.auth import authenticate
 from django.db import transaction
+from django.db.models import Sum
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 
@@ -321,61 +322,134 @@ class UserPrivateSerializer(serializers.ModelSerializer):
 
 
 class UserPlaylistSerializer(serializers.ModelSerializer):
+    owner_id = serializers.IntegerField(source='owner.id', read_only=True)
+    image_url = serializers.ImageField(source='cover_image', read_only=True)
+    song_list = serializers.SerializerMethodField()
+
     class Meta:
         model = Playlist
         fields = [
             "id",
             "name",
-            "description",
-            "cover_image",
-            "is_private",
+            "owner_id",
             "created_at",
+            "image_url",
+            "description",
+            "is_private",
+            "song_list",
         ]
+
+    def get_song_list(self, playlist):
+        # preserve order by PlaylistItem.position
+        return list(playlist.items.order_by('position').values_list('song_id', flat=True))
 
 
 class UserAlbumSerializer(serializers.ModelSerializer):
+    """
+    Serialize Album to match frontend AlbumItem shape where possible.
+    """
+    name = serializers.CharField(source='title')
+    artist_name = serializers.SerializerMethodField()
+    artist_id = serializers.SerializerMethodField()
+    listeners = serializers.SerializerMethodField()
+    image_url = serializers.ImageField(source='cover_image', read_only=True)
+    song_list = serializers.SerializerMethodField()
+    description = serializers.CharField(allow_null=True)
+    genre = serializers.SerializerMethodField()
+    collaborators = serializers.SerializerMethodField()
+    release_type = serializers.SerializerMethodField()
 
     class Meta:
         model = Album
         fields = [
-            "id",
-            "title",
-            "description",
-            "cover_image",
-            "release_date",
-            "is_single",
+            'id',
+            'name',
+            'artist_name',
+            'artist_id',
+            'listeners',
+            'release_date',
+            'image_url',
+            'description',
+            'song_list',
+            'genre',
+            'collaborators',
+            'release_type',
         ]
+
+    def get_artist_name(self, album):
+        owner = album.artist.owner
+        return owner.display_name or owner.username
+
+    def get_artist_id(self, album):
+        return album.artist.owner.id
+
+    def get_listeners(self, album):
+        # approximate listeners as total streams for songs in the album
+        return int(album.songs.aggregate(total_streams=Sum('streams'))['total_streams'] or 0)
+
+    def get_song_list(self, album):
+        return list(album.songs.order_by('track_number').values_list('id', flat=True))
+
+    def get_genre(self, album):
+        return list(album.genre.values_list('name', flat=True))
+
+    def get_collaborators(self, album):
+        return [c.owner.id for c in album.collaborators.all()]
+
+    def get_release_type(self, album):
+        return 'single' if album.is_single else 'album'
 
 
 class UserSongSerializer(serializers.ModelSerializer):
+    artist_name = serializers.SerializerMethodField()
+    artist_id = serializers.SerializerMethodField()
+    album_name = serializers.CharField(source='album.title', read_only=True)
+    album_id = serializers.IntegerField(source='album.id', read_only=True)
+    image_url = serializers.ImageField(source='cover_image', read_only=True)
+    song_duration_ms = serializers.IntegerField(source='duration_ms')
+    audio_url = serializers.FileField(source='audio_file', read_only=True)
 
     class Meta:
         model = Song
         fields = [
-            "id",
-            "title",
-            "duration_ms",
-            "streams",
-            "cover_image",
-            "release_date",
-            "track_number",
+            'id',
+            'title',
+            'artist_name',
+            'artist_id',
+            'album_name',
+            'album_id',
+            'streams',
+            'release_date',
+            'image_url',
+            'track_number',
+            'song_duration_ms',
+            'audio_url',
+            'lyrics',
         ]
+
+    def get_artist_name(self, song):
+        owner = song.artist.owner
+        return owner.display_name or owner.username
+
+    def get_artist_id(self, song):
+        return song.artist.owner.id
 
 
 class NotificationSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source='owner.id', read_only=True)
+    status = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField()
 
     class Meta:
         model = Notification
         fields = [
-            "id",
-            "type",
-            "content",
-            "is_read",
-            "created_at",
+            'id',
+            'user_id',
+            'content',
+            'status',
+            'type',
+            'created_at',
         ]
 
-        read_only_fields = [
-            "created_at",
-            "type",
-            "content",
-        ]
+    def get_status(self, obj):
+        return 'read' if obj.is_read else 'unread'

@@ -11,7 +11,18 @@ from albums.models import Album
 from songs.models import Song
 
 from rest_framework import serializers
-from .serializers import RegisterSerializer, LoginSerializer, AuthUserSerializer, AuthResponseSerializer
+from .serializers import (
+    RegisterSerializer,
+    LoginSerializer,
+    AuthUserSerializer,
+    AuthResponseSerializer,
+    UserPublicSerializer,
+    UserPrivateSerializer,
+    UserAlbumSerializer,
+    UserSongSerializer,
+    UserPlaylistSerializer,
+    NotificationSerializer,
+)
 
 from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer, OpenApiResponse
 
@@ -263,6 +274,7 @@ from django.db.models import Prefetch
 
 from drf_spectacular.utils import (
     extend_schema,
+    extend_schema_view,
     OpenApiExample,
 )
 
@@ -340,6 +352,11 @@ class SubmitArtistApplicationView(generics.CreateAPIView):
         )
 
 
+@extend_schema(
+    summary="Get user profile",
+    description="Returns public view of a user's profile or private view if requested by the owner.",
+    responses={200: UserPublicSerializer}
+)
 class UserProfileView(APIView):
 
     permission_classes = [
@@ -347,46 +364,25 @@ class UserProfileView(APIView):
     ]
 
     def get(self, request, id):
-
         user = get_object_or_404(
-            User,
-            id=id
+            User.objects.select_related('subscription_plan', 'settings', 'artist_profile')
+            .prefetch_related('followers', 'following', 'playlists'),
+            id=id,
         )
 
-        data = {
-            "id": user.id,
-            "username": user.username,
-            "display_name": user.display_name,
-            "email": user.email,
-            "profile_picture": user.profile_picture.url
-            if user.profile_picture else None,
-            "role": user.role,
-            "gender": user.gender,
-            "birth_date": user.birth_date,
-            "created_at": user.created_at,
-            "followers": user.followers.count(),
-            "following": user.following.count(),
-        }
-
-
-        # Only show private information to owner
         if request.user.id == user.id:
+            serializer = UserPrivateSerializer(user)
+        else:
+            serializer = UserPublicSerializer(user)
 
-            data.update(
-                {
-                    "subscription_plan":
-                        user.subscription_plan.name
-                        if user.subscription_plan else None,
-
-                    "subscription_valid_until":
-                        user.subscription_valid_until,
-                }
-            )
-
-        return Response(data)
+        return Response(serializer.data)
 
 
-
+@extend_schema(
+    summary="Get user's playlists",
+    description="Returns playlists owned by the specified user.",
+    responses={200: UserPlaylistSerializer(many=True)}
+)
 class UserPlaylistsView(APIView):
 
     permission_classes = [
@@ -394,33 +390,17 @@ class UserPlaylistsView(APIView):
     ]
 
     def get(self, request, id):
-
-        user = get_object_or_404(
-            User,
-            id=id
-        )
-
-        playlists = user.playlists.all()
-
-        data = [
-            {
-                "id": playlist.id,
-                "name": playlist.name,
-                "description": playlist.description,
-                "is_private": playlist.is_private,
-                "cover_image":
-                    playlist.cover_image.url
-                    if playlist.cover_image else None,
-                "created_at": playlist.created_at,
-            }
-
-            for playlist in playlists
-        ]
-
-        return Response(data)
+        user = get_object_or_404(User, id=id)
+        playlists = user.playlists.prefetch_related('items').all()
+        serializer = UserPlaylistSerializer(playlists, many=True)
+        return Response(serializer.data)
 
 
-
+@extend_schema(
+    summary="Get user's albums",
+    description="Returns published albums for an artist. Shape matches frontend AlbumItem as closely as possible.",
+    responses={200: UserAlbumSerializer(many=True)}
+)
 class UserAlbumsView(APIView):
 
     permission_classes = [
@@ -428,37 +408,21 @@ class UserAlbumsView(APIView):
     ]
 
     def get(self, request, id):
+        user = get_object_or_404(User, id=id)
 
-        user = get_object_or_404(
-            User,
-            id=id
-        )
-
-        if not hasattr(user, "artist_profile"):
+        if not hasattr(user, 'artist_profile'):
             return Response([])
 
-
-        albums = user.artist_profile.albums.all()
-
-
-        data = [
-            {
-                "id": album.id,
-                "title": album.title,
-                "description": album.description,
-                "release_date": album.release_date,
-                "cover_image":
-                    album.cover_image.url
-                    if album.cover_image else None,
-            }
-
-            for album in albums
-        ]
-
-        return Response(data)
+        albums = user.artist_profile.albums.prefetch_related('songs', 'genre', 'collaborators').all()
+        serializer = UserAlbumSerializer(albums, many=True)
+        return Response(serializer.data)
 
 
-
+@extend_schema(
+    summary="Get user's songs",
+    description="Returns songs belonging to an artist. Uses a serializer shaped for frontend SongItem.",
+    responses={200: UserSongSerializer(many=True)}
+)
 class UserSongsView(APIView):
 
     permission_classes = [
@@ -466,37 +430,21 @@ class UserSongsView(APIView):
     ]
 
     def get(self, request, id):
+        user = get_object_or_404(User, id=id)
 
-        user = get_object_or_404(
-            User,
-            id=id
-        )
-
-        if not hasattr(user, "artist_profile"):
+        if not hasattr(user, 'artist_profile'):
             return Response([])
 
-
-        songs = user.artist_profile.songs.all()
-
-
-        data = [
-            {
-                "id": song.id,
-                "title": song.title,
-                "album": song.album.title,
-                "duration_ms": song.duration_ms,
-                "streams": song.streams,
-                "release_date": song.release_date,
-            }
-
-            for song in songs
-        ]
+        songs = user.artist_profile.songs.select_related('album').all()
+        serializer = UserSongSerializer(songs, many=True)
+        return Response(serializer.data)
 
 
-        return Response(data)
-
-
-
+@extend_schema(
+    summary="List notifications for current user",
+    description="Returns notifications belonging to the authenticated user.",
+    responses={200: NotificationSerializer(many=True)}
+)
 class NotificationsView(APIView):
 
     permission_classes = [
@@ -504,25 +452,23 @@ class NotificationsView(APIView):
     ]
 
     def get(self, request):
-
         notifications = request.user.notifications.all()
-
-        data = [
-            {
-                "id": notification.id,
-                "type": notification.type,
-                "content": notification.content,
-                "is_read": notification.is_read,
-                "created_at": notification.created_at,
-            }
-
-            for notification in notifications
-        ]
-
-        return Response(data)
+        serializer = NotificationSerializer(notifications, many=True)
+        return Response(serializer.data)
 
 
-
+@extend_schema_view(
+    patch=extend_schema(
+        summary="Mark notification read/unread",
+        description="Mark the specified notification as read or unread. Accepts 'is_read' (boolean) or 'status' ('read'|'unread').",
+        responses={200: inline_serializer(name='NotificationUpdateResponse', fields={'detail': serializers.CharField()})}
+    ),
+    delete=extend_schema(
+        summary="Delete a notification",
+        description="Deletes the specified notification owned by the authenticated user.",
+        responses={200: inline_serializer(name='NotificationDeleteResponse', fields={'detail': serializers.CharField()})}
+    )
+)
 class NotificationDetailView(APIView):
 
     permission_classes = [
@@ -530,29 +476,24 @@ class NotificationDetailView(APIView):
     ]
 
     def patch(self, request, id):
-
         notification = get_object_or_404(
             Notification,
             id=id,
             owner=request.user
         )
 
-        notification.is_read = request.data.get(
-            "is_read",
-            notification.is_read
-        )
+        # allow clients to send 'is_read' (boolean) or 'status' ('read'|'unread')
+        if 'is_read' in request.data:
+            notification.is_read = bool(request.data.get('is_read'))
+        elif 'status' in request.data:
+            notification.is_read = (request.data.get('status') == 'read')
 
-        notification.save()
+        notification.save(update_fields=['is_read'])
 
-        return Response(
-            {
-                "detail": "Notification updated"
-            }
-        )
+        return Response({'detail': 'Notification updated'})
 
 
     def delete(self, request, id):
-
         notification = get_object_or_404(
             Notification,
             id=id,
@@ -561,14 +502,21 @@ class NotificationDetailView(APIView):
 
         notification.delete()
 
-        return Response(
-            {
-                "detail": "Notification deleted"
-            }
-        )
+        return Response({'detail': 'Notification deleted'})
 
 
-
+@extend_schema_view(
+    post=extend_schema(
+        summary="Follow a user",
+        description="Authenticated user follows the specified target user. Returns a success message on completion.",
+        responses={200: inline_serializer(name='FollowResponse', fields={'detail': serializers.CharField()})}
+    ),
+    delete=extend_schema(
+        summary="Unfollow a user",
+        description="Authenticated user unfollows the specified target user. Returns a success message on completion.",
+        responses={200: inline_serializer(name='UnfollowResponse', fields={'detail': serializers.CharField()})}
+    )
+)
 class FollowUserView(APIView):
 
     permission_classes = [
@@ -577,41 +525,22 @@ class FollowUserView(APIView):
 
 
     def post(self, request, id):
+        target = get_object_or_404(User, id=id)
 
-        target = get_object_or_404(
-            User,
-            id=id
-        )
+        if target.id == request.user.id:
+            return Response({'detail': "Cannot follow yourself."}, status=status.HTTP_400_BAD_REQUEST)
 
+        request.user.following.add(target)
 
-        request.user.following.add(
-            target
-        )
-
-
-        return Response(
-            {
-                "detail": "Followed successfully"
-            }
-        )
-
+        return Response({'detail': 'Followed successfully'})
 
 
     def delete(self, request, id):
+        target = get_object_or_404(User, id=id)
 
-        target = get_object_or_404(
-            User,
-            id=id
-        )
+        if target.id == request.user.id:
+            return Response({'detail': "Cannot unfollow yourself."}, status=status.HTTP_400_BAD_REQUEST)
 
+        request.user.following.remove(target)
 
-        request.user.following.remove(
-            target
-        )
-
-
-        return Response(
-            {
-                "detail": "Unfollowed successfully"
-            }
-        )
+        return Response({'detail': 'Unfollowed successfully'})
