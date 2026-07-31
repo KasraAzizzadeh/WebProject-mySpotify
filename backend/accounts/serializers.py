@@ -230,6 +230,13 @@ class SubmitArtistApplicationSerializer(serializers.Serializer):
         )
 
 
+class UserUpdateSerializer(serializers.Serializer):
+    display_name = serializers.CharField(max_length=64, required=False)
+    email = serializers.EmailField(required=False)
+    password = serializers.CharField(write_only=True, required=False)
+    artist_bio = serializers.CharField(required=False, allow_blank=True)
+
+
 class UserPublicSerializer(serializers.ModelSerializer):
     followers = serializers.PrimaryKeyRelatedField(
         many=True,

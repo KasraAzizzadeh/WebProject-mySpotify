@@ -352,10 +352,34 @@ class SubmitArtistApplicationView(generics.CreateAPIView):
         )
 
 
-@extend_schema(
-    summary="Get user profile",
-    description="Returns public view of a user's profile or private view if requested by the owner.",
-    responses={200: UserPublicSerializer}
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get user profile",
+        description="Returns public view of a user's profile or private view if requested by the owner.",
+        responses={200: UserPublicSerializer}
+    ),
+    patch=extend_schema(
+        summary="Update own profile",
+        description=(
+            "Update the authenticated user's profile. Allowed fields: display_name, email, password. "
+            "If the user is an artist, artist_bio may also be provided to update the artist bio."
+        ),
+        request=inline_serializer(
+            name='UserUpdateRequest',
+            fields={
+                'display_name': serializers.CharField(required=False),
+                'email': serializers.EmailField(required=False),
+                'password': serializers.CharField(required=False),
+                'artist_bio': serializers.CharField(required=False),
+            }
+        ),
+        responses={200: AuthUserSerializer}
+    ),
+    delete=extend_schema(
+        summary="Delete own account",
+        description="Deletes the authenticated user's account. The id in the path must match the authenticated user's id.",
+        responses={200: inline_serializer(name='UserDeleteResponse', fields={'detail': serializers.CharField()})}
+    )
 )
 class UserProfileView(APIView):
 
@@ -376,6 +400,82 @@ class UserProfileView(APIView):
             serializer = UserPublicSerializer(user)
 
         return Response(serializer.data)
+
+    def patch(self, request, id):
+        # Only allow owners to update their profile
+        if request.user.id != id:
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+
+        from .serializers import UserUpdateSerializer
+
+        serializer = UserUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = request.user
+
+        changed = False
+        update_fields = []
+
+        if 'display_name' in data:
+            user.display_name = data['display_name']
+            changed = True
+            update_fields.append('display_name')
+
+        if 'email' in data and data['email'] != user.email:
+            # ensure email uniqueness
+            if User.objects.filter(email=data['email']).exclude(pk=user.pk).exists():
+                return Response({'email': ['A user with that email already exists.']}, status=status.HTTP_400_BAD_REQUEST)
+            user.email = data['email']
+            changed = True
+            update_fields.append('email')
+
+        if 'password' in data and data['password']:
+            # validate password using same rules as registration
+            try:
+                RegisterSerializer().validate_password(data['password'])
+            except serializers.ValidationError as exc:
+                # return error format similar to registration errors
+                msg = exc.detail if hasattr(exc, 'detail') else str(exc)
+                return Response({'password': [msg]}, status=status.HTTP_400_BAD_REQUEST)
+
+            user.set_password(data['password'])
+            changed = True
+            update_fields.append('password')
+
+        # artist bio - only allowed for users with artist role
+        if 'artist_bio' in data:
+            # require explicit artist role
+            if user.role != User.Roles.ARTIST:
+                return Response({'artist_bio': ['Only artists can update artist bio.']}, status=status.HTTP_400_BAD_REQUEST)
+
+            if hasattr(user, 'artist_profile'):
+                artist = user.artist_profile
+                artist.bio = data['artist_bio']
+                artist.save(update_fields=['bio'])
+            else:
+                return Response({'artist_bio': ['Artist profile not found.']}, status=status.HTTP_400_BAD_REQUEST)
+
+        if changed:
+            # save user
+            user.save()
+
+        # return full user representation
+        user = User.objects.select_related('subscription_plan', 'settings', 'artist_profile')\
+            .prefetch_related('followers', 'following', 'playlists').get(pk=user.pk)
+
+        return Response(AuthUserSerializer(user).data)
+
+    def delete(self, request, id):
+        # Only allow owners to delete their account
+        if request.user.id != id:
+            return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+
+        user = request.user
+        username = user.username
+        user.delete()
+
+        return Response({'detail': f'User {username} deleted successfully.'})
 
 
 @extend_schema(
