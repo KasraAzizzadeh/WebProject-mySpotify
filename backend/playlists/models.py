@@ -22,8 +22,10 @@ class PlaylistItem(models.Model):
     added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        models.UniqueConstraint(
-            fields=["playlist", "position"],
-            name="unique_playlist_position",
-        )
+        constraints = [
+            models.UniqueConstraint(
+                fields=["playlist", "position"],
+                name="unique_playlist_position",
+            )
+        ]
         ordering = ["position"]

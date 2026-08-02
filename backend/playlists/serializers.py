@@ -1,7 +1,9 @@
 from rest_framework import serializers
 
 from accounts.models import User
-from .models import Playlist
+from songs.serializers import SongSerializer
+from .models import Playlist, PlaylistItem
+
 
 class PlaylistsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -38,3 +40,11 @@ class PlaylistDetailSerializer(serializers.ModelSerializer):
 
     def get_songs(self, obj):
         return list(obj.items.order_by("position").values_list("song_id", flat=True))
+
+
+class PlaylistSongsSerializer(serializers.ModelSerializer):
+    song = SongSerializer(read_only=True)
+
+    class Meta:
+        model = PlaylistItem
+        fields = ("position", "added_at", "song")

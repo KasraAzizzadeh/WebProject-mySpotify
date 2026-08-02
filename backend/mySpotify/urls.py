@@ -34,6 +34,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("albums/", include("albums.urls")),
     path("playlists/", include("playlists.urls")),
+    path("songs/", include("songs.urls")),
     path("subscriptions/", include("subscriptions.urls")),
 
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

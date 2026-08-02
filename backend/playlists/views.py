@@ -1,17 +1,22 @@
 from django.db.models import Q
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from rest_framework import generics, status
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import Playlist
+from songs.models import Song
+from .models import Playlist, PlaylistItem
 from .permissions import IsPlaylistOwner
-from .serializers import PlaylistsSerializer, PlaylistDetailSerializer
+from .serializers import PlaylistsSerializer, PlaylistDetailSerializer, PlaylistSongsSerializer
 
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer, OpenApiResponse, OpenApiParameter, \
     extend_schema_view
+
+from .services import PlaylistService
 
 
 # Create your views here.
@@ -142,7 +147,9 @@ class PlaylistListCreateView(generics.ListCreateAPIView):
 
         query = self.request.query_params.get("query")
         if query:
-            queryset = queryset.filter(name__icontains=query)
+            queryset = queryset.filter(
+                Q(name__icontains=query) | Q(owner__display_name__icontains=query)
+            )
 
         ordering = self.request.query_params.get("filter")
         sort_map = {
@@ -278,3 +285,130 @@ class PlaylistDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return Playlist.objects.all()
+
+
+
+class PlaylistSongsView(generics.ListAPIView):
+    serializer_class = PlaylistSongsSerializer
+
+    def get_queryset(self):
+        return PlaylistItem.objects.filter(
+            playlist__id=self.kwargs["playlist_id"]
+        ).filter(
+            Q(playlist__owner=self.request.user) | Q(playlist__is_private=False)
+        )
+
+
+
+
+class PlaylistSongManageView(APIView):
+    permission_classes = [IsAuthenticated, IsPlaylistOwner]
+
+    def get_playlist(self, playlist_id):
+        playlist = get_object_or_404(Playlist, id=playlist_id)
+        self.check_object_permissions(self.request, playlist)
+        return playlist
+
+    @extend_schema(
+        summary="Add song to playlist",
+        description=(
+                "Adds a song to the specified playlist. "
+                "The song is appended to the end of the playlist. "
+                "Only the playlist owner can modify the playlist."
+        ),
+        responses={
+            status.HTTP_201_CREATED: OpenApiResponse(
+                description="Song added successfully.",
+                examples=[
+                    OpenApiExample(
+                        "Song added",
+                        value={
+                            "playlist": 5,
+                            "song": 12,
+                            "position": 3,
+                        },
+                    )
+                ],
+            ),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Song already exists in playlist.",
+                examples=[
+                    OpenApiExample(
+                        "Duplicate song",
+                        value={
+                            "detail": "Song already exists"
+                        },
+                    )
+                ],
+            ),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(
+                description="You do not have permission to modify this playlist."
+            ),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Playlist or song not found."
+            ),
+        },
+    )
+    def post(self, request, playlist_id, song_id):
+        playlist = self.get_playlist(playlist_id)
+        song = get_object_or_404(Song, id=song_id)
+        try:
+            item = PlaylistService.add_song(playlist=playlist, song=song)
+
+        except ValueError as e:
+            return Response(
+                {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            {
+                "playlist": item.playlist_id,
+                "song": item.song_id,
+                "position": item.position,
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+    @extend_schema(
+        summary="Remove song from playlist",
+        description=(
+                "Removes a song from the specified playlist. "
+                "Songs after the removed song are shifted one position backward."
+        ),
+        responses={
+            status.HTTP_204_NO_CONTENT: OpenApiResponse(
+                description="Song removed successfully."
+            ),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Song is not in playlist.",
+                examples=[
+                    OpenApiExample(
+                        "Song missing",
+                        value={
+                            "detail": "Song is not in this playlist"
+                        },
+                    )
+                ],
+            ),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(
+                description="You do not have permission to modify this playlist."
+            ),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Playlist or song not found."
+            ),
+        },
+    )
+    def delete(self, request, playlist_id, song_id):
+        playlist = self.get_playlist(playlist_id)
+        song = get_object_or_404(Song, id=song_id)
+
+        try:
+            PlaylistService.remove_song(playlist=playlist, song=song)
+        except ValueError as e:
+            return Response(
+                {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT
+        )

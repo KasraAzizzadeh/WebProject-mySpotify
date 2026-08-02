@@ -21,7 +21,7 @@ from .serializers import (
     UserAlbumSerializer,
     UserSongSerializer,
     UserPlaylistSerializer,
-    NotificationSerializer,
+    NotificationSerializer, SubmitArtistApplicationSerializer,
 )
 
 from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer, OpenApiResponse
@@ -277,17 +277,6 @@ from drf_spectacular.utils import (
     extend_schema_view,
     OpenApiExample,
 )
-
-from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-
-from .models import User
-from .serializers import (
-    SubmitArtistApplicationSerializer,
-    AuthUserSerializer,
-)
-
 
 @extend_schema(
     summary="Apply as an artist",

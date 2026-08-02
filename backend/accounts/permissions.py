@@ -17,3 +17,10 @@ class IsOwnerOrReadOnly(BasePermission):
             return True
 
         return obj == request.user
+
+
+class IsArtist(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return request.user.role == "artist"
