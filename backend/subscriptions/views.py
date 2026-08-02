@@ -1,4 +1,7 @@
 from django.core.exceptions import ImproperlyConfigured
+from django.http import HttpResponseRedirect
+from urllib.parse import urlencode, urlparse, urlunparse, parse_qsl
+
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -123,8 +126,8 @@ class SubscriptionCheckoutView(APIView):
 @extend_schema(
     summary="Verify a subscription payment",
     description=(
-        "Verifies the callback from Zarinpal sandbox after the user returns from the payment flow. "
-        "Updates transaction status and applies the purchased subscription plan when payment succeeds."
+        "Receives Zarinpal callback, performs server-side verify, updates subscription on success, "
+        "and optionally redirects the browser back to the provided return URL."
     ),
     parameters=[
         OpenApiParameter(
@@ -141,9 +144,19 @@ class SubscriptionCheckoutView(APIView):
             description="Payment result status returned by Zarinpal. Use OK for successful checkout return.",
             type=str,
         ),
+        OpenApiParameter(
+            name="return_url",
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description="Optional frontend URL to redirect to after verification.",
+            type=str,
+        ),
     ],
     responses={
         status.HTTP_200_OK: SubscriptionVerificationResponseSerializer,
+        status.HTTP_302_FOUND: OpenApiResponse(
+            description="Redirects to the provided return_url with result parameters."
+        ),
         status.HTTP_400_BAD_REQUEST: OpenApiResponse(
             description="Missing or invalid callback parameters."
         ),
@@ -165,6 +178,8 @@ class SubscriptionVerifyView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        return_url = request.GET.get("return_url")
+
         try:
             transaction = verify_subscription_payment(authority, status_value)
         except SubscriptionTransaction.DoesNotExist as exc:
@@ -185,5 +200,25 @@ class SubscriptionVerifyView(APIView):
             "subscription_valid_until": transaction.user.subscription_valid_until,
             "reference_id": transaction.reference_id,
         }
+
+        if return_url:
+            parsed_url = urlparse(return_url)
+            query = dict(parse_qsl(parsed_url.query, keep_blank_values=True))
+            query.update(
+                {
+                    "status": "success" if transaction.status == SubscriptionTransaction.Status.SUCCESS else "failed",
+                    "authority": authority,
+                    "transaction_status": transaction.status,
+                    "subscription_plan": response_data["subscription_plan"],
+                    "reference_id": response_data["reference_id"] or "",
+                }
+            )
+            if response_data["subscription_valid_until"]:
+                query["subscription_valid_until"] = response_data["subscription_valid_until"].isoformat()
+
+            new_query = urlencode(query)
+            redirect_url = urlunparse(parsed_url._replace(query=new_query))
+            return HttpResponseRedirect(redirect_url)
+
         response_serializer = SubscriptionVerificationResponseSerializer(response_data)
         return Response(response_serializer.data)

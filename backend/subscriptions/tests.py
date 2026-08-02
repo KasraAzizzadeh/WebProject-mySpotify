@@ -177,7 +177,10 @@ class SubscriptionPlanApiTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["authority"], "TESTAUTH123")
         self.assertEqual(response.data["status"], SubscriptionTransaction.Status.PENDING)
-
+ 
+        self.assertEqual(mock_send_request.call_args[0][0], "request.json")
+        self.assertEqual(mock_send_request.call_args[0][1]["amount"], 9990)
+ 
         transaction = SubscriptionTransaction.objects.get(authority="TESTAUTH123")
         self.assertEqual(transaction.status, SubscriptionTransaction.Status.PENDING)
         self.assertEqual(transaction.subscription_plan, self.silver_plan)
@@ -198,7 +201,7 @@ class SubscriptionPlanApiTests(TestCase):
             },
             "errors": [],
         }
-
+ 
         transaction = SubscriptionTransaction.objects.create(
             user=self.user,
             subscription_plan=self.gold_plan,
@@ -206,21 +209,57 @@ class SubscriptionPlanApiTests(TestCase):
             authority="TESTAUTH456",
             status=SubscriptionTransaction.Status.PENDING,
         )
-
+ 
         response = self.client.get(
             "/subscriptions/verify/?Authority=TESTAUTH456&Status=OK"
         )
-
+ 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["transaction_status"], SubscriptionTransaction.Status.SUCCESS)
         self.assertEqual(response.data["reference_id"], "REF123")
-
+ 
         transaction.refresh_from_db()
         self.user.refresh_from_db()
         self.assertEqual(transaction.status, SubscriptionTransaction.Status.SUCCESS)
         self.assertEqual(self.user.subscription_plan, self.gold_plan)
         self.assertIsNotNone(self.user.subscription_valid_until)
 
+    @override_settings(
+        ZARINPAL_MERCHANT_ID="test-merchant-id",
+        ZARINPAL_CALLBACK_URL="http://localhost:8000/subscriptions/verify/",
+        ZARINPAL_SANDBOX=True,
+    )
+    @patch("subscriptions.services._send_zarinpal_request")
+    def test_verify_payment_redirects_to_return_url(self, mock_send_request):
+        mock_send_request.return_value = {
+            "data": {
+                "code": 100,
+                "ref_id": "REF123",
+                "message": "Success",
+            },
+            "errors": [],
+        }
+ 
+        transaction = SubscriptionTransaction.objects.create(
+            user=self.user,
+            subscription_plan=self.gold_plan,
+            amount=self.gold_plan.price,
+            authority="TESTAUTH456",
+            status=SubscriptionTransaction.Status.PENDING,
+        )
+ 
+        response = self.client.get(
+            "/subscriptions/verify/?Authority=TESTAUTH456&Status=OK&return_url=http://example.com/return",
+            follow=False,
+        )
+ 
+        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
+        self.assertIn("http://example.com/return?", response["Location"])
+        self.assertIn("status=success", response["Location"])
+        self.assertIn("authority=TESTAUTH456", response["Location"])
+        self.assertIn("transaction_status=SUCCESS", response["Location"])
+        self.assertIn("reference_id=REF123", response["Location"])
+ 
     @override_settings(
         ZARINPAL_MERCHANT_ID="test-merchant-id",
         ZARINPAL_CALLBACK_URL="http://localhost:8000/subscriptions/verify/",

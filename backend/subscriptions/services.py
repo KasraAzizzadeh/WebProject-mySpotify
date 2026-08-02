@@ -1,6 +1,6 @@
 from datetime import timedelta
 import json
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN
 from typing import Iterable
 from urllib import error, request
 
@@ -132,8 +132,9 @@ def _send_zarinpal_request(endpoint: str, payload: dict) -> dict:
 
 
 def _to_zarinpal_amount(price: Decimal) -> int:
-    amount_rials = int(price * Decimal("1000"))
-    return amount_rials if amount_rials > 0 else 1000
+    amount_rials = (price * Decimal("1000")).to_integral_value(rounding=ROUND_DOWN)
+    amount_int = int(amount_rials)
+    return amount_int if amount_int > 0 else 1000
 
 
 def create_subscription_checkout(user, plan_name: str) -> tuple[SubscriptionTransaction, str]:
