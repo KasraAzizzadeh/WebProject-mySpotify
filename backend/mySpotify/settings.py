@@ -168,5 +168,17 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
 }
 
+# In Zarinpal sandbox mode, MerchantID can be any 36-character string.
+# This default allows sandbox flow to work without a real merchant account.
+ZARINPAL_MERCHANT_ID = config(
+    "ZARINPAL_MERCHANT_ID",
+    default="123456789012345678901234567890123456",
+)
+ZARINPAL_CALLBACK_URL = config(
+    "ZARINPAL_CALLBACK_URL",
+    default="http://localhost:8000/subscriptions/verify/",
+)
+ZARINPAL_SANDBOX = config("ZARINPAL_SANDBOX", default=True, cast=bool)
+
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"

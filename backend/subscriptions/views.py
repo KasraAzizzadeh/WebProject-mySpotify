@@ -1,15 +1,26 @@
+from django.core.exceptions import ImproperlyConfigured
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from drf_spectacular.utils import OpenApiExample, extend_schema, OpenApiResponse
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, OpenApiResponse
 
 from .serializers import (
+    SubscriptionCheckoutResponseSerializer,
+    SubscriptionCheckoutSerializer,
     SubscriptionPlanSerializer,
     SubscriptionPricesUpdateSerializer,
+    SubscriptionVerificationResponseSerializer,
 )
 from .permissions import IsAdminRole
-from .services import get_all_subscription_plans, update_subscription_prices
+from .models import SubscriptionTransaction
+from .services import (
+    ZarinpalServiceError,
+    create_subscription_checkout,
+    get_all_subscription_plans,
+    update_subscription_prices,
+    verify_subscription_payment,
+)
 
 
 @extend_schema(
@@ -63,4 +74,116 @@ class SubscriptionPlanView(APIView):
 
         updated_plans = update_subscription_prices(**serializer.validated_data)
         response_serializer = SubscriptionPlanSerializer(updated_plans, many=True)
+        return Response(response_serializer.data)
+
+
+@extend_schema(
+    summary="Create a subscription checkout session",
+    description=(
+        "Starts a sandbox payment session for the selected subscription plan. "
+        "Returns a payment URL and authority token for the Zarinpal sandbox gateway."
+    ),
+    request=SubscriptionCheckoutSerializer,
+    responses={
+        status.HTTP_200_OK: SubscriptionCheckoutResponseSerializer,
+        status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+            description="Invalid request payload or unsupported plan."
+        ),
+        status.HTTP_401_UNAUTHORIZED: OpenApiResponse(
+            description="Authentication credentials were not provided."
+        ),
+    },
+)
+class SubscriptionCheckoutView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = SubscriptionCheckoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        plan_name = serializer.validated_data["plan"]
+        try:
+            transaction, payment_url = create_subscription_checkout(request.user, plan_name)
+        except (ZarinpalServiceError, ImproperlyConfigured, ValueError) as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        response_data = {
+            "transaction_id": transaction.id,
+            "authority": transaction.authority,
+            "payment_url": payment_url,
+            "status": transaction.status,
+        }
+        response_serializer = SubscriptionCheckoutResponseSerializer(response_data)
+        return Response(response_serializer.data)
+
+
+@extend_schema(
+    summary="Verify a subscription payment",
+    description=(
+        "Verifies the callback from Zarinpal sandbox after the user returns from the payment flow. "
+        "Updates transaction status and applies the purchased subscription plan when payment succeeds."
+    ),
+    parameters=[
+        OpenApiParameter(
+            name="Authority",
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="Zarinpal Authority token returned after the payment request.",
+            type=str,
+        ),
+        OpenApiParameter(
+            name="Status",
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="Payment result status returned by Zarinpal. Use OK for successful checkout return.",
+            type=str,
+        ),
+    ],
+    responses={
+        status.HTTP_200_OK: SubscriptionVerificationResponseSerializer,
+        status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+            description="Missing or invalid callback parameters."
+        ),
+        status.HTTP_404_NOT_FOUND: OpenApiResponse(
+            description="Transaction with the requested authority could not be found."
+        ),
+    },
+)
+class SubscriptionVerifyView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        authority = request.GET.get("Authority")
+        status_value = request.GET.get("Status")
+
+        if not authority or not status_value:
+            return Response(
+                {"detail": "Authority and Status are required query parameters."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            transaction = verify_subscription_payment(authority, status_value)
+        except SubscriptionTransaction.DoesNotExist as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except ZarinpalServiceError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        response_data = {
+            "transaction_id": transaction.id,
+            "transaction_status": transaction.status,
+            "subscription_plan": transaction.user.subscription_plan.name if transaction.user.subscription_plan else None,
+            "subscription_valid_until": transaction.user.subscription_valid_until,
+            "reference_id": transaction.reference_id,
+        }
+        response_serializer = SubscriptionVerificationResponseSerializer(response_data)
         return Response(response_serializer.data)

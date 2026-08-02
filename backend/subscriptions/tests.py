@@ -1,11 +1,14 @@
 from decimal import Decimal
 
-from django.test import TestCase
+from unittest.mock import patch
+
+from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from rest_framework import status
 
 from accounts.models import User
-from subscriptions.models import SubscriptionPlan
+from subscriptions.models import SubscriptionPlan, SubscriptionTransaction
+from subscriptions.services import ZarinpalServiceError
 
 
 class SubscriptionPlanApiTests(TestCase):
@@ -145,3 +148,145 @@ class SubscriptionPlanApiTests(TestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @override_settings(
+        ZARINPAL_MERCHANT_ID="test-merchant-id",
+        ZARINPAL_CALLBACK_URL="http://localhost:8000/subscriptions/verify/",
+        ZARINPAL_SANDBOX=True,
+    )
+    @patch("subscriptions.services._send_zarinpal_request")
+    def test_checkout_creates_pending_transaction(self, mock_send_request):
+        mock_send_request.return_value = {
+            "data": {
+                "authority": "TESTAUTH123",
+                "code": 100,
+                "fee": 1000,
+                "fee_type": "Merchant",
+                "message": "Success",
+            },
+            "errors": [],
+        }
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(
+            "/subscriptions/checkout/",
+            {"plan": SubscriptionPlan.PlanType.SILVER},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["authority"], "TESTAUTH123")
+        self.assertEqual(response.data["status"], SubscriptionTransaction.Status.PENDING)
+
+        transaction = SubscriptionTransaction.objects.get(authority="TESTAUTH123")
+        self.assertEqual(transaction.status, SubscriptionTransaction.Status.PENDING)
+        self.assertEqual(transaction.subscription_plan, self.silver_plan)
+        self.assertEqual(transaction.user, self.user)
+
+    @override_settings(
+        ZARINPAL_MERCHANT_ID="test-merchant-id",
+        ZARINPAL_CALLBACK_URL="http://localhost:8000/subscriptions/verify/",
+        ZARINPAL_SANDBOX=True,
+    )
+    @patch("subscriptions.services._send_zarinpal_request")
+    def test_verify_payment_success_updates_subscription(self, mock_send_request):
+        mock_send_request.return_value = {
+            "data": {
+                "code": 100,
+                "ref_id": "REF123",
+                "message": "Success",
+            },
+            "errors": [],
+        }
+
+        transaction = SubscriptionTransaction.objects.create(
+            user=self.user,
+            subscription_plan=self.gold_plan,
+            amount=self.gold_plan.price,
+            authority="TESTAUTH456",
+            status=SubscriptionTransaction.Status.PENDING,
+        )
+
+        response = self.client.get(
+            "/subscriptions/verify/?Authority=TESTAUTH456&Status=OK"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["transaction_status"], SubscriptionTransaction.Status.SUCCESS)
+        self.assertEqual(response.data["reference_id"], "REF123")
+
+        transaction.refresh_from_db()
+        self.user.refresh_from_db()
+        self.assertEqual(transaction.status, SubscriptionTransaction.Status.SUCCESS)
+        self.assertEqual(self.user.subscription_plan, self.gold_plan)
+        self.assertIsNotNone(self.user.subscription_valid_until)
+
+    @override_settings(
+        ZARINPAL_MERCHANT_ID="test-merchant-id",
+        ZARINPAL_CALLBACK_URL="http://localhost:8000/subscriptions/verify/",
+        ZARINPAL_SANDBOX=True,
+    )
+    @patch("subscriptions.services._send_zarinpal_request")
+    def test_verify_payment_failure_marks_transaction_failed(self, mock_send_request):
+        mock_send_request.return_value = {
+            "data": {
+                "code": 110,
+                "message": "Amount mismatch",
+            },
+            "errors": [],
+        }
+
+        transaction = SubscriptionTransaction.objects.create(
+            user=self.user,
+            subscription_plan=self.gold_plan,
+            amount=self.gold_plan.price,
+            authority="TESTAUTH789",
+            status=SubscriptionTransaction.Status.PENDING,
+        )
+
+        response = self.client.get(
+            "/subscriptions/verify/?Authority=TESTAUTH789&Status=OK"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["transaction_status"], SubscriptionTransaction.Status.FAILED)
+
+        transaction.refresh_from_db()
+        self.assertEqual(transaction.status, SubscriptionTransaction.Status.FAILED)
+        self.assertIsNone(transaction.reference_id)
+
+    @override_settings(
+        ZARINPAL_MERCHANT_ID="test-merchant-id",
+        ZARINPAL_CALLBACK_URL="http://localhost:8000/subscriptions/verify/",
+        ZARINPAL_SANDBOX=True,
+    )
+    @patch("subscriptions.services._send_zarinpal_request")
+    def test_verify_payment_code_101_is_treated_as_success(self, mock_send_request):
+        mock_send_request.return_value = {
+            "data": {
+                "code": 101,
+                "ref_id": "REF101",
+                "message": "Already verified",
+            },
+            "errors": [],
+        }
+
+        transaction = SubscriptionTransaction.objects.create(
+            user=self.user,
+            subscription_plan=self.gold_plan,
+            amount=self.gold_plan.price,
+            authority="TESTAUTH999",
+            status=SubscriptionTransaction.Status.PENDING,
+        )
+
+        response = self.client.get(
+            "/subscriptions/verify/?Authority=TESTAUTH999&Status=OK"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["transaction_status"], SubscriptionTransaction.Status.SUCCESS)
+        self.assertEqual(response.data["reference_id"], "REF101")
+
+        transaction.refresh_from_db()
+        self.assertEqual(transaction.status, SubscriptionTransaction.Status.SUCCESS)
+        self.assertEqual(transaction.reference_id, "REF101")

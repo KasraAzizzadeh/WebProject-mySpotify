@@ -39,3 +39,27 @@ class SubscriptionPricesUpdateSerializer(serializers.Serializer):
                 "At least one price field must be provided."
             )
         return attrs
+
+
+class SubscriptionCheckoutSerializer(serializers.Serializer):
+    plan = serializers.ChoiceField(
+        choices=[
+            SubscriptionPlan.PlanType.SILVER,
+            SubscriptionPlan.PlanType.GOLD,
+        ]
+    )
+
+
+class SubscriptionCheckoutResponseSerializer(serializers.Serializer):
+    transaction_id = serializers.IntegerField()
+    authority = serializers.CharField()
+    payment_url = serializers.URLField()
+    status = serializers.CharField()
+
+
+class SubscriptionVerificationResponseSerializer(serializers.Serializer):
+    transaction_id = serializers.IntegerField()
+    transaction_status = serializers.CharField()
+    subscription_plan = serializers.CharField(allow_null=True)
+    subscription_valid_until = serializers.DateTimeField(allow_null=True)
+    reference_id = serializers.CharField(allow_null=True)
