@@ -1,7 +1,14 @@
+import os
+import uuid
+
 from django.db import models
 from accounts.models import User
 from songs.models import Song
 
+
+def playlist_cover_upload_path(instance, filename):
+    ext = os.path.splitext(filename)[1]
+    return f"playlist_covers/{instance.owner.id}/{uuid.uuid4()}{ext}"
 
 # Create your models here.
 class Playlist(models.Model):
@@ -9,7 +16,7 @@ class Playlist(models.Model):
     description = models.TextField(null=True, blank=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="playlists")
     is_private = models.BooleanField(default=True)
-    cover_image = models.ImageField(upload_to='playlist_covers/', null=True, blank=True)
+    cover_image = models.ImageField(upload_to=playlist_cover_upload_path, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     def __str__(self):

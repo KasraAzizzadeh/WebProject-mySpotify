@@ -1,6 +1,18 @@
+import os
+import uuid
+
 from django.db import models
 from accounts.models import User, ArtistProfile
 from albums.models import Genre, Album
+
+def song_audio_upload_path(instance, filename):
+    ext = os.path.splitext(filename)[1]
+    return f"songs/{instance.artist.owner.id}/{instance.album.id}/{uuid.uuid4()}{ext}"
+
+
+def song_cover_upload_path(instance, filename):
+    ext = os.path.splitext(filename)[1]
+    return f"album_covers/{instance.artist.owner.id}/{uuid.uuid4()}{ext}"
 
 # Create your models here.
 class Song(models.Model):
@@ -12,7 +24,7 @@ class Song(models.Model):
     duration_ms = models.PositiveIntegerField()
     track_number = models.PositiveIntegerField(default=1)
     streams = models.PositiveIntegerField(default=0, db_index=True)
-    audio_file = models.FileField(upload_to='songs/')
+    audio_file = models.FileField(upload_to=song_audio_upload_path)
     cover_image = models.ImageField(upload_to='album_covers/', null=True, blank=True)
     release_date = models.DateTimeField(db_index=True)
     # TODO collaborators
