@@ -1,3 +1,6 @@
+import os
+import uuid
+
 from django.db import models
 from accounts.models import User, ArtistProfile
 
@@ -9,13 +12,17 @@ class Genre(models.Model):
     def __str__(self):
         return self.name
 
+def album_cover_upload_path(instance, filename):
+    ext = os.path.splitext(filename)[1]
+    return f"album_covers/{instance.artist.owner.id}/{uuid.uuid4()}{ext}"
+
 class Album(models.Model):
     title = models.CharField(max_length=50, db_index=True)
     description = models.TextField(null=True, blank=True)
     genre = models.ManyToManyField(Genre, related_name="albums", blank=True)
     is_single = models.BooleanField(default=False)
     release_date = models.DateTimeField(db_index=True)
-    cover_image = models.ImageField(upload_to='album_covers/', null=True, blank=True)
+    cover_image = models.ImageField(upload_to=album_cover_upload_path, null=True, blank=True)
     artist = models.ForeignKey(ArtistProfile, on_delete=models.CASCADE, related_name="albums")
     # TODO collaborators
     collaborators = models.ManyToManyField(ArtistProfile, related_name="collaborated_albums", blank=True)

@@ -4,7 +4,8 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
 from .models import Song
-from .serializers import SongSerializer
+from .permissions import IsSongOwner
+from .serializers import SongSerializer, SongDetailSerializer
 
 from accounts.permissions import IsArtist
 
@@ -179,3 +180,151 @@ class SongListCreateView(generics.ListCreateAPIView):
             queryset = queryset.order_by(sort_map[ordering])
 
         return queryset
+
+
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="Retrieve song",
+        description=(
+            "Returns complete information about a song including "
+            "artist, album, genres, collaborators, and media information."
+        ),
+        responses={
+            status.HTTP_200_OK: SongDetailSerializer,
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Song not found."
+            ),
+        },
+        examples=[
+            OpenApiExample(
+                "Song details",
+                response_only=True,
+                status_codes=["200"],
+                value={
+                    "id": 12,
+                    "title": "Blinding Lights",
+                    "lyrics": "....",
+                    "duration_ms": 200040,
+                    "track_number": 3,
+                    "streams": 1200000,
+                    "audio_file": "/media/songs/blinding.mp3",
+                    "cover_image": "/media/album_covers/dawn.jpg",
+                    "release_date": "2026-07-20T12:00:00Z",
+                    "genre": [1, 4],
+                    "collaborators": [15, 20],
+                    "album_id": 5,
+                    "artist_id": 7,
+                    "artist_name": "The Weeknd",
+                    "album_name": "After Hours",
+                },
+            ),
+        ],
+    ),
+
+    patch=extend_schema(
+        summary="Update song",
+        description=(
+            "Updates an existing song. Only the song owner can modify it. "
+            "The title, lyrics, genres, collaborators, and audio file can be changed. "
+            "If the audio file is replaced, its duration is recalculated automatically."
+        ),
+        request=SongDetailSerializer,
+        responses={
+            status.HTTP_200_OK: SongDetailSerializer,
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Validation error.",
+                response=inline_serializer(
+                    name="SongUpdateError",
+                    fields={
+                        "title": serializers.ListField(
+                            child=serializers.CharField(),
+                            required=False,
+                        ),
+                        "audio_file": serializers.ListField(
+                            child=serializers.CharField(),
+                            required=False,
+                        ),
+                        "genre": serializers.ListField(
+                            child=serializers.CharField(),
+                            required=False,
+                        ),
+                        "non_field_errors": serializers.ListField(
+                            child=serializers.CharField(),
+                            required=False,
+                        ),
+                    },
+                ),
+            ),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(
+                description="You do not have permission to modify this song."
+            ),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Song not found."
+            ),
+        },
+        examples=[
+            OpenApiExample(
+                "Update song",
+                request_only=True,
+                value={
+                    "title": "Updated Song Title",
+                    "lyrics": "Updated lyrics",
+                    "genre": [2, 5],
+                    "audio_file": "updated_song.mp3",
+                },
+            ),
+            OpenApiExample(
+                "Song updated",
+                response_only=True,
+                status_codes=["200"],
+                value={
+                    "id": 12,
+                    "title": "Updated Song Title",
+                    "duration_ms": 215000,
+                    "track_number": 3,
+                    "streams": 1200000,
+                    "audio_file": "/media/songs/updated_song.mp3",
+                    "cover_image": "/media/album_covers/dawn.jpg",
+                    "release_date": "2026-07-20T12:00:00Z",
+                    "genre": [2, 5],
+                    "collaborators": [15, 20],
+                    "album_id": 5,
+                    "artist_id": 7,
+                    "artist_name": "The Weeknd",
+                    "album_name": "After Hours",
+                },
+            ),
+        ],
+    ),
+
+    delete=extend_schema(
+        summary="Delete song",
+        description=(
+            "Deletes a song owned by the authenticated artist. "
+            "The song is also removed from all playlists containing it."
+        ),
+        responses={
+            status.HTTP_204_NO_CONTENT: OpenApiResponse(
+                description="Song deleted successfully."
+            ),
+            status.HTTP_403_FORBIDDEN: OpenApiResponse(
+                description="You do not have permission to delete this song."
+            ),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Song not found."
+            ),
+        },
+    ),
+)
+class SongDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = SongDetailSerializer
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [IsAuthenticated()]
+
+        return [IsAuthenticated(), IsSongOwner()]
+
+    def get_queryset(self):
+        return Song.objects.all()

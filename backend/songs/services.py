@@ -1,3 +1,4 @@
+from django.db import transaction
 from mutagen import File
 
 from .models import Song
@@ -31,4 +32,24 @@ class SongService:
         song = Song.objects.create(**validated_data)
         song.genre.set(genres)
         song.collaborators.set(collaborators)
+        return song
+
+    @classmethod
+    @transaction.atomic
+    def update_song(cls, song, validated_data):
+        if "audio_file" in validated_data:
+            song.audio_file = validated_data["audio_file"]
+            song.duration_ms = cls.extract_duration(validated_data["audio_file"])
+
+        if "title" in validated_data:
+            song.title = validated_data["title"]
+
+        if "lyrics" in validated_data:
+            song.lyrics = validated_data["lyrics"]
+
+        if "genre" in validated_data:
+            genres = validated_data.pop("genre")
+            song.genre.set(genres)
+
+        song.save()
         return song
