@@ -1,10 +1,12 @@
 from django.db.models import Q
-from django.shortcuts import render
+from django.http import FileResponse
+from django.shortcuts import render, get_object_or_404
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from .models import Song
-from .permissions import IsSongOwner
+from .permissions import IsSongOwner, CanDownloadSong
 from .serializers import SongSerializer, SongDetailSerializer
 
 from accounts.permissions import IsArtist
@@ -14,6 +16,8 @@ from accounts.permissions import IsArtist
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes, OpenApiExample, OpenApiResponse
 from rest_framework import serializers, status
 from drf_spectacular.utils import inline_serializer
+
+from .services import SongService
 
 
 @extend_schema_view(
@@ -328,3 +332,85 @@ class SongDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return Song.objects.all()
+
+
+
+@extend_schema(
+    summary="Register song stream",
+    description=(
+        "Registers that the authenticated user has played a song. "
+        "Creates a play history record and increments the song stream count."
+    ),
+    responses={
+        status.HTTP_201_CREATED: OpenApiResponse(
+            description="Song stream registered successfully.",
+            response=inline_serializer(
+                name="SongStreamResponse",
+                fields={
+                    "detail": serializers.CharField(),
+                },
+            ),
+            examples=[
+                OpenApiExample(
+                    "Stream registered",
+                    value={
+                        "detail": "Song stream registered"
+                    },
+                )
+            ],
+        ),
+        status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+            description="A Song was already streamed by you recently."
+        ),
+        status.HTTP_404_NOT_FOUND: OpenApiResponse(
+            description="Song not found."
+        ),
+    },
+)
+class SongStreamView(generics.GenericAPIView):
+    def post(self, request, pk):
+        song = get_object_or_404(Song, id=pk)
+
+        try:
+            SongService.stream_song(song=song, user=request.user)
+        except ValueError as e:
+            return Response(
+                {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            { "detail": "Song stream registered"}, status=status.HTTP_201_CREATED
+        )
+
+
+
+@extend_schema(
+    summary="Download song audio",
+    description=(
+        "Downloads the audio file of a song. "
+        "Only users with an active subscription plan that supports downloads "
+        "can access this endpoint."
+    ),
+    responses={
+        status.HTTP_200_OK: OpenApiResponse(
+            description="Song audio file.",
+        ),
+        status.HTTP_403_FORBIDDEN: OpenApiResponse(
+            description="User subscription does not allow downloads."
+        ),
+        status.HTTP_404_NOT_FOUND: OpenApiResponse(
+            description="Song not found."
+        ),
+    },
+)
+class SongDownloadView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated, CanDownloadSong]
+
+    def get(self, request, pk):
+        song = get_object_or_404(Song, id=pk)
+
+        return FileResponse(
+            song.audio_file.open("rb"),
+            as_attachment=True,
+            filename=song.audio_file.name.split("/")[-1]
+        )
