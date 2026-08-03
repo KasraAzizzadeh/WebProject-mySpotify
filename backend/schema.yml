@@ -1,0 +1,2931 @@
+openapi: 3.0.3
+info:
+  title: mySpotify Backend API
+  version: 1.0.0
+  description: Web Programming Project
+paths:
+  /accounts/{id}/:
+    get:
+      operationId: accounts_retrieve
+      description: Returns public view of a user's profile or private view if requested
+        by the owner.
+      summary: Get user profile
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+          description: ''
+    patch:
+      operationId: accounts_partial_update
+      description: 'Update the authenticated user''s profile. Allowed fields: display_name,
+        email, password. If the user is an artist, artist_bio may also be provided
+        to update the artist bio.'
+      summary: Update own profile
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdateRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdateRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdateRequestRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUser'
+          description: ''
+    delete:
+      operationId: accounts_destroy
+      description: Deletes the authenticated user's account. The id in the path must
+        match the authenticated user's id.
+      summary: Delete own account
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDeleteResponse'
+          description: ''
+  /accounts/{id}/albums/:
+    get:
+      operationId: accounts_albums_list
+      description: Returns published albums for an artist. Shape matches frontend
+        AlbumItem as closely as possible.
+      summary: Get user's albums
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserAlbum'
+          description: ''
+  /accounts/{id}/follow/:
+    post:
+      operationId: accounts_follow_create
+      description: Authenticated user follows the specified target user. Returns a
+        success message on completion.
+      summary: Follow a user
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowResponse'
+          description: ''
+    delete:
+      operationId: accounts_follow_destroy
+      description: Authenticated user unfollows the specified target user. Returns
+        a success message on completion.
+      summary: Unfollow a user
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnfollowResponse'
+          description: ''
+  /accounts/{id}/playlists/:
+    get:
+      operationId: accounts_playlists_list
+      description: Returns playlists owned by the specified user.
+      summary: Get user's playlists
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserPlaylist'
+          description: ''
+  /accounts/{id}/songs/:
+    get:
+      operationId: accounts_songs_list
+      description: Returns songs belonging to an artist. Uses a serializer shaped
+        for frontend SongItem.
+      summary: Get user's songs
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSong'
+          description: ''
+  /accounts/apply-as-artist/:
+    post:
+      operationId: accounts_apply_as_artist_create
+      description: Submits an artist verification request together with sample audio
+        files. A pending artist profile is created (or reset from rejected), support
+        staff are notified, and the updated user is returned.
+      summary: Apply as an artist
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitArtistApplicationRequest'
+            examples:
+              Request:
+                value:
+                  artistic_name: DJ Eclipse
+                  samples:
+                  - <audio file>
+                  - <audio file>
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubmitArtistApplicationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmitArtistApplicationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUser'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+                description: Unspecified response body
+          description: ''
+  /accounts/login/:
+    post:
+      operationId: accounts_login_create
+      description: Authenticates a user using their email and password, checks their
+        subscription status, creates an expiration notification if necessary, and
+        returns the authenticated user together with JWT access and refresh tokens.
+      summary: Login
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              LoginRequest:
+                value:
+                  email: john@example.com
+                  password: StrongPassword123!
+                summary: Login request
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              examples:
+                SuccessfulLogin:
+                  value:
+                    user:
+                      id: 1
+                      username: johndoe
+                      display_name: johndoe_4821
+                      email: john@example.com
+                      role: listener
+                      profile_picture: null
+                      gender: MALE
+                      birth_date: '2000-01-15'
+                      subscription_type: basic
+                      subscription_valid_until: null
+                      followers:
+                      - 3
+                      - 5
+                      following:
+                      - 7
+                      - 12
+                      created_at: '2026-07-29T12:34:56Z'
+                      settings:
+                        language: en
+                        system_voice: en-is
+                        notification_limit: 10
+                      listener_profile:
+                        playlists:
+                        - 4
+                        - 8
+                        recently_played:
+                        - 21
+                        - 15
+                        - 8
+                        liked_tracks: []
+                        daily_streams: 6
+                        last_stream_date: '2026-07-29T11:08:12Z'
+                      artist_profile: {}
+                    access: <jwt access token>
+                    refresh: <jwt refresh token>
+                  summary: Successful login
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginError'
+              examples:
+                InvalidCredentials:
+                  value:
+                    detail: Invalid credentials
+                  summary: Invalid credentials
+          description: Authentication failed.
+  /accounts/notifications/:
+    get:
+      operationId: accounts_notifications_list
+      description: Returns notifications belonging to the authenticated user.
+      summary: List notifications for current user
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+          description: ''
+  /accounts/notifications/{id}/:
+    patch:
+      operationId: accounts_notifications_partial_update
+      description: Mark the specified notification as read or unread. Accepts 'is_read'
+        (boolean) or 'status' ('read'|'unread').
+      summary: Mark notification read/unread
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationUpdateResponse'
+          description: ''
+    delete:
+      operationId: accounts_notifications_destroy
+      description: Deletes the specified notification owned by the authenticated user.
+      summary: Delete a notification
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationDeleteResponse'
+          description: ''
+  /accounts/refresh/:
+    post:
+      operationId: accounts_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /accounts/register/:
+    post:
+      operationId: accounts_register_create
+      description: Creates a new listener account, assigns the Basic subscription
+        plan, generates a random display name, creates default user settings, and
+        returns the authenticated user together with JWT access and refresh tokens.
+      summary: Register a new user
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              RegisterRequest:
+                value:
+                  username: johndoe
+                  email: john@example.com
+                  password: StrongPassword123!
+                  birth_date: '2000-01-15'
+                  gender: MALE
+                summary: Register request
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              examples:
+                SuccessfulRegistration:
+                  value:
+                    user:
+                      id: 1
+                      username: johndoe
+                      display_name: johndoe_4821
+                      email: john@example.com
+                      role: listener
+                      profile_picture: null
+                      gender: MALE
+                      birth_date: '2000-01-15'
+                      subscription_type: basic
+                      subscription_valid_until: null
+                      followers: []
+                      following: []
+                      created_at: '2026-07-29T12:34:56Z'
+                      settings:
+                        language: en
+                        system_voice: en-is
+                        notification_limit: 10
+                      listener_profile:
+                        playlists: []
+                        recently_played: []
+                        liked_tracks: []
+                        daily_streams: 0
+                        last_stream_date: null
+                      artist_profile: {}
+                    access: <jwt access token>
+                    refresh: <jwt refresh token>
+                  summary: Successful registration
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterError'
+              examples:
+                EmailAlreadyExists:
+                  value:
+                    email:
+                    - user with this email already exists.
+                  summary: Email already exists
+                UsernameAlreadyExists:
+                  value:
+                    username:
+                    - A user with that username already exists.
+                  summary: Username already exists
+                WeakPassword:
+                  value:
+                    password:
+                    - This password is too short.
+                  summary: Weak password
+          description: Validation error.
+  /albums/:
+    get:
+      operationId: albums_list
+      description: Returns all albums ordered by release date. Supports optional search
+        and basic ordering.
+      summary: List albums
+      parameters:
+      - in: query
+        name: filter
+        schema:
+          type: string
+          enum:
+          - newest
+          - oldest
+          - stream
+        description: '''newest'' orders by newest first, ''oldest'' orders by oldest
+          first, ''stream'' orders by listeners when available.'
+      - in: query
+        name: query
+        schema:
+          type: string
+        description: Case-insensitive search by album title or artist name.
+      tags:
+      - albums
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlbumList'
+          description: ''
+    post:
+      operationId: albums_create
+      description: Creates a new album for the authenticated artist.
+      summary: Create album
+      tags:
+      - albums
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlbumCreateRequest'
+            examples:
+              CreateAlbum:
+                value:
+                  title: New Album
+                  description: My release
+                  releaseDate: '2026-07-30T12:00:00Z'
+                summary: Create album
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlbumCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlbumCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumCreate'
+          description: ''
+  /albums/{id}/:
+    get:
+      operationId: albums_retrieve
+      description: Returns an album in frontend shape including song list.
+      summary: Retrieve an album
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - albums
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumDetailModel'
+          description: ''
+    patch:
+      operationId: albums_partial_update
+      description: Partially updates album metadata. Songs cannot be updated through
+        this endpoint. Only the owning artist may update.
+      summary: Update an album
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - albums
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAlbumDetailModelRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAlbumDetailModelRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAlbumDetailModelRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlbumDetailModel'
+          description: ''
+    delete:
+      operationId: albums_destroy
+      description: Deletes an album owned by the authenticated artist.
+      summary: Delete an album
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - albums
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /albums/{id}/songs/:
+    get:
+      operationId: albums_songs_list
+      description: Returns the tracks for a given album id in track order.
+      summary: List songs of an album
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - albums
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlbumSong'
+          description: ''
+  /api/schema/:
+    get:
+      operationId: api_schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - ht
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /playlists/:
+    get:
+      operationId: playlists_list
+      description: Returns all public playlists together with the authenticated user's
+        private playlists. Results can be searched by name and optionally ordered
+        by creation date.
+      summary: List playlists
+      parameters:
+      - in: query
+        name: filter
+        schema:
+          type: string
+          enum:
+          - newest
+          - oldest
+          - stream
+        description: '''newest'' orders by newest first, ''oldest'' orders by oldest
+          first, ''stream'' keeps the default ordering.'
+      - in: query
+        name: query
+        schema:
+          type: string
+        description: Case-insensitive search by playlist name.
+      tags:
+      - playlists
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Playlists'
+              examples:
+                PlaylistList:
+                  value:
+                  - - id: 15
+                      name: Workout Mix
+                      owner: 3
+                      cover_image: null
+                      created_at: '2026-07-30T13:42:11Z'
+                    - id: 7
+                      name: Chill Vibes
+                      owner: 8
+                      cover_image: https://example.com/media/playlist_covers/chill.jpg
+                      created_at: '2026-07-28T19:21:45Z'
+                  summary: Playlist list
+          description: ''
+    post:
+      operationId: playlists_create
+      description: Creates a new playlist for the authenticated user. Only the playlist
+        name is required. The owner is assigned automatically and the request fails
+        if the user's subscription playlist limit has been reached.
+      summary: Create playlist
+      tags:
+      - playlists
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaylistsRequest'
+            examples:
+              CreatePlaylist:
+                value:
+                  name: Workout Mix
+                summary: Create playlist
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PlaylistsRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PlaylistsRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Playlists'
+              examples:
+                PlaylistCreated:
+                  value:
+                    id: 15
+                    name: Workout Mix
+                    owner: 3
+                    cover_image: null
+                    created_at: '2026-07-30T13:42:11Z'
+                  summary: Playlist created
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistCreateError'
+              examples:
+                PlaylistLimitReached:
+                  value:
+                    non_field_errors:
+                    - You can create at most 6 playlists with your current subscription.
+                  summary: Playlist limit reached
+          description: Validation error.
+  /playlists/{id}/:
+    get:
+      operationId: playlists_retrieve
+      description: Returns the complete information for a playlist owned by the authenticated
+        user, including the IDs of all songs in playlist order.
+      summary: Retrieve a playlist
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - playlists
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistDetail'
+              examples:
+                PlaylistDetails:
+                  value:
+                    id: 15
+                    name: Workout Mix
+                    description: Songs for the gym.
+                    owner: 3
+                    is_private: true
+                    cover_image: https://example.com/media/playlist_covers/workout.jpg
+                    created_at: '2026-07-30T13:42:11Z'
+                    songs:
+                    - 4
+                    - 18
+                    - 27
+                    - 35
+                  summary: Playlist details
+          description: ''
+        '403':
+          description: You do not have permission to access this playlist.
+        '404':
+          description: Playlist not found.
+    put:
+      operationId: playlists_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - playlists
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaylistDetailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PlaylistDetailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PlaylistDetailRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistDetail'
+          description: ''
+    patch:
+      operationId: playlists_partial_update
+      description: Partially updates a playlist owned by the authenticated user. Only
+        the provided fields are modified. Songs cannot be updated through this endpoint.
+      summary: Update a playlist
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - playlists
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPlaylistDetailRequest'
+            examples:
+              UpdatePlaylist:
+                value:
+                  name: Morning Playlist
+                  description: Perfect for commuting.
+                  is_private: false
+                summary: Update playlist
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPlaylistDetailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPlaylistDetailRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistDetail'
+              examples:
+                PlaylistUpdated:
+                  value:
+                    id: 15
+                    name: Morning Playlist
+                    description: Perfect for commuting.
+                    owner: 3
+                    is_private: false
+                    cover_image: null
+                    created_at: '2026-07-30T13:42:11Z'
+                    songs:
+                    - 4
+                    - 18
+                    - 27
+                    - 35
+                  summary: Playlist updated
+          description: ''
+        '403':
+          description: You do not have permission to access this playlist.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistUpdateError'
+          description: Validation error.
+        '404':
+          description: Playlist not found.
+    delete:
+      operationId: playlists_destroy
+      description: Deletes a playlist owned by the authenticated user.
+      summary: Delete a playlist
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - playlists
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Playlist deleted successfully.
+        '403':
+          description: You do not have permission to access this playlist.
+        '404':
+          description: Playlist not found.
+  /playlists/{playlist_id}/songs/:
+    get:
+      operationId: playlists_songs_list
+      parameters:
+      - in: path
+        name: playlist_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - playlists
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlaylistSongs'
+          description: ''
+  /playlists/{playlist_id}/songs/{song_id}/:
+    post:
+      operationId: playlists_songs_create
+      description: Adds a song to the specified playlist. The song is appended to
+        the end of the playlist. Only the playlist owner can modify the playlist.
+      summary: Add song to playlist
+      parameters:
+      - in: path
+        name: playlist_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: song_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - playlists
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          description: Song added successfully.
+        '400':
+          description: Song already exists in playlist.
+        '403':
+          description: You do not have permission to modify this playlist.
+        '404':
+          description: Playlist or song not found.
+    delete:
+      operationId: playlists_songs_destroy
+      description: Removes a song from the specified playlist. Songs after the removed
+        song are shifted one position backward.
+      summary: Remove song from playlist
+      parameters:
+      - in: path
+        name: playlist_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: song_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - playlists
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Song removed successfully.
+        '400':
+          description: Song is not in playlist.
+        '403':
+          description: You do not have permission to modify this playlist.
+        '404':
+          description: Playlist or song not found.
+  /songs/:
+    get:
+      operationId: songs_list
+      description: Returns songs with artist and album information. Songs can be searched
+        by title or artist display name and optionally ordered by release date or
+        stream count.
+      summary: List songs
+      parameters:
+      - in: query
+        name: filter
+        schema:
+          type: string
+          enum:
+          - newest
+          - oldest
+          - streams
+        description: '''newest'' orders by newest release date, ''oldest'' orders
+          by oldest release date, ''streams'' orders by highest stream count.'
+      - in: query
+        name: query
+        schema:
+          type: string
+        description: Case-insensitive search by song title or artist display name.
+      tags:
+      - songs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Song'
+              examples:
+                SongList:
+                  value:
+                  - - id: 12
+                      title: Blinding Lights
+                      lyrics: '....'
+                      duration_ms: 200040
+                      track_number: 3
+                      streams: 1200000
+                      audio_file: /media/songs/blinding.mp3
+                      cover_image: /media/album_covers/dawn.jpg
+                      release_date: '2026-07-20T12:00:00Z'
+                      genre:
+                      - 1
+                      - 4
+                      collaborators:
+                      - 15
+                      - 20
+                      artist_id: 7
+                      artist_display_name: The Weeknd
+                      album_display_name: After Hours
+                  summary: Song list
+          description: ''
+    post:
+      operationId: songs_create
+      description: Creates a new song for the authenticated artist. The artist is
+        assigned automatically from the authenticated user. The uploaded audio file
+        is validated and its duration is extracted automatically. If the album has
+        a cover image, it is copied to the song.
+      summary: Create song
+      tags:
+      - songs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SongRequest'
+            examples:
+              CreateSong:
+                value:
+                  title: New Song
+                  album_id: 5
+                  track_number: 2
+                  audio_file: song.mp3
+                  lyrics: Optional lyrics
+                  genre:
+                  - 1
+                  - 3
+                  collaborators:
+                  - 12
+                  - 15
+                summary: Create song
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SongRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SongRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Song'
+              examples:
+                SongCreated:
+                  value:
+                    id: 25
+                    title: New Song
+                    duration_ms: 185000
+                    track_number: 2
+                    streams: 0
+                    audio_file: /media/songs/new_song.mp3
+                    cover_image: /media/album_covers/album.jpg
+                    release_date: '2026-08-02T20:30:00Z'
+                    genre:
+                    - 1
+                    - 3
+                    collaborators:
+                    - 12
+                    - 15
+                    artist_id: 7
+                    artist_display_name: Artist Name
+                    album_display_name: Album Name
+                  summary: Song created
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongCreateError'
+          description: Validation error.
+  /subscriptions/:
+    get:
+      operationId: subscriptions_list
+      description: Returns the available subscription plans together with their pricing
+        and enabled features. This endpoint is used by settings and admin pricing
+        pages.
+      summary: List subscription plans
+      tags:
+      - subscriptions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+    patch:
+      operationId: subscriptions_partial_update
+      description: Allows administrators to update the prices of subscription plans.
+        The request may include silver_price, gold_price, or both.
+      summary: Update subscription plan prices
+      tags:
+      - subscriptions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscriptionPricesUpdateRequest'
+            examples:
+              UpdateSubscriptionPrices:
+                value:
+                  silver_price: '19.99'
+                  gold_price: '29.99'
+                summary: Update subscription prices
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscriptionPricesUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscriptionPricesUpdateRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+        '403':
+          description: Only admin users are authorized to update subscription prices.
+  /subscriptions/checkout/:
+    post:
+      operationId: subscriptions_checkout_create
+      description: Starts a sandbox payment session for the selected subscription
+        plan. Returns a payment URL and authority token for the Zarinpal sandbox gateway.
+      summary: Create a subscription checkout session
+      tags:
+      - subscriptions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionCheckoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubscriptionCheckoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubscriptionCheckoutRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionCheckoutResponse'
+          description: ''
+        '400':
+          description: Invalid request payload or unsupported plan.
+        '401':
+          description: Authentication credentials were not provided.
+  /subscriptions/verify/:
+    get:
+      operationId: subscriptions_verify_retrieve
+      description: Receives Zarinpal callback, performs server-side verify, updates
+        subscription on success, and optionally redirects the browser back to the
+        provided return URL.
+      summary: Verify a subscription payment
+      parameters:
+      - in: query
+        name: Authority
+        schema:
+          type: string
+        description: Zarinpal Authority token returned after the payment request.
+        required: true
+      - in: query
+        name: Status
+        schema:
+          type: string
+        description: Payment result status returned by Zarinpal. Use OK for successful
+          checkout return.
+        required: true
+      - in: query
+        name: return_url
+        schema:
+          type: string
+        description: Optional frontend URL to redirect to after verification.
+      tags:
+      - subscriptions
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionVerificationResponse'
+          description: ''
+        '302':
+          description: Redirects to the provided return_url with result parameters.
+        '400':
+          description: Missing or invalid callback parameters.
+        '404':
+          description: Transaction with the requested authority could not be found.
+  /support/applications/:
+    get:
+      operationId: support_applications_list
+      description: Retrieves the list of all submitted artist application tickets.
+      summary: List artist applications
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ArtistApplication'
+          description: ''
+  /support/applications/{id}/:
+    patch:
+      operationId: support_applications_partial_update
+      description: Support or admin users may accept or reject an artist application.
+        When rejecting, a rejection message is required.
+      summary: Review artist application
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedArtistApplicationDecisionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedArtistApplicationDecisionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedArtistApplicationDecisionRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtistApplication'
+          description: ''
+  /support/audits/:
+    get:
+      operationId: support_audits_list
+      description: Retrieves all artist auditing records.
+      summary: List auditing records
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditingRecord'
+          description: ''
+  /support/audits/{id}/:
+    patch:
+      operationId: support_audits_partial_update
+      description: Admin users may settle an artist auditing record.
+      summary: Confirm audit settlement
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditingRecord'
+          description: ''
+  /support/questions/:
+    get:
+      operationId: support_questions_list
+      description: Retrieves the list of support questions and any related answers.
+      summary: List support questions
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupportQuestion'
+          description: ''
+    post:
+      operationId: support_questions_create
+      description: Submit a new support question ticket. Any authenticated user may
+        use this endpoint.
+      summary: Create a support question
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportQuestionCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SupportQuestionCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SupportQuestionCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportQuestion'
+          description: ''
+  /support/questions/{id}/:
+    get:
+      operationId: support_questions_retrieve
+      description: Retrieves a specific support question ticket together with its
+        messages.
+      summary: Retrieve support question
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportQuestion'
+          description: ''
+    patch:
+      operationId: support_questions_partial_update
+      description: Support or admin users may send an answer to a support question
+        ticket.
+      summary: Answer support question
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSupportQuestionAnswerRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSupportQuestionAnswerRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSupportQuestionAnswerRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportQuestion'
+          description: ''
+components:
+  schemas:
+    AlbumCreate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 50
+        description:
+          type: string
+          nullable: true
+        is_single:
+          type: boolean
+        release_date:
+          type: string
+          format: date-time
+        artist:
+          type: integer
+          readOnly: true
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+      required:
+      - artist
+      - cover_image
+      - id
+      - release_date
+      - title
+    AlbumCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 50
+        description:
+          type: string
+          nullable: true
+        is_single:
+          type: boolean
+        release_date:
+          type: string
+          format: date-time
+      required:
+      - release_date
+      - title
+    AlbumDetailModel:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 50
+        description:
+          type: string
+          nullable: true
+        is_single:
+          type: boolean
+        release_date:
+          type: string
+          format: date-time
+        artist:
+          type: integer
+          readOnly: true
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+        songs:
+          type: string
+          readOnly: true
+      required:
+      - artist
+      - id
+      - release_date
+      - songs
+      - title
+    AlbumList:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        artistName:
+          type: string
+          readOnly: true
+        artistId:
+          type: string
+          readOnly: true
+        listeners:
+          type: string
+          readOnly: true
+        releaseDate:
+          type: string
+          format: date-time
+        imageUrl:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          nullable: true
+        songList:
+          type: string
+          readOnly: true
+      required:
+      - artistId
+      - artistName
+      - description
+      - id
+      - imageUrl
+      - listeners
+      - name
+      - releaseDate
+      - songList
+    AlbumSong:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        artistName:
+          type: string
+          readOnly: true
+        artistId:
+          type: string
+          readOnly: true
+        albumName:
+          type: string
+          readOnly: true
+        albumId:
+          type: string
+          readOnly: true
+        streams:
+          type: integer
+        releaseDate:
+          type: string
+          format: date-time
+        imageUrl:
+          type: string
+          readOnly: true
+        trackNumber:
+          type: integer
+          nullable: true
+        songDurationMs:
+          type: integer
+        audioUrl:
+          type: string
+          readOnly: true
+        lyrics:
+          type: string
+          nullable: true
+      required:
+      - albumId
+      - albumName
+      - artistId
+      - artistName
+      - audioUrl
+      - id
+      - imageUrl
+      - lyrics
+      - releaseDate
+      - songDurationMs
+      - streams
+      - title
+      - trackNumber
+    ArtistApplication:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        userId:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        artisticName:
+          type: string
+          readOnly: true
+        samples:
+          type: string
+          readOnly: true
+        verificationStatus:
+          type: string
+          readOnly: true
+        submittedAt:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - artisticName
+      - email
+      - id
+      - samples
+      - submittedAt
+      - userId
+      - verificationStatus
+    ArtistProfile:
+      type: object
+      properties:
+        bio:
+          type: string
+          nullable: true
+        verification_status:
+          $ref: '#/components/schemas/VerificationStatusEnum'
+        songs:
+          type: string
+          readOnly: true
+        albums:
+          type: string
+          readOnly: true
+        total_streams:
+          type: string
+          readOnly: true
+        unique_listeners:
+          type: string
+          readOnly: true
+      required:
+      - albums
+      - songs
+      - total_streams
+      - unique_listeners
+      - verification_status
+    AuditingRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        artistId:
+          type: integer
+          readOnly: true
+        artistName:
+          type: string
+          readOnly: true
+        uniqueListeners:
+          type: integer
+          readOnly: true
+        totalStreams:
+          type: integer
+          readOnly: true
+        calculatedReward:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        paymentStatus:
+          type: string
+          readOnly: true
+      required:
+      - artistId
+      - artistName
+      - calculatedReward
+      - id
+      - paymentStatus
+      - totalStreams
+      - uniqueListeners
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/AuthUser'
+        access:
+          type: string
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+      - user
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        display_name:
+          type: string
+          maxLength: 64
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        profile_picture:
+          type: string
+          format: uri
+          nullable: true
+        gender:
+          $ref: '#/components/schemas/GenderEnum'
+        birth_date:
+          type: string
+          format: date
+          nullable: true
+        subscription_type:
+          type: string
+          readOnly: true
+        subscription_valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        followers:
+          type: string
+          readOnly: true
+        following:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        settings:
+          allOf:
+          - $ref: '#/components/schemas/UserSettings'
+          readOnly: true
+        listener_profile:
+          type: string
+          readOnly: true
+        artist_profile:
+          type: string
+          readOnly: true
+      required:
+      - artist_profile
+      - created_at
+      - email
+      - followers
+      - following
+      - id
+      - listener_profile
+      - settings
+      - subscription_type
+      - username
+    FollowResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    GenderEnum:
+      enum:
+      - MALE
+      - FEMALE
+      - NOT_SPECIFIED
+      type: string
+      description: |-
+        * `MALE` - Male
+        * `FEMALE` - Female
+        * `NOT_SPECIFIED` - Rather not say
+    LanguageEnum:
+      enum:
+      - en
+      - fa
+      type: string
+      description: |-
+        * `en` - English
+        * `fa` - Persian
+    LoginError:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    NameEnum:
+      enum:
+      - basic
+      - silver
+      - gold
+      type: string
+      description: |-
+        * `basic` - Basic
+        * `silver` - Silver
+        * `gold` - Gold
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user_id:
+          type: integer
+          readOnly: true
+        content:
+          type: string
+        status:
+          type: string
+          readOnly: true
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - content
+      - created_at
+      - id
+      - status
+      - type
+      - user_id
+    NotificationDeleteResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    NotificationUpdateResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    PatchedAlbumDetailModelRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 50
+        description:
+          type: string
+          nullable: true
+        is_single:
+          type: boolean
+        release_date:
+          type: string
+          format: date-time
+        cover_image:
+          type: string
+          format: binary
+          nullable: true
+    PatchedArtistApplicationDecisionRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        message:
+          type: string
+    PatchedPlaylistDetailRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        is_private:
+          type: boolean
+        cover_image:
+          type: string
+          format: binary
+          nullable: true
+    PatchedSubscriptionPricesUpdateRequest:
+      type: object
+      properties:
+        silver_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        gold_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+    PatchedSupportQuestionAnswerRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          minLength: 1
+    PatchedUserUpdateRequestRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+        artist_bio:
+          type: string
+          minLength: 1
+    PlanEnum:
+      enum:
+      - silver
+      - gold
+      type: string
+      description: |-
+        * `silver` - silver
+        * `gold` - gold
+    PlaylistCreateError:
+      type: object
+      properties:
+        name:
+          type: array
+          items:
+            type: string
+        non_field_errors:
+          type: array
+          items:
+            type: string
+    PlaylistDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        owner:
+          type: integer
+          readOnly: true
+        is_private:
+          type: boolean
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        songs:
+          type: string
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+      - owner
+      - songs
+    PlaylistDetailRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        is_private:
+          type: boolean
+        cover_image:
+          type: string
+          format: binary
+          nullable: true
+      required:
+      - name
+    PlaylistSongs:
+      type: object
+      properties:
+        position:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        added_at:
+          type: string
+          format: date-time
+          readOnly: true
+        song:
+          allOf:
+          - $ref: '#/components/schemas/Song'
+          readOnly: true
+      required:
+      - added_at
+      - position
+      - song
+    PlaylistUpdateError:
+      type: object
+      properties:
+        name:
+          type: array
+          items:
+            type: string
+        description:
+          type: array
+          items:
+            type: string
+        cover_image:
+          type: array
+          items:
+            type: string
+        is_private:
+          type: array
+          items:
+            type: string
+    Playlists:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        owner:
+          type: integer
+          readOnly: true
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - cover_image
+      - created_at
+      - id
+      - name
+      - owner
+    PlaylistsRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+      - name
+    RegisterError:
+      type: object
+      properties:
+        username:
+          type: array
+          items:
+            type: string
+        email:
+          type: array
+          items:
+            type: string
+        password:
+          type: array
+          items:
+            type: string
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        birth_date:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          $ref: '#/components/schemas/GenderEnum'
+      required:
+      - email
+      - password
+      - username
+    RoleEnum:
+      enum:
+      - listener
+      - artist
+      - support
+      - admin
+      type: string
+      description: |-
+        * `listener` - Listener
+        * `artist` - Artist
+        * `support` - Support
+        * `admin` - Admin
+    Song:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        lyrics:
+          type: string
+          nullable: true
+        duration_ms:
+          type: integer
+          readOnly: true
+        track_number:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        streams:
+          type: integer
+          readOnly: true
+        audio_file:
+          type: string
+          format: uri
+        cover_image:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        release_date:
+          type: string
+          format: date-time
+          readOnly: true
+        genre:
+          type: array
+          items:
+            type: integer
+        collaborators:
+          type: array
+          items:
+            type: integer
+        album_id:
+          type: integer
+        artist_id:
+          type: integer
+          readOnly: true
+        artist_name:
+          type: string
+          readOnly: true
+        album_name:
+          type: string
+          readOnly: true
+      required:
+      - album_id
+      - album_name
+      - artist_id
+      - artist_name
+      - audio_file
+      - cover_image
+      - duration_ms
+      - id
+      - release_date
+      - streams
+      - title
+    SongCreateError:
+      type: object
+      properties:
+        title:
+          type: array
+          items:
+            type: string
+        album_id:
+          type: array
+          items:
+            type: string
+        audio_file:
+          type: array
+          items:
+            type: string
+        non_field_errors:
+          type: array
+          items:
+            type: string
+    SongRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        lyrics:
+          type: string
+          nullable: true
+        track_number:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        audio_file:
+          type: string
+          format: binary
+        genre:
+          type: array
+          items:
+            type: integer
+        collaborators:
+          type: array
+          items:
+            type: integer
+        album_id:
+          type: integer
+      required:
+      - album_id
+      - audio_file
+      - title
+    StatusEnum:
+      enum:
+      - approved
+      - rejected
+      type: string
+      description: |-
+        * `approved` - approved
+        * `rejected` - rejected
+    SubmitArtistApplicationRequest:
+      type: object
+      properties:
+        artistic_name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        samples:
+          type: array
+          items:
+            type: string
+            format: binary
+          maxItems: 5
+      required:
+      - artistic_name
+      - samples
+    SubscriptionCheckoutRequest:
+      type: object
+      properties:
+        plan:
+          $ref: '#/components/schemas/PlanEnum'
+      required:
+      - plan
+    SubscriptionCheckoutResponse:
+      type: object
+      properties:
+        transaction_id:
+          type: integer
+        authority:
+          type: string
+        payment_url:
+          type: string
+          format: uri
+        status:
+          type: string
+      required:
+      - authority
+      - payment_url
+      - status
+      - transaction_id
+    SubscriptionPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          allOf:
+          - $ref: '#/components/schemas/NameEnum'
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        daily_stream_limit:
+          type: integer
+          readOnly: true
+          nullable: true
+        playlist_limit:
+          type: integer
+          readOnly: true
+          nullable: true
+        profile_picture_upload:
+          type: boolean
+          readOnly: true
+        song_download:
+          type: boolean
+          readOnly: true
+        early_access:
+          type: boolean
+          readOnly: true
+        stats_info:
+          type: boolean
+          readOnly: true
+      required:
+      - daily_stream_limit
+      - early_access
+      - id
+      - name
+      - playlist_limit
+      - profile_picture_upload
+      - song_download
+      - stats_info
+    SubscriptionVerificationResponse:
+      type: object
+      properties:
+        transaction_id:
+          type: integer
+        transaction_status:
+          type: string
+        subscription_plan:
+          type: string
+          nullable: true
+        subscription_valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        reference_id:
+          type: string
+          nullable: true
+      required:
+      - reference_id
+      - subscription_plan
+      - subscription_valid_until
+      - transaction_id
+      - transaction_status
+    SupportQuestion:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        senderId:
+          type: integer
+          readOnly: true
+        senderUsername:
+          type: string
+          readOnly: true
+        subject:
+          type: string
+          maxLength: 64
+        status:
+          type: string
+          readOnly: true
+        submittedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketMessage'
+          readOnly: true
+      required:
+      - id
+      - messages
+      - senderId
+      - senderUsername
+      - status
+      - subject
+      - submittedAt
+    SupportQuestionCreateRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          minLength: 1
+      required:
+      - message
+    SystemVoiceEnum:
+      enum:
+      - en-is
+      - fa
+      type: string
+      description: |-
+        * `en-is` - English
+        * `fa` - Persian
+    TicketMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        senderId:
+          type: integer
+          readOnly: true
+        senderName:
+          type: string
+          readOnly: true
+        senderRole:
+          type: string
+          readOnly: true
+        content:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - content
+      - id
+      - senderId
+      - senderName
+      - senderRole
+      - timestamp
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+      required:
+      - access
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - refresh
+    TypeEnum:
+      enum:
+      - ES
+      - SA
+      - AA
+      - AQ
+      - ST
+      - AT
+      - NA
+      type: string
+      description: |-
+        * `ES` - Expiring Sub
+        * `SA` - Support App
+        * `AA` - Artist Approved
+        * `AQ` - Answered Question
+        * `ST` - Support Ticket
+        * `AT` - Audit Transfer
+        * `NA` - New Album
+    UnfollowResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    UserAlbum:
+      type: object
+      description: Serialize Album to match frontend AlbumItem shape where possible.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        artist_name:
+          type: string
+          readOnly: true
+        artist_id:
+          type: string
+          readOnly: true
+        listeners:
+          type: string
+          readOnly: true
+        release_date:
+          type: string
+          format: date-time
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        description:
+          type: string
+          nullable: true
+        song_list:
+          type: string
+          readOnly: true
+        genre:
+          type: string
+          readOnly: true
+        collaborators:
+          type: string
+          readOnly: true
+        release_type:
+          type: string
+          readOnly: true
+      required:
+      - artist_id
+      - artist_name
+      - collaborators
+      - description
+      - genre
+      - id
+      - image_url
+      - listeners
+      - name
+      - release_date
+      - release_type
+      - song_list
+    UserDeleteResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    UserPlaylist:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        owner_id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        description:
+          type: string
+          nullable: true
+        is_private:
+          type: boolean
+        song_list:
+          type: string
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - image_url
+      - name
+      - owner_id
+      - song_list
+    UserPublic:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        display_name:
+          type: string
+          maxLength: 64
+        profile_picture_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        followers:
+          type: array
+          items:
+            type: integer
+          readOnly: true
+        following:
+          type: array
+          items:
+            type: integer
+          readOnly: true
+        artist_profile:
+          allOf:
+          - $ref: '#/components/schemas/ArtistProfile'
+          readOnly: true
+      required:
+      - artist_profile
+      - followers
+      - following
+      - id
+      - profile_picture_url
+      - username
+    UserSettings:
+      type: object
+      properties:
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+        system_voice:
+          $ref: '#/components/schemas/SystemVoiceEnum'
+        notification_limit:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+    UserSong:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        artist_name:
+          type: string
+          readOnly: true
+        artist_id:
+          type: string
+          readOnly: true
+        album_name:
+          type: string
+          readOnly: true
+        album_id:
+          type: integer
+          readOnly: true
+        streams:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        release_date:
+          type: string
+          format: date-time
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        track_number:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        song_duration_ms:
+          type: integer
+        audio_url:
+          type: string
+          format: uri
+          nullable: true
+          readOnly: true
+        lyrics:
+          type: string
+          nullable: true
+      required:
+      - album_id
+      - album_name
+      - artist_id
+      - artist_name
+      - audio_url
+      - id
+      - image_url
+      - release_date
+      - song_duration_ms
+      - title
+    VerificationStatusEnum:
+      enum:
+      - REJECTED
+      - PENDING
+      - ACCEPTED
+      type: string
+      description: |-
+        * `REJECTED` - Rejected
+        * `PENDING` - Pending
+        * `ACCEPTED` - Accepted
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

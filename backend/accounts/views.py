@@ -548,8 +548,8 @@ class NotificationsView(APIView):
 
 @extend_schema_view(
     patch=extend_schema(
-        summary="Mark notification read/unread",
-        description="Mark the specified notification as read or unread. Accepts 'is_read' (boolean) or 'status' ('read'|'unread').",
+        summary="Mark notification as read",
+        description="Marks the specified notification as read by setting its is_read field to true.",
         responses={200: inline_serializer(name='NotificationUpdateResponse', fields={'detail': serializers.CharField()})}
     ),
     delete=extend_schema(
@@ -571,12 +571,7 @@ class NotificationDetailView(APIView):
             owner=request.user
         )
 
-        # allow clients to send 'is_read' (boolean) or 'status' ('read'|'unread')
-        if 'is_read' in request.data:
-            notification.is_read = bool(request.data.get('is_read'))
-        elif 'status' in request.data:
-            notification.is_read = (request.data.get('status') == 'read')
-
+        notification.is_read = True
         notification.save(update_fields=['is_read'])
 
         return Response({'detail': 'Notification updated'})
