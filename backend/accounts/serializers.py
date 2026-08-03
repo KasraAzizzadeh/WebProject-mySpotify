@@ -444,7 +444,7 @@ class UserSongSerializer(serializers.ModelSerializer):
 
 class NotificationSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source='owner.id', read_only=True)
-    status = serializers.SerializerMethodField()
+    is_read = serializers.BooleanField(read_only=True)
     created_at = serializers.DateTimeField()
 
     class Meta:
@@ -453,10 +453,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             'id',
             'user_id',
             'content',
-            'status',
+            'is_read',
             'type',
             'created_at',
         ]
-
-    def get_status(self, obj):
-        return 'read' if obj.is_read else 'unread'
