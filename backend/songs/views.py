@@ -335,39 +335,124 @@ class SongDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 
-@extend_schema(
-    summary="Register song stream",
-    description=(
-        "Registers that the authenticated user has played a song. "
-        "Creates a play history record and increments the song stream count."
-    ),
-    responses={
-        status.HTTP_201_CREATED: OpenApiResponse(
-            description="Song stream registered successfully.",
-            response=inline_serializer(
-                name="SongStreamResponse",
-                fields={
-                    "detail": serializers.CharField(),
-                },
-            ),
-            examples=[
-                OpenApiExample(
-                    "Stream registered",
-                    value={
-                        "detail": "Song stream registered"
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get stream URL",
+        description=(
+            "Returns the audio URL for streaming a song after checking that the "
+            "authenticated user is allowed to stream it (for example, daily "
+            "stream limits for the current subscription plan)."
+        ),
+        responses={
+            status.HTTP_200_OK: OpenApiResponse(
+                description="Audio URL returned successfully.",
+                response=inline_serializer(
+                    name="SongStreamUrlResponse",
+                    fields={
+                        "audio_url": serializers.CharField(),
                     },
-                )
-            ],
+                ),
+                examples=[
+                    OpenApiExample(
+                        "Audio URL",
+                        value={
+                            "audio_url": "/media/songs/7/blinding_lights.mp3"
+                        },
+                    )
+                ],
+            ),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="User has reached the daily stream limit.",
+                response=inline_serializer(
+                    name="SongStreamUrlError",
+                    fields={
+                        "detail": serializers.CharField(),
+                    },
+                ),
+                examples=[
+                    OpenApiExample(
+                        "Daily limit reached",
+                        value={
+                            "detail": "You have reached your daily stream limit."
+                        },
+                    )
+                ],
+            ),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Song not found."
+            ),
+        },
+    ),
+    post=extend_schema(
+        summary="Register song stream",
+        description=(
+            "Registers that the authenticated user has listened to the song. "
+            "Creates a play history record and increments the song stream count. "
+            "This should be called after the client determines that playback "
+            "has reached the required listening threshold."
         ),
-        status.HTTP_400_BAD_REQUEST: OpenApiResponse(
-            description="A Song was already streamed by you recently."
-        ),
-        status.HTTP_404_NOT_FOUND: OpenApiResponse(
-            description="Song not found."
-        ),
-    },
+        responses={
+            status.HTTP_201_CREATED: OpenApiResponse(
+                description="Song stream registered successfully.",
+                response=inline_serializer(
+                    name="SongStreamResponse",
+                    fields={
+                        "detail": serializers.CharField(),
+                    },
+                ),
+                examples=[
+                    OpenApiExample(
+                        "Stream registered",
+                        value={
+                            "detail": "Song stream registered"
+                        },
+                    )
+                ],
+            ),
+            status.HTTP_400_BAD_REQUEST: OpenApiResponse(
+                description="Daily limit reached or a stream was already registered within the last minute.",
+                response=inline_serializer(
+                    name="SongStreamPostError",
+                    fields={
+                        "detail": serializers.CharField(),
+                    },
+                ),
+                examples=[
+                    OpenApiExample(
+                        "Too soon",
+                        value={
+                            "detail": "A Song was already streamed by you recently."
+                        },
+                    ),
+                    OpenApiExample(
+                        "Daily limit reached",
+                        value={
+                            "detail": "You have reached your daily stream limit."
+                        },
+                    ),
+                ],
+            ),
+            status.HTTP_404_NOT_FOUND: OpenApiResponse(
+                description="Song not found."
+            ),
+        },
+    ),
 )
 class SongStreamView(generics.GenericAPIView):
+    def get(self, request, pk):
+        song = get_object_or_404(Song, id=pk)
+
+        try:
+            url = SongService.fetch_song(song=song, user=request.user)
+        except ValueError as e:
+            return Response(
+                {"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            {"audio_url": f"{url}"}, status=status.HTTP_200_OK
+        )
+
     def post(self, request, pk):
         song = get_object_or_404(Song, id=pk)
 

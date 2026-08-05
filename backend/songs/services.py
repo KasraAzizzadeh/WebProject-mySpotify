@@ -75,6 +75,11 @@ class SongService:
         return song
 
     @classmethod
+    def fetch_song(cls, song, user):
+        cls.check_stream_allowed(user)
+        return song.audio_file.url
+
+    @classmethod
     @transaction.atomic
     def stream_song(cls, song, user):
         cls.check_stream_allowed(user)
