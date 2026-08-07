@@ -235,6 +235,7 @@ class UserUpdateSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False)
     password = serializers.CharField(write_only=True, required=False)
     artist_bio = serializers.CharField(required=False, allow_blank=True)
+    profile_picture = serializers.ImageField(required=False, allow_null=True)
 
 
 class UserPublicSerializer(serializers.ModelSerializer):

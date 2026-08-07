@@ -360,6 +360,7 @@ class SubmitArtistApplicationView(generics.CreateAPIView):
                 'email': serializers.EmailField(required=False),
                 'password': serializers.CharField(required=False),
                 'artist_bio': serializers.CharField(required=False),
+                'profile_picture': serializers.ImageField(required=False, allow_null=True),
             }
         ),
         responses={200: AuthUserSerializer}
@@ -397,7 +398,17 @@ class UserProfileView(APIView):
 
         from .serializers import UserUpdateSerializer
 
-        serializer = UserUpdateSerializer(data=request.data)
+        # Normalize incoming data: if a client (e.g. Swagger UI multipart) sends empty strings
+        # for optional fields (clicking 'send empty value'), treat them as omitted so they do not
+        # trigger validations or permission checks. Copy request.data (a QueryDict) so it's mutable.
+        incoming = request.data.copy()
+        for key in list(incoming.keys()):
+            val = incoming.get(key)
+            # if it's an empty string, remove it so serializer treats it as not provided
+            if isinstance(val, str) and val.strip() == "":
+                incoming.pop(key)
+
+        serializer = UserUpdateSerializer(data=incoming)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
@@ -444,6 +455,30 @@ class UserProfileView(APIView):
                 artist.save(update_fields=['bio'])
             else:
                 return Response({'artist_bio': ['Artist profile not found.']}, status=status.HTTP_400_BAD_REQUEST)
+
+        # profile picture handling (file upload similar to songs audio_file)
+        if 'profile_picture' in data:
+            # Only allow profile picture changes for plans that support it
+            plan = getattr(user, 'subscription_plan', None)
+            can_change_picture = bool(plan and getattr(plan, 'profile_picture_upload', False))
+            if not can_change_picture:
+                return Response({'detail': 'Your subscription plan does not allow changing profile picture.'}, status=status.HTTP_403_FORBIDDEN)
+
+            pic = data.get('profile_picture')
+            # explicit removal if null provided
+            if pic is None:
+                if user.profile_picture:
+                    try:
+                        user.profile_picture.delete(save=False)
+                    except Exception:
+                        pass
+                user.profile_picture = None
+                changed = True
+                update_fields.append('profile_picture')
+            else:
+                user.profile_picture = pic
+                changed = True
+                update_fields.append('profile_picture')
 
         if changed:
             # save user
