@@ -137,25 +137,30 @@ def _to_zarinpal_amount(price: Decimal) -> int:
     return amount_int if amount_int > 0 else 1000
 
 
-def create_subscription_checkout(user, plan_name: str) -> tuple[SubscriptionTransaction, str]:
+def create_subscription_checkout(user, plan_name: str, duration_months: int = 1) -> tuple[SubscriptionTransaction, str]:
     if plan_name not in {
         SubscriptionPlan.PlanType.SILVER,
         SubscriptionPlan.PlanType.GOLD,
     }:
         raise ValueError("Only silver and gold plans can be purchased.")
 
+    if duration_months not in (1, 3, 6, 12):
+        raise ValueError("Invalid duration. Allowed values: 1, 3, 6, 12 months.")
+
     callback_url = getattr(settings, "ZARINPAL_CALLBACK_URL", None)
     if not callback_url:
         raise ImproperlyConfigured("ZARINPAL_CALLBACK_URL must be configured.")
 
     plan = SubscriptionPlan.objects.get(name=plan_name)
-    amount_rials = _to_zarinpal_amount(plan.price)
+    # multiply plan price by duration
+    total_price = plan.price * Decimal(duration_months)
+    amount_rials = _to_zarinpal_amount(total_price)
 
     payload = {
         "merchant_id": settings.ZARINPAL_MERCHANT_ID,
         "amount": amount_rials,
         "callback_url": callback_url,
-        "description": f"Subscribe to {plan.name} plan for user {user.username}",
+        "description": f"Subscribe to {plan.name} plan ({duration_months} months) for user {user.username}",
     }
     response = _send_zarinpal_request("request.json", payload)
 
@@ -171,9 +176,10 @@ def create_subscription_checkout(user, plan_name: str) -> tuple[SubscriptionTran
     transaction = SubscriptionTransaction.objects.create(
         user=user,
         subscription_plan=plan,
-        amount=plan.price,
+        amount=total_price,
         authority=authority,
         status=SubscriptionTransaction.Status.PENDING,
+        duration_months=duration_months,
     )
 
     gateway_base = "https://sandbox.zarinpal.com/pg/StartPay" if getattr(settings, "ZARINPAL_SANDBOX", True) else "https://www.zarinpal.com/pg/StartPay"
@@ -211,7 +217,7 @@ def verify_subscription_payment(authority: str, status: str) -> SubscriptionTran
         transaction.reference_id = str(ref_id) if ref_id else None
         transaction.save(update_fields=["status", "reference_id"])
         if original_status != SubscriptionTransaction.Status.SUCCESS:
-            _apply_subscription(transaction.user, transaction.subscription_plan)
+            _apply_subscription(transaction.user, transaction.subscription_plan, transaction.duration_months)
         return transaction
 
     transaction.status = SubscriptionTransaction.Status.FAILED
@@ -220,12 +226,13 @@ def verify_subscription_payment(authority: str, status: str) -> SubscriptionTran
     return transaction
 
 
-def _apply_subscription(user, plan: SubscriptionPlan) -> None:
+def _apply_subscription(user, plan: SubscriptionPlan, months: int = 1) -> None:
     now = timezone.now()
+    additional_days = 30 * int(months)
     if user.subscription_valid_until and user.subscription_valid_until > now:
-        valid_until = user.subscription_valid_until + timedelta(days=30)
+        valid_until = user.subscription_valid_until + timedelta(days=additional_days)
     else:
-        valid_until = now + timedelta(days=30)
+        valid_until = now + timedelta(days=additional_days)
 
     user.subscription_plan = plan
     user.subscription_valid_until = valid_until

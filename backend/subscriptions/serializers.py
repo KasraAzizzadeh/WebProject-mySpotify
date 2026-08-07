@@ -48,6 +48,12 @@ class SubscriptionCheckoutSerializer(serializers.Serializer):
             SubscriptionPlan.PlanType.GOLD,
         ]
     )
+    duration = serializers.ChoiceField(
+        choices=[1, 3, 6, 12],
+        required=False,
+        default=1,
+        help_text="Number of months to purchase (1, 3, 6, 12).",
+    )
 
 
 class SubscriptionCheckoutResponseSerializer(serializers.Serializer):

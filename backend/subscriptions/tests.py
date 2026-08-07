@@ -185,6 +185,40 @@ class SubscriptionPlanApiTests(TestCase):
         self.assertEqual(transaction.status, SubscriptionTransaction.Status.PENDING)
         self.assertEqual(transaction.subscription_plan, self.silver_plan)
         self.assertEqual(transaction.user, self.user)
+        self.assertEqual(transaction.duration_months, 1)
+
+    @override_settings(
+        ZARINPAL_MERCHANT_ID="test-merchant-id",
+        ZARINPAL_CALLBACK_URL="http://localhost:8000/subscriptions/verify/",
+        ZARINPAL_SANDBOX=True,
+    )
+    @patch("subscriptions.services._send_zarinpal_request")
+    def test_checkout_with_duration_multiplies_amount(self, mock_send_request):
+        mock_send_request.return_value = {
+            "data": {
+                "authority": "TESTAUTHDUR",
+                "code": 100,
+                "fee": 1000,
+                "fee_type": "Merchant",
+                "message": "Success",
+            },
+            "errors": [],
+        }
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(
+            "/subscriptions/checkout/",
+            {"plan": SubscriptionPlan.PlanType.SILVER, "duration": 3},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # silver price in setUp is 9.99 -> total price 9.99 * 3 = 29.97 -> 29970 rials
+        self.assertEqual(mock_send_request.call_args[0][1]["amount"], 29970)
+
+        transaction = SubscriptionTransaction.objects.get(authority="TESTAUTHDUR")
+        self.assertEqual(transaction.amount, self.silver_plan.price * 3)
+        self.assertEqual(transaction.duration_months, 3)
 
     @override_settings(
         ZARINPAL_MERCHANT_ID="test-merchant-id",
