@@ -21,6 +21,7 @@ class SongSerializer(serializers.ModelSerializer):
     artist_id = serializers.IntegerField(source="artist.owner.id", read_only=True)
     artist_name = serializers.CharField( source="artist.owner.display_name", read_only=True)
     album_name = serializers.CharField(source="album.title", read_only=True)
+    cover_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Song
@@ -58,6 +59,20 @@ class SongSerializer(serializers.ModelSerializer):
             "artist_name",
             "album_name",
         ]
+
+    def get_cover_image(self, obj):
+        if getattr(obj.album, "cover_image", None):
+            current_name = getattr(obj.cover_image, "name", None)
+            album_name = getattr(obj.album.cover_image, "name", None)
+            if not current_name or current_name != album_name:
+                obj.cover_image = obj.album.cover_image
+                obj.save(update_fields=["cover_image"])
+            return obj.cover_image.url if obj.cover_image else None
+
+        if obj.cover_image:
+            return obj.cover_image.url
+
+        return None
 
     def validate_audio_file(self, file):
         extension = Path(file.name).suffix.lower()
@@ -85,6 +100,7 @@ class SongDetailSerializer(serializers.ModelSerializer):
     artist_name = serializers.CharField( source="artist.owner.display_name", read_only=True)
     album_name = serializers.CharField(source="album.title", read_only=True)
     collaborators = ArtistUserPrimaryKeyField(many=True, required=False, read_only=True)
+    cover_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Song
@@ -125,6 +141,20 @@ class SongDetailSerializer(serializers.ModelSerializer):
             "album_id",
             "collaborators",
         ]
+
+    def get_cover_image(self, obj):
+        if getattr(obj.album, "cover_image", None):
+            current_name = getattr(obj.cover_image, "name", None)
+            album_name = getattr(obj.album.cover_image, "name", None)
+            if not current_name or current_name != album_name:
+                obj.cover_image = obj.album.cover_image
+                obj.save(update_fields=["cover_image"])
+            return obj.cover_image.url if obj.cover_image else None
+
+        if obj.cover_image:
+            return obj.cover_image.url
+
+        return None
 
     def validate_audio_file(self, file):
         extension = Path(file.name).suffix.lower()

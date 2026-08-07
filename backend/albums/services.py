@@ -38,6 +38,10 @@ def create_album(data):
         artist=artist,
     )
 
+    if "cover_image" in data and data.get("cover_image") is not None:
+        album.cover_image = data.get("cover_image")
+        album.save(update_fields=["cover_image"])
+
     # genres (list of ids)
     genre_ids = data.get("genre_ids") or []
     if genre_ids:

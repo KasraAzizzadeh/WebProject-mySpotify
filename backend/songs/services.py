@@ -67,6 +67,9 @@ class SongService:
         if "lyrics" in validated_data:
             song.lyrics = validated_data["lyrics"]
 
+        if song.album and song.album.cover_image:
+            song.cover_image = song.album.cover_image
+
         if "genre" in validated_data:
             genres = validated_data.pop("genre")
             song.genre.set(genres)

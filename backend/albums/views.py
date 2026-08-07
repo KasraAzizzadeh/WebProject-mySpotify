@@ -9,10 +9,12 @@ from rest_framework import status
 
 from . import services
 from .serializers import (
+    AlbumCreateRequestSerializer,
     AlbumCreateSerializer,
     AlbumListSerializer,
     AlbumDetailModelSerializer,
     AlbumSongSerializer,
+    AlbumUpdateRequestSerializer,
 )
 from .permissions import IsAlbumOwner
 
@@ -48,8 +50,8 @@ from drf_spectacular.types import OpenApiTypes
     ),
     post=extend_schema(
         summary="Create album",
-        description="Creates a new album for the authenticated artist.",
-        request=AlbumCreateSerializer,
+        description="Creates a new album for the authenticated artist. Accepts multipart/form-data with an optional cover image upload.",
+        request=AlbumCreateRequestSerializer,
         responses={status.HTTP_201_CREATED: AlbumCreateSerializer},
         examples=[
             OpenApiExample(
@@ -67,6 +69,7 @@ from drf_spectacular.types import OpenApiTypes
 class AlbumListCreateView(generics.ListCreateAPIView):
     # Use AlbumListSerializer for GET and AlbumCreateSerializer for POST to mimic playlists behavior
     permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def get_queryset(self):
         from django.db.models import Q, Sum
@@ -116,8 +119,8 @@ class AlbumListCreateView(generics.ListCreateAPIView):
     ),
     patch=extend_schema(
         summary="Update an album",
-        description="Partially updates album metadata. Songs cannot be updated through this endpoint. Only the owning artist may update.",
-        request=AlbumDetailModelSerializer,
+        description="Partially updates album metadata and optionally uploads a new cover image. Songs cannot be updated through this endpoint. Only the owning artist may update.",
+        request=AlbumUpdateRequestSerializer,
         responses={status.HTTP_200_OK: AlbumDetailModelSerializer},
     ),
     delete=extend_schema(

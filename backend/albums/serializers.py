@@ -5,6 +5,22 @@ from . import services
 from songs.models import Song
 
 
+class AlbumCreateRequestSerializer(serializers.Serializer):
+    title = serializers.CharField(required=True, help_text="Album title")
+    description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    is_single = serializers.BooleanField(required=False, default=False)
+    release_date = serializers.DateTimeField(required=True, help_text="Release date in ISO-8601 format")
+    cover_image = serializers.ImageField(required=False, allow_null=True, help_text="Optional album cover image")
+
+
+class AlbumUpdateRequestSerializer(serializers.Serializer):
+    title = serializers.CharField(required=False, allow_blank=True)
+    description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    is_single = serializers.BooleanField(required=False)
+    release_date = serializers.DateTimeField(required=False)
+    cover_image = serializers.ImageField(required=False, allow_null=True)
+
+
 class AlbumListSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField(source="title")
@@ -108,8 +124,7 @@ class AlbumCreateSerializer(drf_serializers.ModelSerializer):
             "artist",
             "cover_image",
         ]
-        # cover_image is read-only on create (playlists created cover via detail patch)
-        read_only_fields = ["id", "artist", "cover_image"]
+        read_only_fields = ["id", "artist"]
 
     def create(self, validated_data):
         request = self.context.get("request")
