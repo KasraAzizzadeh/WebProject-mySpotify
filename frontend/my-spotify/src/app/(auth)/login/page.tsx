@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { login } from "@/services/authService";
+import { ApiError } from "@/services/api";
 import { validateEmail, validatePassword } from "@/utils/authUtils";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -40,10 +41,14 @@ export default function LoginPage() {
     if (!errors.emailError && !errors.passwordError) {
       try {
         const result = await login(email.toLocaleLowerCase(), password);
-        loginUser(result.user, result.token);
+        loginUser(result.user, result.access, result.refresh);
         router.push("/");
-      } catch {
-        setError("Invalid email or password");
+      } catch (error) {
+        if (error instanceof ApiError) {
+            setError(error.getFirstError());
+        } else {
+            setError("Something went wrong");
+        }
       }
     }
   };

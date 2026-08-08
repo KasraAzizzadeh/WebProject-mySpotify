@@ -10,3 +10,4 @@ mutagen==1.48.1
 psycopg==3.3.4
 python-decouple==3.8
 pytest==9.1.1
+django-cors-headers==4.9.0

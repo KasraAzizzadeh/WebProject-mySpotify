@@ -6,9 +6,10 @@ import { UserProfile } from "@/types";
 
 type AuthContextType = {
   user: UserProfile | null;
-  token: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isLoading: boolean;
-  loginUser: (user: UserProfile, token: string) => void;
+  loginUser: (user: UserProfile, accessToken: string, refreshToken: string) => void;
   updateUser: (user: UserProfile) => void;
   logoutUser: () => void;
   deleteUser: () => Promise<void>;
@@ -18,7 +19,8 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -27,8 +29,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedUser = localStorage.getItem("user");
       if (storedUser) setUser(JSON.parse(storedUser));
 
-      const storedToken = localStorage.getItem("token");
-      if (storedToken) setToken(JSON.parse(storedToken));
+      const storedAccessToken = localStorage.getItem("accessToken");
+      if (storedAccessToken) {
+          setAccessToken(JSON.parse(storedAccessToken));
+      }
+
+      const storedRefreshToken = localStorage.getItem("refreshToken");
+      if (storedRefreshToken) {
+          setRefreshToken(JSON.parse(storedRefreshToken));
+      }
     } catch (e) {
       console.error("Auth initialization error:", e);
     } finally {
@@ -36,11 +45,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const loginUser = (user: UserProfile, token: string) => {
+  const loginUser = (user: UserProfile, accessToken: string, refreshToken: string) => {
     setUser(user);
+    setAccessToken(accessToken);
+    setRefreshToken(refreshToken);
+
     localStorage.setItem("user", JSON.stringify(user));
-    localStorage.setItem("token", JSON.stringify(token));
-  };
+    localStorage.setItem("accessToken", JSON.stringify(accessToken));
+    localStorage.setItem("refreshToken", JSON.stringify(refreshToken));
+};
 
   const updateUser = (user: UserProfile) => {
     setUser(user);
@@ -49,17 +62,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logoutUser = () => {
     setUser(null);
+    setAccessToken(null);
+    setRefreshToken(null);
+
     localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+
     router.push("/login");
-  };
+};
 
   const deleteUser = async () => {
     setUser(null);
-    setToken(null);
+    setAccessToken(null);
+    setRefreshToken(null);
     
     localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
     localStorage.removeItem("setting_notification_limit");
     localStorage.removeItem("setting_system_voice");
     localStorage.removeItem("setting_interface_language");
@@ -68,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, loginUser, updateUser, logoutUser, deleteUser }}>
+    <AuthContext.Provider value={{ user, accessToken, refreshToken, isLoading, loginUser, updateUser, logoutUser, deleteUser }}>
       {!isLoading ? children : (
         <div className="h-screen bg-black flex items-center justify-center text-neutral-500 text-sm">
           Resuming secure session...

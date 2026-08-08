@@ -1,6 +1,7 @@
 export type UserRole = 'listener' | 'artist' | 'supporter' | 'admin';
 export type SubscriptionType = 'basic' | 'silver' | 'gold';
 export type VerificationStatus = "pending" | "approved" | "rejected";
+export type ApiValidationErrors = Record<string, string | string[]>;
 
 export interface UserProfile {
   id: string;
@@ -10,7 +11,7 @@ export interface UserProfile {
   profilePictureUrl?: string;
   role: UserRole;
   subscriptionType: SubscriptionType;
-  subValidUntil?: Date;
+  subValidUntil?: Date | null;
   gender?: string;
   birthDate?: Date;
   createdAt?: Date;
@@ -35,7 +36,7 @@ interface ListenerProfile {
   likedTracks: string[];
   recentlyPlayed: string[];
   dailyStreams: number;
-  lastStreamDate: Date;
+  lastStreamDate: Date | null;
 }
 
 interface UserSettings {

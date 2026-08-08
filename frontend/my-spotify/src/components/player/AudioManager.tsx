@@ -7,7 +7,7 @@ import { updateStreams } from "@/services/mediaService";
 import { canPlaySong } from "@/utils/mediaUtils";
 import Message from "../ui/Message";
 
-const LISTEN_THRESHHOLD = 45;
+const LISTEN_THRESHHOLD = 60;
 
 async function playAudioSafely(audio: HTMLAudioElement) {
     try {

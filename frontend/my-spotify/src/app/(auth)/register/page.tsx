@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { register } from "@/services/authService";
+import { ApiError } from "@/services/api";
 import { validateEmail, validatePassword } from "@/utils/authUtils";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -15,7 +16,7 @@ import Checkbox from "@/components/ui/Checkbox";
 import PrivacyModal from "@/components/PrivacyModal";
 
 type RegisterErrors = {
-  displayNameError: string;
+  usernameError: string;
   emailError: string;
   passwordError: string;
   confirmPasswordError: string;
@@ -26,7 +27,7 @@ type RegisterErrors = {
 export default function LoginPage() {
   const { loginUser } = useAuth();
 
-  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -36,7 +37,7 @@ export default function LoginPage() {
   const [applyArtist, setApplyArtist] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registerErrors, setRegisterErrors] = useState<RegisterErrors>({
-    displayNameError: "",
+    usernameError: "",
     emailError: "",
     passwordError: "",
     confirmPasswordError: "",
@@ -52,8 +53,8 @@ export default function LoginPage() {
     e.preventDefault();
 
     const errors : RegisterErrors = {
-        displayNameError: displayName.length < 64 ? 
-            "" : "Display name should be at most 64 letters",
+        usernameError: username.length <= 64 ? 
+            "" : "Username hould be at most 64 letters",
         emailError: validateEmail(email.toLocaleLowerCase()),
         passwordError: validatePassword(password),
         confirmPasswordError: validatePassword(confirmPassword),
@@ -61,7 +62,7 @@ export default function LoginPage() {
         genderError: gender ? "" : "Please select your geneder,"
     }
     setRegisterErrors(errors);
-    if (errors.displayNameError || errors.emailError || errors.passwordError
+    if (errors.usernameError || errors.emailError || errors.passwordError
         || errors.confirmPasswordError || errors.dateError || errors.genderError
     ) return;
 
@@ -76,8 +77,8 @@ export default function LoginPage() {
     }
 
     try {
-        const result = await register(displayName, email.toLocaleLowerCase(), password, birthDate, gender);
-        loginUser(result.user, result.token);
+        const result = await register(username, email.toLocaleLowerCase(), password, birthDate, gender);
+        loginUser(result.user, result.access, result.refresh);
         if (applyArtist) {
             setTimeout(() => {
                 router.push("/apply-artist");
@@ -86,8 +87,12 @@ export default function LoginPage() {
         else {
             router.push("/")
         }
-    } catch {
-        setError("Something went wrong");
+    } catch (error) {
+        if (error instanceof ApiError) {
+            setError(error.getFirstError());
+        } else {
+            setError("Something went wrong");
+        }
     }
     
   };
@@ -108,11 +113,11 @@ export default function LoginPage() {
         </h2>
 
         <Input
-            label="Name"
-            placeholder="Display name"
-            value={displayName}
-            error={registerErrors.displayNameError}
-            onChange={(e) => {setDisplayName(e.target.value); clearBackendError();}}
+            label="Username"
+            placeholder="Username"
+            value={username}
+            error={registerErrors.usernameError}
+            onChange={(e) => {setUsername(e.target.value); clearBackendError();}}
         />
         
         <Input

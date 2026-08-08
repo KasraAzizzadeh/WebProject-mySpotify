@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { applyArtist } from "@/services/authService";
+import { ApiError } from "@/services/api";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import FileInput from "@/components/ui/FileInput";
@@ -23,7 +24,7 @@ export default function ArtistApplyPage() {
   });
 
   const router = useRouter();
-  const { user: authUser, token: authToken, updateUser} = useAuth();
+  const { user: authUser, updateUser} = useAuth();
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,18 +40,23 @@ export default function ArtistApplyPage() {
         return;
     }
 
-    if (authUser === null || authToken === null) {
+    if (authUser === null) {
         setError("You should be logged in to apply")
         return;
     }
 
     if (!errors.nameError) {
         try{
-            const result = await applyArtist(authUser, artisticName, files);
+            const result = await applyArtist(artisticName, files);
             updateUser(result);
             router.push("/");
-        } catch {
-            setError("Something went wrong");
+        } catch (error) {
+            if (error instanceof ApiError) {
+              setError(error.getFirstError());
+            } else {
+              console.log(error)
+              setError("Something went wrong");
+            }
         }
     }
   };

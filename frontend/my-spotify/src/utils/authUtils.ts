@@ -1,3 +1,5 @@
+import { UserProfile } from "@/types";
+
 export const validateEmail = (email: string) => {
     let message : string = "";
     if (!email) {
@@ -39,3 +41,76 @@ export const validateOtp = (otp: string) => {
 
     return message;
 };
+
+
+
+// service mappers //
+export function mapAuthUser(data: any): UserProfile {
+    return {
+        id: String(data.id),
+        username: data.username,
+        displayName: data.display_name,
+        email: data.email,
+
+        profilePictureUrl: data.profile_picture ?? undefined,
+
+        role: data.role,
+        subscriptionType: data.subscription_type,
+
+        subValidUntil: data.subscription_valid_until
+            ? new Date(data.subscription_valid_until)
+            : undefined,
+
+        gender: data.gender,
+        birthDate: data.birth_date
+            ? new Date(data.birth_date)
+            : undefined,
+
+        createdAt: data.created_at
+            ? new Date(data.created_at)
+            : undefined,
+
+        followers: data.followers ?? [],
+        following: data.following ?? [],
+
+        settings: data.settings
+            ? {
+                  notificationLimit: data.settings.notification_limit,
+                  systemVoice: data.settings.system_voice,
+                  language: data.settings.language,
+              }
+            : undefined,
+
+        listenerProfile: data.listener_profile
+            ? {
+                  playlists: data.listener_profile.playlists ?? [],
+                  likedTracks: data.listener_profile.liked_tracks ?? [],
+                  recentlyPlayed:
+                      data.listener_profile.recently_played ?? [],
+                  dailyStreams:
+                      data.listener_profile.daily_streams ?? 0,
+                  lastStreamDate: data.listener_profile.last_stream_date
+                      ? new Date(
+                            data.listener_profile.last_stream_date
+                        )
+                      : null,
+              }
+            : undefined,
+
+        artistProfile:
+            data.artist_profile &&
+            Object.keys(data.artist_profile).length > 0
+                ? {
+                      bio: data.artist_profile.bio,
+                      verificationStatus:
+                          data.artist_profile.verification_status,
+                      singles: data.artist_profile.singles ?? [],
+                      albums: data.artist_profile.albums ?? [],
+                      totalStreams:
+                          data.artist_profile.total_streams ?? 0,
+                      uniqueListener:
+                          data.artist_profile.unique_listener,
+                  }
+                : undefined,
+    };
+}

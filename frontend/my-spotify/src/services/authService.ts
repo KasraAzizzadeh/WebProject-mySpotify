@@ -1,8 +1,12 @@
+import api from "@/services/api"
+import { handleApiError } from "@/services/api";
 import { UserProfile, ArtistApplicationTicket, OtpEntry } from "@/types";
+import { AuthResponse} from "@/types/authTypes"
 import { getUsers, saveUsers, User } from "@/store/mockDb";
 import { getApplicaitonTickets, saveApplicationTickets } from "@/store/mockDb";
 import { getNotifications, saveNotifications } from "@/store/mockDb";
 import { getOtps, saveOtps } from "@/store/mockDb";
+import { mapAuthUser } from "@/utils/authUtils";
 import { isSameDay } from "@/utils/mediaUtils";
 
 type LoginResponse = {
@@ -17,201 +21,68 @@ function delay(ms: number) {
 export async function login(
   email: string,
   password: string
-): Promise<LoginResponse> {
-  // replace with actual api
-  await delay(100);
+): Promise<AuthResponse> {
 
-  const users = getUsers();
+    try {
+        const response = await api.post("/accounts/login/", {
+            email,
+            password,
+        })
 
-  const index = users.findIndex(
-    (u) => u.email === email && u.password === password
-  );
-
-  if (index === -1) {
-    throw new Error("Invalid credentials");
-  }
-
-  const today = new Date();
-  let user = users[index];
-  let userUpdated = false;
-
-  // Reset daily streams if it's a new day
-  if (user.listenerProfile) {
-    const listenedToday =
-      user.listenerProfile.lastStreamDate &&
-      isSameDay(new Date(user.listenerProfile.lastStreamDate), today);
-
-    if (!listenedToday) {
-      users[index] = {
-        ...user,
-        listenerProfile: {
-          ...user.listenerProfile,
-          dailyStreams: 0,
-        },
-      };
-
-      user = users[index];
-      userUpdated = true;
+        return {
+            user: mapAuthUser(response.data.user),
+            access: response.data.access,
+            refresh: response.data.refresh,
+        };
+    } catch (error) {
+        handleApiError(error)
     }
-  }
-
-  if (userUpdated) {
-    saveUsers(users);
-  }
-
-  // Check if subscription is about to expire
-  if (user.subValidUntil) {
-    const notifications = getNotifications();
-
-    const expiryDate = new Date(user.subValidUntil);
-    const msPerDay = 1000 * 60 * 60 * 24;
-
-    const remainingDays = Math.ceil(
-      (expiryDate.getTime() - today.getTime()) / msPerDay
-    );
-
-    if (remainingDays > 0 && remainingDays <= 2) {
-      const alreadyNotified = notifications.some(
-        (n) =>
-          n.userId === user.id &&
-          n.type === "ES" &&
-          isSameDay(new Date(n.createdAt), today)
-      );
-
-      if (!alreadyNotified) {
-        notifications.push({
-          id: crypto.randomUUID(),
-          userId: user.id,
-          content: `Your ${user.subscriptionType} subscription will expire in ${remainingDays} day${remainingDays === 1 ? "" : "s"}. Please renew to continue enjoying premium features.`,
-          status: "unread",
-          type: "ES",
-          createdAt: today,
-        });
-
-        saveNotifications(notifications);
-      }
-    }
-  }
-
-  return {
-    token: `token-${user.username}`,
-    user,
-  };
 }
 
 export async function register(
-    displayName: string,
+    username: string,
     email: string,
     password: string,
     birthDate: string,
     gender: string
-): Promise<LoginResponse> {
+): Promise<AuthResponse> {
     
-    // replace with actual API
-    await delay(100);
+    try {
+        const response = await api.post("/accounts/register/", {
+            username,
+            email,
+            password,
+            birth_date: birthDate,
+            gender: gender.toUpperCase(),
+        })
 
-    const users = getUsers();
-    const exists = users.find(u =>
-        u.email === email
-    )
-    if (exists) {
-        throw new Error("A user with this email already exists");
-    }
-
-    const newUserProfile : UserProfile = {
-        id: crypto.randomUUID(),
-        username: displayName.replace(/\s+/g, "") + crypto.randomUUID(),
-        displayName: displayName,
-        email: email,
-        role: "listener",
-        subscriptionType: "basic",
-        gender: gender,
-        birthDate: new Date(birthDate),
-        followers: [],
-        following: [],
-        createdAt: new Date(),
-        listenerProfile: {
-            playlists: [],
-            recentlyPlayed: [],
-            likedTracks: [],
-            dailyStreams: 0,
-            lastStreamDate: new Date()
-        }
-    }
-
-    const newUser = {...newUserProfile, password};
-    const newUsers = [...users, newUser];
-    saveUsers(newUsers);
-
-    return {
-        token: `token-${newUserProfile.username}`,
-        user: newUserProfile
+        return {
+            user: mapAuthUser(response.data.user),
+            access: response.data.access,
+            refresh: response.data.refresh,
+        };
+    } catch (error) {
+        handleApiError(error);
     }
 }
 
 export async function applyArtist(
-    user: UserProfile,
     artisticName: string,
     samples: File[]
 ): Promise<UserProfile> {
     
-    // replace with actual API
-    await delay(100);
+    try {
+        const formData = new FormData()
+        formData.append("artistic_name", artisticName)
+        samples.forEach(sample => {
+            formData.append("samples", sample)
+        })
 
-    const allUsers = getUsers();
-    const index = allUsers.findIndex((u) => u.id === user.id);
-
-    const updatedUser: User = {
-        ...allUsers[index],
-        artistProfile: {
-            verificationStatus: "pending",
-            bio: "",
-            singles: [],
-            albums: [],
-            totalStreams: 0,
-        }
-    };
-
-    allUsers[index] = updatedUser;
-    saveUsers(allUsers);
-
-    const tickets = getApplicaitonTickets();
-    const samplePaths : string[] = samples.map(
-        (file) => `/mockUploads/${user.id}/${file.name}`
-    );
-    const newApplication : ArtistApplicationTicket = {
-        id: crypto.randomUUID(),
-        userId: user.id,
-        email: user.email,
-        artisticName,
-        samples: samplePaths,
-        verificationStatus: "pending",
-        submittedAt: new Date(),
+        const response = await api.post("/accounts/apply-as-artist/", formData)
+        return mapAuthUser(response.data)
+    } catch (error) {
+        handleApiError(error)
     }
-    saveApplicationTickets([...tickets, newApplication]);
-
-    const notifications = getNotifications();
-
-    const supportNotifications = allUsers
-    .filter(
-        u => u.role === "admin" || u.role === "supporter"
-    )
-    .map(user => ({
-        id: crypto.randomUUID(),
-        userId: user.id,
-        content: `New artist verification request from ${updatedUser.displayName}.`,
-        status: "unread" as const,
-        type: "SA" as const,
-        createdAt: new Date()
-    }));
-
-    saveNotifications([
-    ...notifications,
-    ...supportNotifications,
-    ]);
-
-    const { password, ...updatedProfile } = updatedUser;
-    return updatedProfile;
 };
 
 function genOtp(): string {
