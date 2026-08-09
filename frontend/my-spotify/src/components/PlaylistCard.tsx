@@ -27,6 +27,7 @@ export default function PlaylistCard({
             sizes="180px"
             loading="eager"
             className="object-cover"
+            unoptimized
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-3xl text-neutral-500 select-none">

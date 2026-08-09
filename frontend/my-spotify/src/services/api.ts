@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, {AxiosError, InternalAxiosRequestConfig} from "axios";
 import { ApiValidationErrors } from "@/types";
 
 export class ApiError extends Error {
@@ -35,6 +35,8 @@ const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL,
 });
 
+
+// attach access token
 api.interceptors.request.use(
     (config) => {
         const accessToken = localStorage.getItem("accessToken");
@@ -46,6 +48,82 @@ api.interceptors.request.use(
         return config;
     },
     (error) => Promise.reject(error)
+);
+
+// refresh access token
+let refreshPromise: Promise<string> | null = null;
+
+const refreshAccessToken = async (): Promise<string> => {
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    if (!refreshToken) {
+        throw new Error("No refresh token available");
+    }
+
+    const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/accounts/refresh/`,
+        {
+            refresh: JSON.parse(refreshToken),
+        }
+    );
+
+    const newAccessToken = response.data.access;
+
+    localStorage.setItem("accessToken", JSON.stringify(newAccessToken));
+    return newAccessToken;
+};
+
+// refreshes the access token
+api.interceptors.response.use(
+    (response) => response,
+
+    async (error: AxiosError) => {
+        const originalRequest = error.config as
+            | InternalAxiosRequestConfig & {
+                  _retry?: boolean;
+              };
+
+        /*
+         * Only attempt refresh for 401 responses.
+         *
+         * _retry prevents an infinite loop if the refreshed
+         * token is also rejected.
+         */
+        if (error.response?.status !== 401 || originalRequest?._retry) {
+            return Promise.reject(error);
+        }
+        originalRequest._retry = true;
+
+        try {
+            /*
+             * If another request is already refreshing the token,
+             * wait for that same refresh request.
+             */
+            if (!refreshPromise) {
+                refreshPromise = refreshAccessToken()
+                    .finally(() => {
+                        refreshPromise = null;
+                    });
+            }
+
+            const newAccessToken = await refreshPromise;
+
+            originalRequest.headers.Authorization =
+                `Bearer ${newAccessToken}`;
+
+            return api(originalRequest);
+        } catch (refreshError) {
+            /*
+             * Refresh token is invalid/expired.
+             * The session can no longer be restored.
+             */
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+            localStorage.removeItem("user");
+
+            return Promise.reject(refreshError);
+        }
+    }
 );
 
 export default api;
@@ -67,4 +145,16 @@ export function handleApiError(error: unknown): never {
     }
 
     throw error;
+}
+
+
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+export function getMediaUrl(path: string | null | undefined) {
+    if (!path) return undefined;
+
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+        return path;
+    }
+
+    return `${BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }

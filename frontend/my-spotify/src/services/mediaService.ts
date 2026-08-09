@@ -1,6 +1,8 @@
 import { getAlbums, getSongs, getPlaylists, getUsers, savePlaylists, saveSongs , saveUsers } from "@/store/mockDb";
 import { AlbumItem, SongItem, PlaylistItem, DiscoverData, DiscoverFilter, PlaybackSource } from "@/types";
-import { isSameDay } from "@/utils/mediaUtils";
+import { isSameDay, mapPlaylist } from "@/utils/mediaUtils";
+import api from "@/services/api"
+import { handleApiError } from "@/services/api";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -35,50 +37,27 @@ export const getPlaylistById = async (playlistId: string): Promise<PlaylistItem>
   return playlist;
 };
 
-export const getUserPlaylists = async (playlistIds: string[]): Promise<PlaylistItem[]> => {
-  if (!playlistIds || playlistIds.length === 0) return [];
-  const playlists = await Promise.all(
-    playlistIds.map((id) => getPlaylistById(id).catch(() => null))
-  );
-  return playlists.filter((p): p is PlaylistItem => p !== null);
+export const getUserPlaylists = async (userId: string): Promise<PlaylistItem[]> => {
+  try {
+    const response = await api.get(
+      `/accounts/${userId}/playlists/`
+    );
+    return response.data.map(mapPlaylist)
+  } catch (error) {
+    handleApiError(error)
+  }
 };
 
-// 🆕 NEW: Creates a brand new playlist and appends its ID to the owner user profile
-export const createPlaylist = async (name: string, userId: string): Promise<{ playlist: PlaylistItem; updatedUser: any }> => {
-  await delay(150);
+export const createPlaylist = async (name: string): Promise<PlaylistItem> => {
+  try {
+    const response = await api.post("/playlists/", {
+      name,
+    });
 
-  const allPlaylists = getPlaylists();
-  const allUsers = getUsers();
-
-  // Create unique playlist item ID
-  const newPlaylistId = `p-${Date.now()}`;
-  const newPlaylist: PlaylistItem = {
-    id: newPlaylistId,
-    name: name,
-    ownerId: userId,
-    isPrivate: false,
-    songList: [], // Initial empty array list for songs
-  };
-
-  // 1. Save new playlist item
-  allPlaylists.push(newPlaylist);
-  savePlaylists(allPlaylists);
-
-  // 2. Update user listener profile registry arrays
-  const targetUser = allUsers.find(u => u.id === userId);
-  if (!targetUser) throw new Error("Authenticated session owner context not found");
-
-  if (!targetUser.listenerProfile) {
-    targetUser.listenerProfile = { playlists: [], likedTracks: [], recentlyPlayed: [], dailyStreams: 0, lastStreamDate: new Date() };
+    return mapPlaylist(response.data);
+  } catch (error) {
+    handleApiError(error);
   }
-  if (!targetUser.listenerProfile.playlists) {
-    targetUser.listenerProfile.playlists = [];
-  }
-
-  targetUser.listenerProfile.playlists.push(newPlaylistId);
-  saveUsers(allUsers);
-
-  return { playlist: newPlaylist, updatedUser: targetUser };
 };
 
 // 🆕 NEW: Resolves all songs belonging to a specific playlist ID

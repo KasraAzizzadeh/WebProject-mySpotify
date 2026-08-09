@@ -2,13 +2,14 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
-import { getUserPlaylists, createPlaylist } from '@/services/mediaService';
-import { getUsers } from '@/store/mockDb';
 import { PlaylistItem, SubscriptionType } from '@/types';
 import ShowAll from '@/components/ShowAll';
 import CreatePlaylistModal from '@/components/CreatePlaylistModal';
 import Link from 'next/link';
 import { ArrowLeft, Music, Plus, Lock } from 'lucide-react';
+import { useUserPlaylist } from '@/hooks/queries/media/useUserPlaylists';
+import { useCreatePlaylist } from '@/hooks/queries/media/useCreatePlaylist';
+import { ApiError } from '@/services/api';
 
 // Explicit tier limit mappings matching user configuration parameters
 const PLAYLIST_LIMITS: Record<string, number> = {
@@ -18,40 +19,31 @@ const PLAYLIST_LIMITS: Record<string, number> = {
 };
 
 export default function UserPlaylistsPage() {
-  const { user: authUser, updateUser} = useAuth() as any;
-  const [playlists, setPlaylists] = useState<PlaylistItem[] | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user: authUser} = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const {
+    data: playlists = [],
+    isLoading,
+    isError,
+  } = useUserPlaylist(authUser?.id)
 
-  const fetchPlaylists = async () => {
-    if (!authUser) return;
-    try {
-      const allUsers = getUsers();
-      const freshUser = allUsers.find((u) => u.id === authUser.id);
-      const activeUser = freshUser || authUser;
-
-      const playlistIds = activeUser.listenerProfile?.playlists || [];
-      const resolvedPlaylists = await getUserPlaylists(playlistIds);
-      setPlaylists(resolvedPlaylists);
-    } catch (error) {
-      console.error("Failed fetching user specific playlists", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPlaylists();
-  }, [authUser]);
+  const createPlaylistMutation = useCreatePlaylist(authUser?.id);
 
   const handleCreatePlaylist = async (name: string) => {
-    if (!authUser) return;
-    
-    const { playlist, updatedUser } = await createPlaylist(name, authUser.id);
-    
-    updateUser(updatedUser);
-    
-    setPlaylists((prev) => [...(prev || []), playlist]);
+    setError(null);
+
+    createPlaylistMutation.mutate(name, {
+      onSuccess: () => setIsModalOpen(false),
+      onError: (error) => {
+        if (error instanceof ApiError) {
+          setError(error.getFirstError())
+        } else {
+          setError("Something went wrong!")
+        }
+      }
+    })
   };
 
   if (!authUser) {
@@ -62,10 +54,18 @@ export default function UserPlaylistsPage() {
     );
   }
 
-  if (loading || !playlists) {
+  if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center text-neutral-500 text-sm bg-black">
         Loading your music library...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="h-screen flex items-center justify-center text-neutral-500 text-sm bg-black">
+        There was an error fetching your data, please come back later...
       </div>
     );
   }

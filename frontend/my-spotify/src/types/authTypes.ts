@@ -1,6 +1,6 @@
 import { UserProfile } from "@/types";
 
-type RegisterRequest = {
+export type RegisterRequest = {
     username: string;
     email: string;
     password: string;
@@ -8,7 +8,7 @@ type RegisterRequest = {
     gender: string;
 };
 
-type RegisterResponse = {
+export type AuthResponse = {
     user: UserProfile;
     access: string;
     refresh: string;

@@ -1,4 +1,6 @@
+import { PlaylistItem } from "@/types";
 import { getUsers } from "@/store/mockDb";
+import { getMediaUrl } from "@/services/api";
 
 export const formatDuration = (ms?: number) => {
   if (!ms) return "--:--";
@@ -41,3 +43,18 @@ export const canPlaySong = (
 
   return dailyStreams < limit;
 };
+
+
+// mappers //
+export function mapPlaylist(data: any): PlaylistItem {
+    return {
+        id: String(data.id),
+        name: data.name,
+        ownerId: String(data.owner_id),
+        createdAt: data.created_at ?? undefined,
+        imageUrl: getMediaUrl(data.image_url) ?? undefined,
+        description: data.description ?? undefined,
+        isPrivate: data.is_private,
+        songList: (data.song_list ?? []).map(String),
+    };
+}
