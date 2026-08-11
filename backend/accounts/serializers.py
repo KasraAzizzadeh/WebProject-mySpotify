@@ -121,6 +121,29 @@ class ArtistProfileSerializer(serializers.ModelSerializer):
         return get_artist_unique_listeners(artist)
 
 
+class UserPublicArtistProfileSerializer(serializers.ModelSerializer):
+    songs = serializers.SerializerMethodField()
+    albums = serializers.SerializerMethodField()
+    total_streams = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ArtistProfile
+        fields = (
+            "songs",
+            "albums",
+            "total_streams",
+        )
+
+    def get_songs(self, artist):
+        return list(artist.songs.values_list("id", flat=True))
+
+    def get_albums(self, artist):
+        return list(artist.albums.values_list("id", flat=True))
+
+    def get_total_streams(self, artist):
+        return get_artist_total_streams(artist)
+
+
 class ListenerProfileSerializer(serializers.Serializer):
     playlists = serializers.SerializerMethodField()
     recently_played = serializers.SerializerMethodField()
@@ -249,9 +272,7 @@ class UserPublicSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
-    artist_profile = ArtistProfileSerializer(
-        read_only=True
-    )
+    artist_profile = serializers.SerializerMethodField()
 
     profile_picture_url = serializers.ImageField(
         source="profile_picture",
@@ -270,6 +291,21 @@ class UserPublicSerializer(serializers.ModelSerializer):
             "following",
             "artist_profile",
         ]
+
+    def get_artist_profile(self, user):
+        if user.role != User.Roles.ARTIST:
+            return None
+
+        try:
+            return UserPublicArtistProfileSerializer(user.artist_profile).data
+        except ArtistProfile.DoesNotExist:
+            return None
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if representation.get("artist_profile") is None:
+            representation.pop("artist_profile", None)
+        return representation
 
 
 class UserPrivateSerializer(serializers.ModelSerializer):
@@ -297,9 +333,14 @@ class UserPrivateSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    listener_profile = serializers.SerializerMethodField()
+
     artist_profile = ArtistProfileSerializer(
         read_only=True
     )
+
+    def get_listener_profile(self, user):
+        return ListenerProfileSerializer(user).data
 
     class Meta:
         model = User
@@ -319,6 +360,7 @@ class UserPrivateSerializer(serializers.ModelSerializer):
             "followers",
             "following",
             "settings",
+            "listener_profile",
             "artist_profile",
         ]
 

@@ -24,7 +24,7 @@ from .serializers import (
     NotificationSerializer, SubmitArtistApplicationSerializer,
 )
 
-from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer, OpenApiResponse, PolymorphicProxySerializer
 
 
 @extend_schema(
@@ -344,8 +344,25 @@ class SubmitArtistApplicationView(generics.CreateAPIView):
 @extend_schema_view(
     get=extend_schema(
         summary="Get user profile",
-        description="Returns public view of a user's profile or private view if requested by the owner.",
-        responses={200: UserPublicSerializer}
+        description=(
+            "Returns public profile data for a user when accessed by another authenticated user. "
+            "If the authenticated user requests their own profile, the full private profile is returned."
+        ),
+        responses={
+            200: OpenApiResponse(
+                response=PolymorphicProxySerializer(
+                    component_name='UserProfileResponse',
+                    serializers=[UserPublicSerializer, UserPrivateSerializer],
+                    resource_type_field_name=None,
+                ),
+                description=(
+                    "Returns either the public user profile or the authenticated owner's full private profile. "
+                    "The public profile includes id, username, display_name, profile_picture_url, role, followers, following, "
+                    "and artist profile data for artists. The private profile includes additional email, subscription, "
+                    "settings, listener_profile, and artist_profile details."
+                ),
+            )
+        }
     ),
     patch=extend_schema(
         summary="Update own profile",
