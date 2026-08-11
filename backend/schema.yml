@@ -356,9 +356,9 @@ paths:
   /accounts/notifications/{id}/:
     patch:
       operationId: accounts_notifications_partial_update
-      description: Mark the specified notification as read or unread. Accepts 'is_read'
-        (boolean) or 'status' ('read'|'unread').
-      summary: Mark notification read/unread
+      description: Marks the specified notification as read by setting its is_read
+        field to true.
+      summary: Mark notification as read
       parameters:
       - in: path
         name: id
@@ -554,7 +554,8 @@ paths:
           description: ''
     post:
       operationId: albums_create
-      description: Creates a new album for the authenticated artist.
+      description: Creates a new album for the authenticated artist. Accepts multipart/form-data
+        with an optional cover image upload.
       summary: Create album
       tags:
       - albums
@@ -562,7 +563,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AlbumCreateRequest'
+              $ref: '#/components/schemas/AlbumCreateRequestRequest'
             examples:
               CreateAlbum:
                 value:
@@ -570,12 +571,12 @@ paths:
                   description: My release
                   releaseDate: '2026-07-30T12:00:00Z'
                 summary: Create album
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/AlbumCreateRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/AlbumCreateRequest'
+              $ref: '#/components/schemas/AlbumCreateRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlbumCreateRequestRequest'
         required: true
       security:
       - jwtAuth: []
@@ -610,8 +611,9 @@ paths:
           description: ''
     patch:
       operationId: albums_partial_update
-      description: Partially updates album metadata. Songs cannot be updated through
-        this endpoint. Only the owning artist may update.
+      description: Partially updates album metadata and optionally uploads a new cover
+        image. Songs cannot be updated through this endpoint. Only the owning artist
+        may update.
       summary: Update an album
       parameters:
       - in: path
@@ -625,13 +627,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedAlbumDetailModelRequest'
+              $ref: '#/components/schemas/PatchedAlbumUpdateRequestRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedAlbumDetailModelRequest'
+              $ref: '#/components/schemas/PatchedAlbumUpdateRequestRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedAlbumDetailModelRequest'
+              $ref: '#/components/schemas/PatchedAlbumUpdateRequestRequest'
       security:
       - jwtAuth: []
       responses:
@@ -1305,6 +1307,295 @@ paths:
               schema:
                 $ref: '#/components/schemas/SongCreateError'
           description: Validation error.
+  /songs/{id}/:
+    get:
+      operationId: songs_retrieve
+      description: Returns complete information about a song including artist, album,
+        genres, collaborators, and media information.
+      summary: Retrieve song
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - songs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongDetail'
+              examples:
+                SongDetails:
+                  value:
+                    id: 12
+                    title: Blinding Lights
+                    lyrics: '....'
+                    duration_ms: 200040
+                    track_number: 3
+                    streams: 1200000
+                    audio_file: /media/songs/blinding.mp3
+                    cover_image: /media/album_covers/dawn.jpg
+                    release_date: '2026-07-20T12:00:00Z'
+                    genre:
+                    - 1
+                    - 4
+                    collaborators:
+                    - 15
+                    - 20
+                    album_id: 5
+                    artist_id: 7
+                    artist_name: The Weeknd
+                    album_name: After Hours
+                  summary: Song details
+          description: ''
+        '404':
+          description: Song not found.
+    put:
+      operationId: songs_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - songs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SongDetailRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SongDetailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SongDetailRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongDetail'
+          description: ''
+    patch:
+      operationId: songs_partial_update
+      description: Updates an existing song. Only the song owner can modify it. The
+        title, lyrics, genres, collaborators, and audio file can be changed. If the
+        audio file is replaced, its duration is recalculated automatically.
+      summary: Update song
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - songs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSongDetailRequest'
+            examples:
+              UpdateSong:
+                value:
+                  title: Updated Song Title
+                  lyrics: Updated lyrics
+                  genre:
+                  - 2
+                  - 5
+                  audio_file: updated_song.mp3
+                summary: Update song
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSongDetailRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSongDetailRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongDetail'
+              examples:
+                SongUpdated:
+                  value:
+                    id: 12
+                    title: Updated Song Title
+                    duration_ms: 215000
+                    track_number: 3
+                    streams: 1200000
+                    audio_file: /media/songs/updated_song.mp3
+                    cover_image: /media/album_covers/dawn.jpg
+                    release_date: '2026-07-20T12:00:00Z'
+                    genre:
+                    - 2
+                    - 5
+                    collaborators:
+                    - 15
+                    - 20
+                    album_id: 5
+                    artist_id: 7
+                    artist_name: The Weeknd
+                    album_name: After Hours
+                  summary: Song updated
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongUpdateError'
+          description: Validation error.
+        '403':
+          description: You do not have permission to modify this song.
+        '404':
+          description: Song not found.
+    delete:
+      operationId: songs_destroy
+      description: Deletes a song owned by the authenticated artist. The song is also
+        removed from all playlists containing it.
+      summary: Delete song
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - songs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Song deleted successfully.
+        '403':
+          description: You do not have permission to delete this song.
+        '404':
+          description: Song not found.
+  /songs/{id}/download/:
+    get:
+      operationId: songs_download_retrieve
+      description: Downloads the audio file of a song. Only users with an active subscription
+        plan that supports downloads can access this endpoint.
+      summary: Download song audio
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - songs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Song audio file.
+        '403':
+          description: User subscription does not allow downloads.
+        '404':
+          description: Song not found.
+  /songs/{id}/stream/:
+    get:
+      operationId: songs_stream_retrieve
+      description: Returns the audio URL for streaming a song after checking that
+        the authenticated user is allowed to stream it (for example, daily stream
+        limits for the current subscription plan).
+      summary: Get stream URL
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - songs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongStreamUrlResponse'
+              examples:
+                AudioURL:
+                  value:
+                    audio_url: /media/songs/7/blinding_lights.mp3
+                  summary: Audio URL
+          description: Audio URL returned successfully.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongStreamUrlError'
+              examples:
+                DailyLimitReached:
+                  value:
+                    detail: You have reached your daily stream limit.
+                  summary: Daily limit reached
+          description: User has reached the daily stream limit.
+        '404':
+          description: Song not found.
+    post:
+      operationId: songs_stream_create
+      description: Registers that the authenticated user has listened to the song.
+        Creates a play history record and increments the song stream count. This should
+        be called after the client determines that playback has reached the required
+        listening threshold.
+      summary: Register song stream
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - songs
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongStreamResponse'
+              examples:
+                StreamRegistered:
+                  value:
+                    detail: Song stream registered
+                  summary: Stream registered
+          description: Song stream registered successfully.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongStreamPostError'
+              examples:
+                TooSoon:
+                  value:
+                    detail: A Song was already streamed by you recently.
+                  summary: Too soon
+                DailyLimitReached:
+                  value:
+                    detail: You have reached your daily stream limit.
+                  summary: Daily limit reached
+          description: Daily limit reached or a stream was already registered within
+            the last minute.
+        '404':
+          description: Song not found.
   /subscriptions/:
     get:
       operationId: subscriptions_list
@@ -1439,6 +1730,23 @@ paths:
           description: Missing or invalid callback parameters.
         '404':
           description: Transaction with the requested authority could not be found.
+  /support/analytics/:
+    get:
+      operationId: support_analytics_retrieve
+      description: Retrieves support analytics including total user counts, premium
+        tier distribution, and monthly gross revenue.
+      summary: Get support analytics
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportAnalytics'
+          description: ''
   /support/applications/:
     get:
       operationId: support_applications_list
@@ -1659,28 +1967,33 @@ components:
           type: string
           format: uri
           nullable: true
-          readOnly: true
       required:
       - artist
-      - cover_image
       - id
       - release_date
       - title
-    AlbumCreateRequest:
+    AlbumCreateRequestRequest:
       type: object
       properties:
         title:
           type: string
           minLength: 1
-          maxLength: 50
+          description: Album title
         description:
           type: string
           nullable: true
         is_single:
           type: boolean
+          default: false
         release_date:
           type: string
           format: date-time
+          description: Release date in ISO-8601 format
+        cover_image:
+          type: string
+          format: binary
+          nullable: true
+          description: Optional album cover image
       required:
       - release_date
       - title
@@ -1983,6 +2296,18 @@ components:
       - settings
       - subscription_type
       - username
+    DurationEnum:
+      enum:
+      - 1
+      - 3
+      - 6
+      - 12
+      type: integer
+      description: |-
+        * `1` - 1
+        * `3` - 3
+        * `6` - 6
+        * `12` - 12
     FollowResponse:
       type: object
       properties:
@@ -2050,8 +2375,8 @@ components:
           readOnly: true
         content:
           type: string
-        status:
-          type: string
+        is_read:
+          type: boolean
           readOnly: true
         type:
           $ref: '#/components/schemas/TypeEnum'
@@ -2062,7 +2387,7 @@ components:
       - content
       - created_at
       - id
-      - status
+      - is_read
       - type
       - user_id
     NotificationDeleteResponse:
@@ -2079,13 +2404,11 @@ components:
           type: string
       required:
       - detail
-    PatchedAlbumDetailModelRequest:
+    PatchedAlbumUpdateRequestRequest:
       type: object
       properties:
         title:
           type: string
-          minLength: 1
-          maxLength: 50
         description:
           type: string
           nullable: true
@@ -2121,6 +2444,27 @@ components:
           type: string
           format: binary
           nullable: true
+    PatchedSongDetailRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        lyrics:
+          type: string
+          nullable: true
+        track_number:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        audio_file:
+          type: string
+          format: binary
+        genre:
+          type: array
+          items:
+            type: integer
     PatchedSubscriptionPricesUpdateRequest:
       type: object
       properties:
@@ -2154,6 +2498,10 @@ components:
         artist_bio:
           type: string
           minLength: 1
+        profile_picture:
+          type: string
+          format: binary
+          nullable: true
     PlanEnum:
       enum:
       - silver
@@ -2382,8 +2730,6 @@ components:
           format: uri
         cover_image:
           type: string
-          format: uri
-          nullable: true
           readOnly: true
         release_date:
           type: string
@@ -2439,6 +2785,96 @@ components:
           type: array
           items:
             type: string
+    SongDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        lyrics:
+          type: string
+          nullable: true
+        duration_ms:
+          type: integer
+          readOnly: true
+        track_number:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        streams:
+          type: integer
+          readOnly: true
+        audio_file:
+          type: string
+          format: uri
+        cover_image:
+          type: string
+          readOnly: true
+        release_date:
+          type: string
+          format: date-time
+          readOnly: true
+        genre:
+          type: array
+          items:
+            type: integer
+        collaborators:
+          type: array
+          items:
+            type: integer
+          readOnly: true
+        album_id:
+          type: integer
+          readOnly: true
+        artist_id:
+          type: integer
+          readOnly: true
+        artist_name:
+          type: string
+          readOnly: true
+        album_name:
+          type: string
+          readOnly: true
+      required:
+      - album_id
+      - album_name
+      - artist_id
+      - artist_name
+      - audio_file
+      - collaborators
+      - cover_image
+      - duration_ms
+      - id
+      - release_date
+      - streams
+      - title
+    SongDetailRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        lyrics:
+          type: string
+          nullable: true
+        track_number:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        audio_file:
+          type: string
+          format: binary
+        genre:
+          type: array
+          items:
+            type: integer
+      required:
+      - audio_file
+      - title
     SongRequest:
       type: object
       properties:
@@ -2470,6 +2906,53 @@ components:
       - album_id
       - audio_file
       - title
+    SongStreamPostError:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    SongStreamResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    SongStreamUrlError:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    SongStreamUrlResponse:
+      type: object
+      properties:
+        audio_url:
+          type: string
+      required:
+      - audio_url
+    SongUpdateError:
+      type: object
+      properties:
+        title:
+          type: array
+          items:
+            type: string
+        audio_file:
+          type: array
+          items:
+            type: string
+        genre:
+          type: array
+          items:
+            type: string
+        non_field_errors:
+          type: array
+          items:
+            type: string
     StatusEnum:
       enum:
       - approved
@@ -2499,6 +2982,17 @@ components:
       properties:
         plan:
           $ref: '#/components/schemas/PlanEnum'
+        duration:
+          allOf:
+          - $ref: '#/components/schemas/DurationEnum'
+          default: 1
+          description: |-
+            Number of months to purchase (1, 3, 6, 12).
+
+            * `1` - 1
+            * `3` - 3
+            * `6` - 6
+            * `12` - 12
       required:
       - plan
     SubscriptionCheckoutResponse:
@@ -2584,6 +3078,39 @@ components:
       - subscription_valid_until
       - transaction_id
       - transaction_status
+    SupportAnalytics:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        activePremiumUsers:
+          type: integer
+        monthlyGrossRevenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        distribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportAnalyticsDistribution'
+      required:
+      - activePremiumUsers
+      - distribution
+      - monthlyGrossRevenue
+      - totalUsers
+    SupportAnalyticsDistribution:
+      type: object
+      properties:
+        tier:
+          type: string
+        count:
+          type: integer
+        percentage:
+          type: integer
+      required:
+      - count
+      - percentage
+      - tier
     SupportQuestion:
       type: object
       properties:

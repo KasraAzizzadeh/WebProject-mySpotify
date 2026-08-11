@@ -16,6 +16,10 @@ def list_albums():
     return qs
 
 
+def list_genres():
+    return Genre.objects.order_by("id")
+
+
 def get_album(pk):
     return get_object_or_404(_album_base_qs(), pk=pk)
 

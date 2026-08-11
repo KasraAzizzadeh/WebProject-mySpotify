@@ -1,5 +1,10 @@
-from django.db import transaction
+from decimal import Decimal
 
+from django.db import transaction
+from django.db.models import Q, Sum
+
+from accounts.models import User
+from subscriptions.models import SubscriptionPlan
 from .models import (
     ArtistApplicationTicket,
     ApplicationSamples,
@@ -101,3 +106,52 @@ def settle_audit_record(audit_record):
     audit_record.is_settled = True
     audit_record.save(update_fields=["is_settled"])
     return audit_record
+
+
+def get_support_analytics():
+    total_users = User.objects.count()
+
+    basic_count = User.objects.filter(
+        Q(subscription_plan__name=SubscriptionPlan.PlanType.BASIC)
+        | Q(subscription_plan__isnull=True)
+    ).count()
+    silver_count = User.objects.filter(
+        subscription_plan__name=SubscriptionPlan.PlanType.SILVER
+    ).count()
+    gold_count = User.objects.filter(
+        subscription_plan__name=SubscriptionPlan.PlanType.GOLD
+    ).count()
+
+    total_revenue = AuditingRecord.objects.aggregate(
+        total_reward=Sum("calculated_reward")
+    )["total_reward"] or Decimal("0.00")
+
+    def build_percentage(count):
+        if total_users == 0:
+            return 0
+        return int(round((count / total_users) * 100))
+
+    distribution = [
+        {
+            "tier": "Basic",
+            "count": basic_count,
+            "percentage": build_percentage(basic_count),
+        },
+        {
+            "tier": "Silver",
+            "count": silver_count,
+            "percentage": build_percentage(silver_count),
+        },
+        {
+            "tier": "Gold",
+            "count": gold_count,
+            "percentage": build_percentage(gold_count),
+        },
+    ]
+
+    return {
+        "total_users": total_users,
+        "active_premium_users": silver_count + gold_count,
+        "monthly_gross_revenue": total_revenue,
+        "distribution": distribution,
+    }

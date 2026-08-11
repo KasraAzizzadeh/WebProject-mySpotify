@@ -1,8 +1,14 @@
 from rest_framework import serializers
 
-from .models import Album
+from .models import Album, Genre
 from . import services
 from songs.models import Song
+
+
+class GenreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Genre
+        fields = ["id", "name"]
 
 
 class AlbumCreateRequestSerializer(serializers.Serializer):

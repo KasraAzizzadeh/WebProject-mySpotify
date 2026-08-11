@@ -7,6 +7,7 @@ from .views import (
     SupportQuestionDetailView,
     AuditingRecordListView,
     AuditingRecordDetailView,
+    SupportAnalyticsView,
 )
 
 urlpatterns = [
@@ -16,4 +17,5 @@ urlpatterns = [
     path("questions/<int:id>/", SupportQuestionDetailView.as_view(), name="support-question-detail"),
     path("audits/", AuditingRecordListView.as_view(), name="support-audits"),
     path("audits/<int:id>/", AuditingRecordDetailView.as_view(), name="support-audit-detail"),
+    path("analytics/", SupportAnalyticsView.as_view(), name="support-analytics"),
 ]
