@@ -18,6 +18,7 @@ from .serializers import (
     SupportQuestionCreateSerializer,
     SupportQuestionAnswerSerializer,
     AuditingRecordSerializer,
+    SupportAnalyticsSerializer,
 )
 from . import services
 
@@ -228,3 +229,17 @@ class AuditingRecordDetailView(APIView):
         )
 
         return Response(AuditingRecordSerializer(audit_record).data)
+
+
+@extend_schema(
+    summary="Get support analytics",
+    description="Retrieves support analytics including total user counts, premium tier distribution, and monthly gross revenue.",
+    responses={200: SupportAnalyticsSerializer},
+)
+class SupportAnalyticsView(APIView):
+    permission_classes = [IsAuthenticated, IsSupportOrAdmin]
+
+    def get(self, request):
+        analytics = services.get_support_analytics()
+        serializer = SupportAnalyticsSerializer(analytics)
+        return Response(serializer.data)

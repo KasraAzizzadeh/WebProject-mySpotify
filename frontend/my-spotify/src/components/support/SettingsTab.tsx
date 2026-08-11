@@ -85,6 +85,24 @@ export default function SettingsTab() {
     );
   }
 
+  const getTierColorClass = (tier: string | undefined, fallbackColor?: string) => {
+    const normalizedTier = (tier ?? '').toLowerCase();
+
+    if (fallbackColor) {
+      return fallbackColor;
+    }
+
+    if (normalizedTier.includes('gold')) {
+      return 'bg-yellow-500';
+    }
+
+    if (normalizedTier.includes('silver')) {
+      return 'bg-neutral-400';
+    }
+
+    return 'bg-neutral-700';
+  };
+
   // Helper method to parse out dynamic gradient positions from backend distribution stats
   const getDynamicConicGradient = () => {
     if (!analytics?.distribution) return '';
@@ -201,27 +219,31 @@ export default function SettingsTab() {
               </div>
 
               <div className="flex-1 max-w-md w-full space-y-4">
-                {analytics?.distribution.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 rounded-xl bg-neutral-950/40 border border-neutral-900"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={`w-3 h-3 rounded-full ${item.color}`} />
-                      <span className="text-sm font-semibold text-neutral-200">
-                        {item.tier}
-                      </span>
+                {analytics?.distribution.map((item, index) => {
+                  const colorClass = getTierColorClass(item.tier, item.color);
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 rounded-xl bg-neutral-950/40 border border-neutral-900"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`w-3 h-3 rounded-full ${colorClass}`} />
+                        <span className="text-sm font-semibold text-neutral-200">
+                          {item.tier}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-bold text-white font-mono">
+                          {item.percentage}%
+                        </span>
+                        <p className="text-[10px] text-neutral-500 mt-0.5">
+                          {item.count.toLocaleString()} accounts
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-sm font-bold text-white font-mono">
-                        {item.percentage}%
-                      </span>
-                      <p className="text-[10px] text-neutral-500 mt-0.5">
-                        {item.count.toLocaleString()} accounts
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
             </div>

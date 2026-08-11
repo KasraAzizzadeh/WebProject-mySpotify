@@ -142,3 +142,16 @@ class AuditingRecordSerializer(serializers.ModelSerializer):
 
     def get_paymentStatus(self, record):
         return "Settled" if record.is_settled else "Pending Payment"
+
+
+class SupportAnalyticsDistributionSerializer(serializers.Serializer):
+    tier = serializers.CharField()
+    count = serializers.IntegerField()
+    percentage = serializers.IntegerField()
+
+
+class SupportAnalyticsSerializer(serializers.Serializer):
+    totalUsers = serializers.IntegerField(source="total_users")
+    activePremiumUsers = serializers.IntegerField(source="active_premium_users")
+    monthlyGrossRevenue = serializers.DecimalField(source="monthly_gross_revenue", max_digits=12, decimal_places=2)
+    distribution = SupportAnalyticsDistributionSerializer(many=True)

@@ -15,12 +15,26 @@ from .serializers import (
     AlbumDetailModelSerializer,
     AlbumSongSerializer,
     AlbumUpdateRequestSerializer,
+    GenreSerializer,
 )
 from .permissions import IsAlbumOwner
 
 
 from drf_spectacular.utils import OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+
+
+@extend_schema(
+    summary="List genres",
+    description="Returns all available genres with simple id/name values for album and song selection.",
+    responses={status.HTTP_200_OK: GenreSerializer(many=True)},
+)
+class AlbumGenresView(generics.ListAPIView):
+    serializer_class = GenreSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return services.list_genres()
 
 
 @extend_schema_view(
