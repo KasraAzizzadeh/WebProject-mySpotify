@@ -14,6 +14,10 @@ import HeroCard from "@/components/music/AlbumHero";
 import StickyBar from "@/components/music/StickyBar";
 import DeleteFromPlaylistModal from "@/components/music/DeleteFromPlaylistModal";
 import EditPlaylistModal from "@/components/music/EditPlaylistModal";
+import { usePlaylist } from "@/hooks/queries/media/usePlaylist";
+import { usePlaylistSongs } from "@/hooks/queries/media/usePlaylistSongs";
+import { usePlaylistOwner } from "@/hooks/queries/media/usePlaylistOwner";
+import { useRemovePlaylistSong } from "@/hooks/queries/media/useRemovePlaylistSong";
 
 export default function PlaylistPage() {
   const { id } = useParams<{ id: string }>();
@@ -24,13 +28,26 @@ export default function PlaylistPage() {
   const setQueue = usePlayerStore((s) => s.setQueue);
   const addToQueue = usePlayerStore((s) => s.addToQueue);
 
-  const [playlist, setPlaylist] = useState<PlaylistItem | null>(null);
-  const [songs, setSongs] = useState<SongItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [selectedSongId, setSelectedSongId] = useState("");
-  const [ownerName, setOwnerName] = useState<string>("User");
+
+  const {
+    data: playlist,
+    isLoading: playlistLoading,
+    isError: playlistError
+  } = usePlaylist(id);
+
+  const {
+    data: songs = [],
+    isLoading: songsLoading,
+  } = usePlaylistSongs(id);
+
+  const ownerProfile = usePlaylistOwner(playlist?.ownerId, authUser?.id);
+
+  const removeSongMutation = useRemovePlaylistSong(id);
+
+  const loading = playlistLoading || songsLoading;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -47,66 +64,28 @@ export default function PlaylistPage() {
     return () => observer.disconnect();
   }, [loading]);
 
-  useEffect(() => {
-    if (!id) return;
-    if (!authUser) {
-      router.push("/login");
-      return;
-    }
+  if (!authUser) {
+    router.push("/login");
+    return;
+  }
 
-    const loadPlaylist = async () => {
-      try {
-        setLoading(true);
-
-        const playlistData = await getPlaylistById(id);
-
-        if (!playlistData) {
-          setPlaylist(null);
-          setLoading(false);
-          return;
-        }
-
-        const songsData: SongItem[] = await getSongsByPlaylistId(id);
-
-        setPlaylist(playlistData);
-        setSongs(songsData);
-
-        if (playlistData.ownerId === authUser.id) {
-          setOwnerName(authUser.displayName || "You");
-        } else {
-          const ownerProfile = await userService.getUserProfile(playlistData.ownerId);
-          setOwnerName(ownerProfile?.displayName || "User");
-        }
-
-      } catch (error) {
-        console.error("Error loading playlist detail screen:", error);
-        setPlaylist(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadPlaylist();
-  }, [id, authUser, router]);
-
-  const remove = async (songId: string) => {
-    if (!playlist) return;
-
-    const updatedPlaylist = await removeSongFromPlaylist(songId, playlist.id);
-    setPlaylist(updatedPlaylist);
-    
-    const updatedSongs = songs.filter(s => s.id !== songId);
-    setSongs(updatedSongs);
-    setSelectedSongId("");
-  };
-  
   if (loading) {
     return <div className="p-8 text-neutral-400">Loading playlist environment...</div>;
   }
 
-  if (!playlist) {
+  if (playlistError || !playlist) {
     notFound();
   }
+
+
+  const remove = async (songId: string) => {
+    if (!playlist) return;
+
+    removeSongMutation.mutate(songId, {
+      onSuccess: () => setSelectedSongId(""),
+      onError: (error) => console.error("Failed to remove song:", error),
+    })
+  };
 
   const handlePlayPlaylist = () => {
     setQueue(songs, {type: "playlist", id: playlist.id}, songs[0]);
@@ -120,6 +99,11 @@ export default function PlaylistPage() {
     addToQueue(songs, {type: "playlist", id: playlist.id})
   }
 
+  const ownerName =
+        playlist.ownerId === authUser.id
+            ? authUser.displayName || "You"
+            : ownerProfile.data?.displayName || "User";
+  
   const isOwner = authUser?.id === playlist.ownerId;
 
   return (
@@ -190,10 +174,7 @@ export default function PlaylistPage() {
       {showEdit && (
         <EditPlaylistModal
           playlist={playlist}
-          onSave={(playlist: PlaylistItem) => {
-            setPlaylist(playlist);
-            setShowEdit(false);
-          }}
+          onSave={() => {setShowEdit(false);}}
           onClose={() => setShowEdit(false)}
         />
       )}

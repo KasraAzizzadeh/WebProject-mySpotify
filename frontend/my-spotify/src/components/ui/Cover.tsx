@@ -26,6 +26,7 @@ export default function Cover({
           className="object-cover"
           sizes={`${size}px`}
           loading="eager"
+          unoptimized
         />
       ) : (
         <svg

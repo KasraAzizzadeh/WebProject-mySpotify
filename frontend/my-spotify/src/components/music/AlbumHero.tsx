@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { usePlayerStore } from '@/store/playerStore';
 import Cover from "@/components/ui/Cover";
 import { AlbumItem, PlaylistItem, PlaybackSource } from "@/types";
-import { deletePlaylist } from '@/services/mediaService';
+import { useDeletePlaylist } from "@/hooks/queries/media/useDeletePlaylist";
 import { formatDuration } from "@/utils/mediaUtils";
 import { useAverageColor } from "@/hooks/useAverageColor";
 import { darken } from "@/utils/color";
@@ -55,21 +55,25 @@ export default function HeroCard(props: HeroProps) {
 
     const isThisPlayback = playbackSource?.id === item.id;
 
-    const handleDelete = async () => {
-        try {
-            const result = await deletePlaylist(item.id);
-            if (result === "success")
+    const deletePlaylistMutation = useDeletePlaylist(type === "playlist" ? item.id : "");
+
+    const handleDelete = () => {
+        if (type !== "playlist") return;
+
+        deletePlaylistMutation.mutate(undefined, {
+            onSuccess: () => {
                 router.push("/playlists");
-        } catch (error) {
-            console.error("error");
-        }
-        
-    }
+            },
+            onError: (error) => {
+                console.error("Failed to delete playlist:", error);
+            },
+        });
+    };
 
     return (
         <section
-        ref={heroRef}
-        className="relative overflow-hidden h-[500px] md:h-[420px]"
+            ref={heroRef}
+            className="relative overflow-hidden h-[500px] md:h-[420px]"
         >
         <div
             className="absolute inset-0"
@@ -208,6 +212,7 @@ export default function HeroCard(props: HeroProps) {
             
             {type === "playlist" && props.edit && (
                 <button 
+                    disabled={deletePlaylistMutation.isPending}
                     className="flex items-center gap-2 rounded-full border border-neutral-700 px-5 py-2.5 text-sm font-medium transition hover:border-white text-neutral-300 hover:text-white"
                     onClick={(e) => {
                       e.preventDefault(); 
@@ -221,6 +226,7 @@ export default function HeroCard(props: HeroProps) {
 
             {type === "playlist" && props.edit && (
                 <button 
+                    disabled={deletePlaylistMutation.isPending}
                     className="flex items-center gap-2 rounded-full bg-red-500 border border-red-600 px-5 py-2.5 
                                 text-sm font-medium transition hover:border-red-600 text-neutral-200 hover:text-white"
                     onClick={(e) => {

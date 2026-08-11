@@ -10,7 +10,8 @@ import Alert from '@/components/ui/Alert';
 import Cover from '@/components/ui/Cover';
 
 import { PlaylistItem } from '@/types';
-import { updatePlaylist } from '@/services/mediaService';
+import { useUpdatePlaylist } from '@/hooks/queries/media/useUpdatePlaylist';
+import { ApiError } from '@/services/api';
 
 interface EditPlaylistModalProps {
   playlist: PlaylistItem;
@@ -30,7 +31,8 @@ export default function EditPlaylistModal({
   const [imageFile, setImageFile] = useState<File[]>([]);
 
   const [alert, setAlert] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const updatePlaylistMutation = useUpdatePlaylist(playlist.id);
 
   useEffect(() => {
     setName(playlist.name);
@@ -41,22 +43,22 @@ export default function EditPlaylistModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try {
-      setIsSubmitting(true);
-      setAlert('');
+    setAlert("");
 
-      const updatedPlaylist = await updatePlaylist(playlist.id, {
-        name,
-        description,
-        imageFile: imageFile[0],
-      });
-
-      onSave(updatedPlaylist);
-    } catch (err: any) {
-      setAlert(err.message ?? 'Something went wrong.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    updatePlaylistMutation.mutate({
+      name,
+      description,
+      imageFile: imageFile[0],
+    }, {
+      onSuccess: () => onClose(),
+      onError: (error) => {
+        if (error instanceof ApiError) {
+          setAlert(error.getFirstError());
+        } else {
+          setAlert("Something went wrong.");
+        }
+      },
+    })
   };
 
   return (
@@ -77,7 +79,7 @@ export default function EditPlaylistModal({
 
           <button
             onClick={onClose}
-            disabled={isSubmitting}
+            disabled={updatePlaylistMutation.isPending}
             className="text-neutral-400 hover:text-red-500 transition"
           >
             <X size={20} />
@@ -125,7 +127,7 @@ export default function EditPlaylistModal({
             
                 <Button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={updatePlaylistMutation.isPending}
                 >
                     Save
                 </Button>
@@ -134,7 +136,7 @@ export default function EditPlaylistModal({
                     type="button"
                     variant="secondary"
                     onClick={onClose}
-                    disabled={isSubmitting}
+                    disabled={updatePlaylistMutation.isPending}
                 >
                     Cancel
                 </Button>

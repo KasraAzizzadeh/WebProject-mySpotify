@@ -1,6 +1,6 @@
 import { getAlbums, getSongs, getPlaylists, getUsers, savePlaylists, saveSongs , saveUsers } from "@/store/mockDb";
 import { AlbumItem, SongItem, PlaylistItem, DiscoverData, DiscoverFilter, PlaybackSource } from "@/types";
-import { isSameDay, mapPlaylist } from "@/utils/mediaUtils";
+import { isSameDay, mapPlaylist, mapSong } from "@/utils/mediaUtils";
 import api from "@/services/api"
 import { handleApiError } from "@/services/api";
 
@@ -30,11 +30,14 @@ export const getSongsByAlbumId = async (albumId: string): Promise<SongItem[]> =>
 };
 
 export const getPlaylistById = async (playlistId: string): Promise<PlaylistItem> => {
-  await delay(100);
-  const allPlaylists = getPlaylists();
-  const playlist = allPlaylists.find(p => p.id === playlistId);
-  if (!playlist) throw new Error("This playlist doesn't exist");
-  return playlist;
+  try {
+    const response = await api.get(
+      `/playlists/${playlistId}/`
+    );
+    return mapPlaylist(response.data);
+  } catch (error) {
+    handleApiError(error)
+  }
 };
 
 export const getUserPlaylists = async (userId: string): Promise<PlaylistItem[]> => {
@@ -60,17 +63,20 @@ export const createPlaylist = async (name: string): Promise<PlaylistItem> => {
   }
 };
 
-// 🆕 NEW: Resolves all songs belonging to a specific playlist ID
 export const getSongsByPlaylistId = async (playlistId: string): Promise<SongItem[]> => {
-  await delay(100);
+  try {
+    const response = await api.get(
+      `/playlists/${playlistId}/songs/`
+    )
 
-  const playlist = await getPlaylistById(playlistId);
+    const songs = response.data.sort(
+      (a: {position : number}, b : {position : number}) => a.position - b.position
+    ).map((item: { song: SongItem }) => item.song);
 
-  const songs = await Promise.all(
-    playlist.songList.map((songId) => getSongById(songId).catch(() => null))
-  );
-
-  return songs.filter((song): song is SongItem => song !== null);
+    return songs.map(mapSong);
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
 export const addSongToPlaylist = async (songId: string, playlistId: string): Promise<void> => {
@@ -87,26 +93,14 @@ export const addSongToPlaylist = async (songId: string, playlistId: string): Pro
   }
 };
 
-export const removeSongFromPlaylist = async (songId: string, playlistId: string): Promise<PlaylistItem> => {
-  await delay(100);
-
-  const allPlaylists = getPlaylists();
-  const index = allPlaylists.findIndex((p) => p.id === playlistId);
-
-  if (index === -1) {
-    throw new Error("Playlist not found");
+export const removeSongFromPlaylist = async (songId: string, playlistId: string): Promise<void> => {
+  try {
+    await api.delete(
+      `/playlists/${playlistId}/songs/${songId}/`
+    );
+  } catch (error) {
+    handleApiError(error);
   }
-
-  if (!allPlaylists[index].songList.includes(songId)) {
-    throw new Error("Song is not in this playlist");
-  }
-
-  allPlaylists[index].songList =
-    allPlaylists[index].songList.filter((s) => s !== songId);
-
-  savePlaylists(allPlaylists);
-
-  return allPlaylists[index];
 };
 
 export const getMediaData = async (
@@ -194,50 +188,31 @@ export const updatePlaylist = async (
     imageFile?: File;
   }
 ): Promise<PlaylistItem> => {
-  await delay(100);
+  try {
+    const formData = new FormData();
+    formData.append("name", updates.name);
+    if (updates.description !== undefined) {
+      formData.append("description", updates.description)
+    }
+    if (updates.imageFile) {
+      formData.append("cover_image", updates.imageFile);
+    }
 
-  const allPlaylists = getPlaylists();
-
-  const index = allPlaylists.findIndex(
-    (p) => p.id === playlistId
-  );
-
-  if (index === -1) {
-    throw new Error("Playlist not found");
+    const response = await api.patch(
+      `/playlists/${playlistId}/`, formData
+    );
+    return mapPlaylist(response.data);
+  } catch (error) {
+    handleApiError(error);
   }
-
-  let imageUrl = allPlaylists[index].imageUrl;
-
-  if (updates.imageFile) {
-    imageUrl = `/covers/${updates.imageFile.name}`;
-  }
-
-  allPlaylists[index] = {
-    ...allPlaylists[index],
-    name: updates.name.trim(),
-    description: updates.description?.trim() || "",
-    imageUrl: imageUrl || "",
-  };
-
-  savePlaylists(allPlaylists);
-
-  return allPlaylists[index];
 };
 
-export const deletePlaylist = async (
-  playlistId: string,
-): Promise<string> => {
-  await delay(100);
-
-  const allPlaylists = getPlaylists();
-
-  const updatedPlaylists = allPlaylists.filter(
-    (p) => p.id !== playlistId
-  );
-
-  savePlaylists(updatedPlaylists);
-
-  return "success";
+export const deletePlaylist = async (playlistId: string): Promise<void> => {
+    try {
+        await api.delete(`/playlists/${playlistId}/`);
+    } catch (error) {
+        handleApiError(error);
+    }
 };
 
 export const updateStreams = async (

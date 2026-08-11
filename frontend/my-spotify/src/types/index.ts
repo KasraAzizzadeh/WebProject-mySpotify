@@ -88,8 +88,8 @@ export interface SongItem {
   audioUrl?: string;
   lyrics?: string;
   // NEW METADATA FIELDS
-  genre?: string;
-  collaborators?: string;
+  genre?: string[];
+  collaborators?: string[];
   
 }
 

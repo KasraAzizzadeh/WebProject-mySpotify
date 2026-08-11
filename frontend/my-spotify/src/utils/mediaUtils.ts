@@ -1,4 +1,4 @@
-import { PlaylistItem } from "@/types";
+import { PlaylistItem, SongItem } from "@/types";
 import { getUsers } from "@/store/mockDb";
 import { getMediaUrl } from "@/services/api";
 
@@ -50,11 +50,31 @@ export function mapPlaylist(data: any): PlaylistItem {
     return {
         id: String(data.id),
         name: data.name,
-        ownerId: String(data.owner_id),
+        ownerId: String(data.owner_id ?? data.owner),
         createdAt: data.created_at ?? undefined,
-        imageUrl: getMediaUrl(data.image_url) ?? undefined,
+        imageUrl: getMediaUrl(data.image_url ?? data.cover_image) ?? undefined,
         description: data.description ?? undefined,
         isPrivate: data.is_private,
-        songList: (data.song_list ?? []).map(String),
+        songList: (data.song_list ?? data.songs ?? []).map(String),
+    };
+}
+
+export function mapSong(data: any): SongItem {
+    return {
+        id: String(data.id),
+        title: data.title,
+        artistId: String(data.artist_id),
+        artistName: data.artist_name,
+        albumId: String(data.album_id),
+        albumName: data.album_name,
+        releaseDate: data.created_at ?? undefined,
+        streams: data.streams,
+        imageUrl: getMediaUrl(data.cover_image) ?? undefined,
+        trackNumber: data.track_number,
+        songDurationMs: data.duration_ms,
+        audioUrl: getMediaUrl(data.audio_file) ?? undefined,
+        lyrics: data.lyrics ?? undefined,
+        collaborators: (data.collaborators ?? []).map(String),
+        genre: (data.genre ?? []).map(String),
     };
 }
