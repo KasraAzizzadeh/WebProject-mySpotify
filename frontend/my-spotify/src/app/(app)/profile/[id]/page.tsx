@@ -3,9 +3,12 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation'; // Added useRouter
-import { userService } from '@/services/userService';
 import { UserProfile, SongItem, AlbumItem } from '@/types';
+import { userService } from '@/services/userService';
 import { getAlbums, getSongs } from '@/store/mockDb';
+
+// TanStack query hook
+import { useUserProfile } from '@/hooks/queries/user/useUserProfile';
 
 // Modular Components
 import ProfileCard from '@/components/profile/ProfileCard';
@@ -43,56 +46,41 @@ export default function ProfilePage() {
   const [email, setEmail] = useState('');
   const [bioText, setBioText] = useState('');
 
-  // 1. Fetch Profile and Sync Real Discography via Database Core
+  // Fetch profile via TanStack Query and hydrate local state
+  const {
+    data: freshUser,
+    isLoading: profileLoading,
+    error: profileError,
+  } = useUserProfile(targetUserId);
+
+  // When freshUser changes, initialize local state and discography
   useEffect(() => {
-    let isMounted = true;
+    if (!freshUser) return;
 
-    async function fetchProfile() {
-      if (!targetUserId) return;
-      
-      try {
-        const freshUser = await userService.getUserProfile(targetUserId);
-        
-        if (isMounted && freshUser) {
-          setDbUser(freshUser);
-          setDisplayName(freshUser.displayName);
-          setEmail(freshUser.email);
-          setBioText(freshUser.artistProfile?.bio || '');
-          
-          if (authUser?.id) {
-            const followerList = freshUser.followers || [];
-            setIsFollowing(followerList.includes(authUser.id));
-          }
+    setDbUser(freshUser as UserProfile);
+    setDisplayName(freshUser.displayName || '');
+    setEmail(freshUser.email || '');
+    setBioText(freshUser.artistProfile?.bio || '');
 
-          // Hydrate and filter real discography records from local DB storage
-          if (freshUser.role === 'artist') {
-            const allAlbums = getAlbums();
-            const allSongs = getSongs();
-
-            const allowedAlbumIds = freshUser.artistProfile?.albums || [];
-            const allowedSingleIds = freshUser.artistProfile?.singles || [];
-
-            // 1. Filter official published albums
-            const userAlbums = allAlbums.filter(album => allowedAlbumIds.includes(album.id));
-            
-            // 2. MODIFIED: Fetch ONLY standalone single tracks belonging directly to the user
-            const userSingles = allSongs.filter(song => allowedSingleIds.includes(song.id));
-
-            setArtistAlbums(userAlbums);
-            setArtistSongs(userSingles);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch user profile or sync discography:', error);
-      }
+    if (authUser?.id) {
+      const followerList = freshUser.followers || [];
+      setIsFollowing(followerList.includes(authUser.id));
     }
 
-    fetchProfile();
+    if (freshUser.role === 'artist') {
+      const allAlbums = getAlbums();
+      const allSongs = getSongs();
 
-    return () => {
-      isMounted = false;
-    };
-  }, [targetUserId, authUser?.id]);
+      const allowedAlbumIds = freshUser.artistProfile?.albums || [];
+      const allowedSingleIds = freshUser.artistProfile?.singles || [];
+
+      const userAlbums = allAlbums.filter(album => allowedAlbumIds.includes(album.id));
+      const userSingles = allSongs.filter(song => allowedSingleIds.includes(song.id));
+
+      setArtistAlbums(userAlbums);
+      setArtistSongs(userSingles);
+    }
+  }, [freshUser, authUser?.id]);
 
   const hasPremiumAvatarPermission = dbUser?.subscriptionType === 'silver' || dbUser?.subscriptionType === 'gold';
 
@@ -232,6 +220,22 @@ export default function ProfilePage() {
       setFollowLoading(false);
     }
   };
+
+  if (profileLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center text-neutral-500 text-sm tracking-wide">
+        Loading profile data...
+      </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <div className="h-screen flex items-center justify-center text-red-400 text-sm tracking-wide">
+        Failed to load profile.
+      </div>
+    );
+  }
 
   if (!dbUser) {
     return (

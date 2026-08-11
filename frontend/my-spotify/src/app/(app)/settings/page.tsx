@@ -13,6 +13,9 @@ import { SettingsHeader, ProfilePanel, SubscriptionPanel } from '@/components/se
 
 import { Trash2 } from 'lucide-react';
 
+// TanStack hook for current user
+import { useUserProfile } from '@/hooks/queries/user/useUserProfile';
+
 type ModalState = 'none' | 'delete' | 'plans' | 'save_success';
 
 export default function SettingsPage() {
@@ -24,10 +27,27 @@ export default function SettingsPage() {
   const [activeModal, setActiveModal] = useState<ModalState>('none');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  if (!authUser) {
+  // Fetch the freshest user profile via TanStack
+  const {
+    data: freshUser,
+    isLoading: profileLoading,
+    error: profileError,
+  } = useUserProfile(authUser?.id);
+
+  const userToUse = freshUser ?? authUser;
+
+  if (profileLoading) {
     return (
       <div className="h-screen flex items-center justify-center text-neutral-500 text-sm bg-[#121212]">
         Loading...
+      </div>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <div className="h-screen flex items-center justify-center text-red-400 text-sm bg-[#121212]">
+        Failed to load user profile.
       </div>
     );
   }
@@ -61,7 +81,7 @@ export default function SettingsPage() {
     }
   };
 
-  const activeSubscriptionType = authUser.subscriptionType || 'basic';
+  const activeSubscriptionType = userToUse?.subscriptionType || 'basic';
 
   return (
     <main className="min-h-screen bg-[#121212] text-white p-4 md:p-8">
@@ -88,7 +108,7 @@ export default function SettingsPage() {
             Subscription
           </h2>
           <SubscriptionPanel
-            user={authUser}
+            user={userToUse}
             onManageClick={() => setActiveModal('plans')}
           />
         </section>
