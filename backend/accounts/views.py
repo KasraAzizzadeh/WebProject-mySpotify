@@ -1,3 +1,5 @@
+import json
+
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
 
@@ -6,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework import permissions, status, generics
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import User, Notification
+from .models import User, Notification, ArtistProfile
 from albums.models import Album
 from songs.models import Song
 
@@ -367,7 +369,8 @@ class SubmitArtistApplicationView(generics.CreateAPIView):
     patch=extend_schema(
         summary="Update own profile",
         description=(
-            "Update the authenticated user's profile. Allowed fields: display_name, email, password. "
+            "Update the authenticated user's profile. Allowed fields: display_name, email, password, settings. "
+            "settings follows the same shape returned by GET /accounts/{id}/: {\"language\": \"en\"|\"fa\", \"system_voice\": \"en-is\"|\"fa\", \"notification_limit\": <integer>}. "
             "If the user is an artist, artist_bio may also be provided to update the artist bio."
         ),
         request=inline_serializer(
@@ -378,6 +381,14 @@ class SubmitArtistApplicationView(generics.CreateAPIView):
                 'password': serializers.CharField(required=False),
                 'artist_bio': serializers.CharField(required=False),
                 'profile_picture': serializers.ImageField(required=False, allow_null=True),
+                'settings': inline_serializer(
+                    name='UserSettingsUpdateRequest',
+                    fields={
+                        'language': serializers.ChoiceField(choices=['en', 'fa'], required=False),
+                        'system_voice': serializers.ChoiceField(choices=['en-is', 'fa'], required=False),
+                        'notification_limit': serializers.IntegerField(min_value=1, required=False),
+                    },
+                ),
             }
         ),
         responses={200: AuthUserSerializer}
@@ -410,7 +421,7 @@ class UserProfileView(APIView):
 
     def patch(self, request, id):
         # Only allow owners to update their profile
-        if request.user.id != id:
+        if request.user.id != int(id):
             return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
 
         from .serializers import UserUpdateSerializer
@@ -421,9 +432,18 @@ class UserProfileView(APIView):
         incoming = request.data.copy()
         for key in list(incoming.keys()):
             val = incoming.get(key)
+            if key == 'profile_picture' and val in ('', 'null', 'None', 'undefined'):
+                incoming[key] = None
+                continue
             # if it's an empty string, remove it so serializer treats it as not provided
             if isinstance(val, str) and val.strip() == "":
                 incoming.pop(key)
+
+        if "settings" in incoming and isinstance(incoming["settings"], str):
+            try:
+                incoming["settings"] = json.loads(incoming["settings"])
+            except json.JSONDecodeError:
+                return Response({"settings": ["Settings must be a valid JSON object."]}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = UserUpdateSerializer(data=incoming)
         serializer.is_valid(raise_exception=True)
@@ -466,12 +486,27 @@ class UserProfileView(APIView):
             if user.role != User.Roles.ARTIST:
                 return Response({'artist_bio': ['Only artists can update artist bio.']}, status=status.HTTP_400_BAD_REQUEST)
 
-            if hasattr(user, 'artist_profile'):
-                artist = user.artist_profile
-                artist.bio = data['artist_bio']
-                artist.save(update_fields=['bio'])
-            else:
-                return Response({'artist_bio': ['Artist profile not found.']}, status=status.HTTP_400_BAD_REQUEST)
+            # Ensure an artist_profile exists (create if missing) and update bio
+            artist_profile, created = ArtistProfile.objects.get_or_create(
+                owner=user,
+                defaults={
+                    'bio': data['artist_bio'],
+                    'verification_status': ArtistProfile.VerificationStatus.ACCEPTED,
+                },
+            )
+
+            if not created:
+                artist_profile.bio = data['artist_bio']
+                artist_profile.save(update_fields=['bio'])
+            # no error returned; artist_profile created or updated
+
+        if 'settings' in data:
+            settings_data = data['settings']
+            settings = user.settings
+            for field_name, value in settings_data.items():
+                setattr(settings, field_name, value)
+            settings.save()
+            changed = True
 
         # profile picture handling (file upload similar to songs audio_file)
         if 'profile_picture' in data:
@@ -509,7 +544,7 @@ class UserProfileView(APIView):
 
     def delete(self, request, id):
         # Only allow owners to delete their account
-        if request.user.id != id:
+        if request.user.id != int(id):
             return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
 
         user = request.user

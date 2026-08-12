@@ -1,4 +1,5 @@
 import { UserProfile } from "@/types";
+import { getMediaUrl } from "@/services/api";
 
 export const validateEmail = (email: string) => {
     let message : string = "";
@@ -45,71 +46,80 @@ export const validateOtp = (otp: string) => {
 
 
 // service mappers //
-export function mapAuthUser(data: any): UserProfile {
+export function mapAuthUser(data: Record<string, unknown> | null | undefined): UserProfile {
+    const source = data ?? {};
+    const settings = (source.settings ?? {}) as Record<string, unknown>;
+    const listenerProfile = (source.listener_profile ?? {}) as Record<string, unknown>;
+    const artistProfile = (source.artist_profile ?? {}) as Record<string, unknown>;
+
     return {
-        id: String(data.id),
-        username: data.username,
-        displayName: data.display_name,
-        email: data.email,
+        id: String(source.id ?? ''),
+        username: String(source.username ?? ''),
+        displayName: String(source.display_name ?? ''),
+        email: String(source.email ?? ''),
 
-        profilePictureUrl: data.profile_picture ?? undefined,
+        profilePictureUrl:
+            getMediaUrl(
+                (source.profile_picture_url as string | null | undefined) ??
+                (source.profile_picture as string | null | undefined)
+            ) ?? undefined,
 
-        role: data.role,
-        subscriptionType: data.subscription_type,
+        role: String(source.role ?? 'listener') as UserProfile['role'],
+        subscriptionType: String(source.subscription_type ?? 'basic') as UserProfile['subscriptionType'],
 
-        subValidUntil: data.subscription_valid_until
-            ? new Date(data.subscription_valid_until)
+        subValidUntil: source.subscription_valid_until
+            ? new Date(String(source.subscription_valid_until))
             : undefined,
 
-        gender: data.gender,
-        birthDate: data.birth_date
-            ? new Date(data.birth_date)
+        gender: typeof source.gender === 'string' ? source.gender : undefined,
+        birthDate: source.birth_date
+            ? new Date(String(source.birth_date))
             : undefined,
 
-        createdAt: data.created_at
-            ? new Date(data.created_at)
+        createdAt: source.created_at
+            ? new Date(String(source.created_at))
             : undefined,
 
-        followers: data.followers ?? [],
-        following: data.following ?? [],
+        followers: Array.isArray(source.followers) ? source.followers.map(String) : [],
+        following: Array.isArray(source.following) ? source.following.map(String) : [],
 
-        settings: data.settings
+        settings: Object.keys(settings).length > 0
             ? {
-                  notificationLimit: data.settings.notification_limit,
-                  systemVoice: data.settings.system_voice,
-                  language: data.settings.language,
+                  notificationLimit: Number(settings.notification_limit ?? 10),
+                  systemVoice: String(settings.system_voice ?? 'en-is'),
+                  language: String(settings.language ?? 'en'),
               }
             : undefined,
 
-        listenerProfile: data.listener_profile
+        listenerProfile: Object.keys(listenerProfile).length > 0
             ? {
-                  playlists: data.listener_profile.playlists ?? [],
-                  likedTracks: data.listener_profile.liked_tracks ?? [],
-                  recentlyPlayed:
-                      data.listener_profile.recently_played ?? [],
-                  dailyStreams:
-                      data.listener_profile.daily_streams ?? 0,
-                  lastStreamDate: data.listener_profile.last_stream_date
-                      ? new Date(
-                            data.listener_profile.last_stream_date
-                        )
+                  playlists: Array.isArray(listenerProfile.playlists) ? listenerProfile.playlists.map(String) : [],
+                  likedTracks: Array.isArray(listenerProfile.liked_tracks) ? listenerProfile.liked_tracks.map(String) : [],
+                  recentlyPlayed: Array.isArray(listenerProfile.recently_played) ? listenerProfile.recently_played.map(String) : [],
+                  dailyStreams: Number(listenerProfile.daily_streams ?? 0),
+                  lastStreamDate: listenerProfile.last_stream_date
+                      ? new Date(String(listenerProfile.last_stream_date))
                       : null,
               }
             : undefined,
 
         artistProfile:
-            data.artist_profile &&
-            Object.keys(data.artist_profile).length > 0
+            artistProfile && Object.keys(artistProfile).length > 0
                 ? {
-                      bio: data.artist_profile.bio,
-                      verificationStatus:
-                          data.artist_profile.verification_status,
-                      singles: data.artist_profile.singles ?? [],
-                      albums: data.artist_profile.albums ?? [],
-                      totalStreams:
-                          data.artist_profile.total_streams ?? 0,
-                      uniqueListener:
-                          data.artist_profile.unique_listener,
+                      bio: typeof artistProfile.bio === 'string' ? artistProfile.bio : undefined,
+                      verificationStatus: String(artistProfile.verification_status ?? 'pending') as UserProfile['artistProfile'] extends undefined ? never : NonNullable<UserProfile['artistProfile']>['verificationStatus'],
+                      singles: Array.isArray(artistProfile.singles)
+                          ? artistProfile.singles.map(String)
+                          : Array.isArray(artistProfile.songs)
+                              ? artistProfile.songs.map(String)
+                              : [],
+                      albums: Array.isArray(artistProfile.albums) ? artistProfile.albums.map(String) : [],
+                      totalStreams: Number(artistProfile.total_streams ?? 0),
+                      uniqueListener: artistProfile.unique_listener !== undefined
+                          ? Number(artistProfile.unique_listener)
+                          : artistProfile.unique_listeners !== undefined
+                              ? Number(artistProfile.unique_listeners)
+                              : undefined,
                   }
                 : undefined,
     };

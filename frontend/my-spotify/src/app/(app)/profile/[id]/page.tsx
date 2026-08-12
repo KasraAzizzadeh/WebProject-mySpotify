@@ -2,12 +2,12 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation'; // Added useRouter
+import { useParams, useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { UserProfile, SongItem, AlbumItem } from '@/types';
 import { userService } from '@/services/userService';
 import { getAlbums, getSongs } from '@/store/mockDb';
 
-// TanStack query hook
 import { useUserProfile } from '@/hooks/queries/user/useUserProfile';
 
 // Modular Components
@@ -21,8 +21,9 @@ import Button from '@/components/ui/Button';
 export default function ProfilePage() {
   const { user: authUser, refreshUser, logoutUser } = useAuth() as any;
   const params = useParams();
-  const router = useRouter(); // Initialize router
-  
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
   const targetUserId = (params?.id as string) || authUser?.id;
   const isOwnProfile = authUser?.id === targetUserId;
   
@@ -89,23 +90,18 @@ export default function ProfilePage() {
     if (!dbUser || !targetUserId || !hasPremiumAvatarPermission) return;
 
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result as string;
-        
-        await userService.updateUserProfile(targetUserId, {
-          profilePictureUrl: base64String
-        });
+      const updatedUser = await userService.updateUserProfile(targetUserId, {
+        profilePicture: file,
+      });
 
-        setDbUser(prev => prev ? { ...prev, profilePictureUrl: base64String } : null);
+      setDbUser(updatedUser);
+      queryClient.invalidateQueries({ queryKey: ['user-profile', targetUserId] });
 
-        if (refreshUser && isOwnProfile) {
-          await refreshUser();
-        }
-      };
-      reader.readAsDataURL(file);
+      if (refreshUser && isOwnProfile) {
+        await refreshUser();
+      }
     } catch (err) {
-      console.error("Failed compiling avatar upload data: ", err);
+      console.error('Failed uploading profile avatar:', err);
     }
   };
 
@@ -118,17 +114,18 @@ export default function ProfilePage() {
 
     setIsDeletingPhoto(true);
     try {
-      await userService.updateUserProfile(targetUserId, {
-        profilePictureUrl: "" 
+      const updatedUser = await userService.updateUserProfile(targetUserId, {
+        profilePicture: null,
       });
 
-      setDbUser(prev => prev ? { ...prev, profilePictureUrl: "" } : null);
+      setDbUser(updatedUser);
+      queryClient.invalidateQueries({ queryKey: ['user-profile', targetUserId] });
 
       if (refreshUser && isOwnProfile) {
         await refreshUser();
       }
     } catch (err) {
-      console.error("Failed removing profile avatar photo: ", err);
+      console.error('Failed removing profile avatar photo:', err);
     } finally {
       setIsDeletingPhoto(false);
       setIsDeleteModalOpen(false);
@@ -148,10 +145,10 @@ export default function ProfilePage() {
   // 4. Handle Saving Profile
   const handleSaveProfile = async () => {
     if (!dbUser || !targetUserId) return;
-    
+
     setIsSaving(true);
     try {
-      const updates: Partial<UserProfile> = {
+      const updates: Record<string, unknown> = {
         displayName,
         email,
       };
@@ -163,8 +160,9 @@ export default function ProfilePage() {
         };
       }
 
-      await userService.updateUserProfile(targetUserId, updates);
-      setDbUser({ ...dbUser, ...updates } as UserProfile);
+      const updatedUser = await userService.updateUserProfile(targetUserId, updates);
+      setDbUser(updatedUser);
+      queryClient.invalidateQueries({ queryKey: ['user-profile', targetUserId] });
       setIsEditing(false);
 
       if (refreshUser && isOwnProfile) {

@@ -119,6 +119,7 @@ export default function SettingsPage() {
             Preferences
           </h2>
           <PreferencesForm
+            user={userToUse}
             onSaveSuccess={handlePreferencesSaved}
             onSaveFailure={(err) => setErrorMessage(err)}
           />

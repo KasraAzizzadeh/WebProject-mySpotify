@@ -5,62 +5,85 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import { Bell, Volume2, Globe } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { userService } from '@/services/userService';
+import { UserProfile } from '@/types';
 
 type PreferencesFormProps = {
   onSaveSuccess: (description: string) => void;
   onSaveFailure: (error: string) => void;
+  user?: UserProfile | null;
 };
 
-export default function PreferencesForm({ onSaveSuccess, onSaveFailure }: PreferencesFormProps) {
+export default function PreferencesForm({ onSaveSuccess, onSaveFailure, user }: PreferencesFormProps) {
+  const { user: authUser } = useAuth() as any;
+  const currentUser = user ?? authUser;
+
   const [notificationLimit, setNotificationLimit] = useState('10');
-  const [systemVoice, setSystemVoice] = useState('en-US-standard');
+  const [systemVoice, setSystemVoice] = useState('en-is');
   const [language, setLanguage] = useState('en');
 
   const [initialSettings, setInitialSettings] = useState({
     limit: '10',
-    voice: 'en-US-standard',
+    voice: 'en-is',
     lang: 'en',
   });
 
   useEffect(() => {
-    const savedLimit = localStorage.getItem('setting_notification_limit') || '10';
-    const savedVoice = localStorage.getItem('setting_system_voice') || 'en-US-standard';
-    const savedLang = localStorage.getItem('setting_interface_language') || 'en';
+    const settings = currentUser?.settings ?? {
+      notificationLimit: 10,
+      systemVoice: 'en-is',
+      language: 'en',
+    };
+
+    const savedLimit = String(settings.notificationLimit ?? 10);
+    const savedVoice = settings.systemVoice ?? 'en-is';
+    const savedLang = settings.language ?? 'en';
 
     setNotificationLimit(savedLimit);
     setSystemVoice(savedVoice);
     setLanguage(savedLang);
 
     setInitialSettings({ limit: savedLimit, voice: savedVoice, lang: savedLang });
-  }, []);
+  }, [currentUser]);
 
   const isFormDirty =
     notificationLimit !== initialSettings.limit ||
     systemVoice !== initialSettings.voice ||
     language !== initialSettings.lang;
 
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!currentUser?.id) {
+      onSaveFailure('User session is not available.');
+      return;
+    }
+
     try {
       const changedKeys: string[] = [];
 
       if (notificationLimit !== initialSettings.limit) {
-        localStorage.setItem('setting_notification_limit', notificationLimit);
         changedKeys.push('notification limit');
       }
       if (systemVoice !== initialSettings.voice) {
-        localStorage.setItem('setting_system_voice', systemVoice);
         changedKeys.push('system voice');
       }
       if (language !== initialSettings.lang) {
-        localStorage.setItem('setting_interface_language', language);
         changedKeys.push('language');
       }
+
+      await userService.updateUserSettings(currentUser.id, {
+        language,
+        systemVoice,
+        notificationLimit: Number(notificationLimit),
+      });
 
       setInitialSettings({ limit: notificationLimit, voice: systemVoice, lang: language });
       onSaveSuccess(`Settings changed for ${changedKeys.join(' and ')}`);
     } catch (error) {
-      onSaveFailure('Failed to save settings to browser disk.');
+      console.error('Failed to save settings:', error);
+      onSaveFailure('Failed to save settings to the server.');
     }
   };
 
@@ -75,7 +98,7 @@ export default function PreferencesForm({ onSaveSuccess, onSaveFailure }: Prefer
           type="number"
           value={notificationLimit}
           onChange={(e) => setNotificationLimit(e.target.value)}
-          min="0"
+          min="1"
           max="100"
           className="bg-neutral-900/60 border-neutral-800 text-sm"
         />
@@ -91,9 +114,8 @@ export default function PreferencesForm({ onSaveSuccess, onSaveFailure }: Prefer
           onChange={(e) => setSystemVoice(e.target.value)}
           className="text-sm bg-neutral-900/60 border-neutral-800"
         >
-          <option value="en-US-standard">English (US) - Male</option>
-          <option value="en-US-neural">English (US) - Female</option>
-          <option value="fa-IR-standard">Persian (IR) - Voice Alpha</option>
+          <option value="en-is">English (US) - Male</option>
+          <option value="fa">فارسی (Persian)</option>
         </Select>
       </div>
 

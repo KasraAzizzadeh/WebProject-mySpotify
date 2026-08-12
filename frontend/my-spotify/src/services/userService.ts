@@ -1,92 +1,102 @@
-import { getUsers, saveUsers, User, 
-  getSupportTickets, saveSupportTickets,
-  getNotifications, saveNotifications } from '@/store/mockDb';
+import api, { handleApiError } from '@/services/api';
+import { UserProfile } from '@/types';
+import { mapAuthUser } from '@/utils/authUtils';
 
-// Helper to simulate network latency so your UI can handle real-world loading states
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+function buildProfilePatchPayload(updates: Record<string, unknown>) {
+  const payload: Record<string, unknown> = {};
+
+  if ('displayName' in updates && updates.displayName !== undefined) {
+    payload.display_name = updates.displayName;
+  }
+
+  if ('email' in updates && updates.email !== undefined) {
+    payload.email = updates.email;
+  }
+
+  if ('password' in updates && updates.password !== undefined) {
+    payload.password = updates.password;
+  }
+
+  if ('artistProfile' in updates && updates.artistProfile && typeof updates.artistProfile === 'object') {
+    const artistProfile = updates.artistProfile as { bio?: string };
+    if (artistProfile.bio !== undefined) {
+      payload.artist_bio = artistProfile.bio;
+    }
+  }
+
+  if ('settings' in updates && updates.settings && typeof updates.settings === 'object') {
+    payload.settings = updates.settings;
+  }
+
+  return payload;
+}
 
 export const userService = {
-  /**
-   * Fetches a user profile by ID.
-   */
-  async getUserProfile(userId: string): Promise<User | null> {
-    await delay(400); // Simulate network request
-    const allUsers: User[] = getUsers();
-    const user = allUsers.find((u) => u.id === userId);
-    
-    return user || null;
-  },
-
-  /**
-   * Placeholder for future implementations (e.g., Follow/Edit)
-   * You can build these out as you connect the edit/follow buttons!
-   */
-  async updateUserProfile(userId: string, updates: Partial<User>): Promise<void> {
-    await delay(400);
-    const allUsers = getUsers();
-    const index = allUsers.findIndex((u) => u.id === userId);
-    
-    if (index !== -1) {
-      allUsers[index] = { ...allUsers[index], ...updates };
-      saveUsers(allUsers);
+  async getUserProfile(userId: string): Promise<UserProfile | null> {
+    try {
+      const response = await api.get(`/accounts/${userId}/`);
+      return mapAuthUser(response.data);
+    } catch (error) {
+      handleApiError(error);
     }
   },
 
-  async submitTicket (userId: string, question: string ): Promise<void> {
-    await delay(100);
+  async updateUserProfile(userId: string, updates: Record<string, unknown>): Promise<UserProfile> {
+    const payload = buildProfilePatchPayload(updates);
+    const hasFile = updates.profilePicture instanceof File || updates.profilePicture === null;
 
-    const users = getUsers();
-    const user = users.find(u => u.id === userId);
+    try {
+      if (hasFile) {
+        const formData = new FormData();
 
-    if (!user) {
-      throw new Error("User doesn't exist");
-    }
-
-    const tickets = getSupportTickets();
-
-    const now = new Date();
-
-    tickets.unshift({
-      id: `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
-      username: user.username,
-      subject:
-        question.length > 50
-          ? `${question.slice(0, 50)}...`
-          : question,
-      dateSubmitted: now.toISOString().split("T")[0],
-      status: "Open",
-      messages: [
-        {
-          id: crypto.randomUUID(),
-          senderId: user.id,
-          senderName: user.username,
-          senderRole: "user",
-          content: question,
-          timestamp: now.toLocaleString(),
-        },
-      ],
-    });
-
-    saveSupportTickets(tickets);
-
-    // Notify all admins and supporters
-    const notifications = getNotifications();
-
-    users
-      .filter(
-        u => u.role === "admin" || u.role === "supporter"
-      )
-      .forEach(staff => {
-        notifications.push({
-          id: crypto.randomUUID(),
-          userId: staff.id,
-          content: `New support ticket submitted by ${user.username}.`,
-          status: "unread",
-          type: "ST",
-          createdAt: new Date()
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value === undefined || value === null) return;
+          if (typeof value === 'object') {
+            formData.append(key, JSON.stringify(value));
+            return;
+          }
+          formData.append(key, String(value));
         });
-      });
 
-    saveNotifications(notifications);
-  }
+        if (updates.profilePicture instanceof File) {
+          formData.append('profile_picture', updates.profilePicture);
+        } else if (updates.profilePicture === null) {
+          formData.append('profile_picture', '');
+        }
+
+        const response = await api.patch(`/accounts/${userId}/`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return mapAuthUser(response.data);
+      }
+
+      const response = await api.patch(`/accounts/${userId}/`, payload);
+      return mapAuthUser(response.data);
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  async updateUserSettings(userId: string, settings: { language?: string; systemVoice?: string; notificationLimit?: number }): Promise<UserProfile> {
+    try {
+      const response = await api.patch(`/accounts/${userId}/`, {
+        settings: {
+          language: settings.language,
+          system_voice: settings.systemVoice,
+          notification_limit: settings.notificationLimit,
+        },
+      });
+      return mapAuthUser(response.data);
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  async submitTicket(userId: string, question: string): Promise<void> {
+    const response = await api.post('/support/tickets/', {
+      userId,
+      question,
+    });
+    return response.data;
+  },
 };

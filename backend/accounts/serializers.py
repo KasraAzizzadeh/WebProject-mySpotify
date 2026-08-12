@@ -93,6 +93,7 @@ class LoginSerializer(serializers.Serializer):
 
 class ArtistProfileSerializer(serializers.ModelSerializer):
     songs = serializers.SerializerMethodField()
+    singles = serializers.SerializerMethodField()
     albums = serializers.SerializerMethodField()
     total_streams = serializers.SerializerMethodField()
     unique_listeners = serializers.SerializerMethodField()
@@ -103,12 +104,16 @@ class ArtistProfileSerializer(serializers.ModelSerializer):
             "bio",
             "verification_status",
             "songs",
+            "singles",
             "albums",
             "total_streams",
             "unique_listeners",
         )
 
     def get_songs(self, artist):
+        return list(artist.songs.values_list("id", flat=True))
+
+    def get_singles(self, artist):
         return list(artist.songs.values_list("id", flat=True))
 
     def get_albums(self, artist):
@@ -123,18 +128,27 @@ class ArtistProfileSerializer(serializers.ModelSerializer):
 
 class UserPublicArtistProfileSerializer(serializers.ModelSerializer):
     songs = serializers.SerializerMethodField()
+    singles = serializers.SerializerMethodField()
     albums = serializers.SerializerMethodField()
     total_streams = serializers.SerializerMethodField()
+    unique_listeners = serializers.SerializerMethodField()
 
     class Meta:
         model = ArtistProfile
         fields = (
+            "bio",
+            "verification_status",
             "songs",
+            "singles",
             "albums",
             "total_streams",
+            "unique_listeners",
         )
 
     def get_songs(self, artist):
+        return list(artist.songs.values_list("id", flat=True))
+
+    def get_singles(self, artist):
         return list(artist.songs.values_list("id", flat=True))
 
     def get_albums(self, artist):
@@ -142,6 +156,9 @@ class UserPublicArtistProfileSerializer(serializers.ModelSerializer):
 
     def get_total_streams(self, artist):
         return get_artist_total_streams(artist)
+
+    def get_unique_listeners(self, artist):
+        return get_artist_unique_listeners(artist)
 
 
 class ListenerProfileSerializer(serializers.Serializer):
@@ -253,12 +270,19 @@ class SubmitArtistApplicationSerializer(serializers.Serializer):
         )
 
 
+class UserSettingsUpdateSerializer(serializers.Serializer):
+    language = serializers.ChoiceField(choices=UserSettings.Languages.choices, required=False)
+    system_voice = serializers.ChoiceField(choices=UserSettings.SystemVoice.choices, required=False)
+    notification_limit = serializers.IntegerField(min_value=1, required=False)
+
+
 class UserUpdateSerializer(serializers.Serializer):
     display_name = serializers.CharField(max_length=64, required=False)
     email = serializers.EmailField(required=False)
     password = serializers.CharField(write_only=True, required=False)
     artist_bio = serializers.CharField(required=False, allow_blank=True)
     profile_picture = serializers.ImageField(required=False, allow_null=True)
+    settings = UserSettingsUpdateSerializer(required=False)
 
 
 class UserPublicSerializer(serializers.ModelSerializer):
