@@ -1,4 +1,4 @@
-import { UserProfile } from "@/types";
+import { Notifications, UserProfile } from "@/types";
 import { getMediaUrl } from "@/services/api";
 
 export const validateEmail = (email: string) => {
@@ -122,5 +122,23 @@ export function mapAuthUser(data: Record<string, unknown> | null | undefined): U
                               : undefined,
                   }
                 : undefined,
+    };
+}
+export function mapNotification(data: Record<string, unknown>): Notifications {
+    const source = data ?? {};
+
+    return {
+        id: String(source.id ?? ''),
+        userId: String(source.user_id ?? source.userId ?? ''),
+        content: String(source.content ?? ''),
+        status: source.is_read ? 'read' : 'unread',
+        type: String(source.type ?? 'NA') as Notifications['type'],
+        redirectId:
+            source.redirect_id !== undefined
+                ? String(source.redirect_id)
+                : source.redirectId !== undefined
+                    ? String(source.redirectId)
+                    : undefined,
+        createdAt: source.created_at ? new Date(String(source.created_at)) : new Date(),
     };
 }

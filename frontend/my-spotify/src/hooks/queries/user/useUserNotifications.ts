@@ -1,27 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
-import { getNotifications, saveNotifications } from "@/store/mockDb";
+import api, { handleApiError } from "@/services/api";
+import { mapNotification } from "@/utils/authUtils";
 import { Notifications, UserRole } from "@/types";
 
 export function useUserNotifications(userId?: string, role?: UserRole) {
   return useQuery<Notifications[]>({
     queryKey: ["userNotifications", userId, role],
-    queryFn: () => {
-      const allNotifications = getNotifications();
-      const filteredByUser = allNotifications.filter((notification) => notification.userId === userId);
-
-      if (!role) {
-        return filteredByUser;
+    queryFn: async () => {
+      try {
+        const response = await api.get("/accounts/notifications/");
+        return Array.isArray(response.data)
+          ? response.data.map((item) => mapNotification(item as Record<string, unknown>))
+          : [];
+      } catch (error) {
+        handleApiError(error);
       }
-
-      const allowedTypesByRole: Record<UserRole, Array<Notifications["type"]>> = {
-        listener: ["ES", "AA", "AQ", "NA"],
-        artist: ["AA", "AT"],
-        supporter: ["ST", "SA"],
-        admin: ["ST", "SA"],
-      };
-
-      const allowedTypes = allowedTypesByRole[role] ?? [];
-      return filteredByUser.filter((notification) => allowedTypes.includes(notification.type));
     },
     enabled: !!userId,
     staleTime: 1000 * 30,
@@ -29,24 +22,32 @@ export function useUserNotifications(userId?: string, role?: UserRole) {
   });
 }
 
-export function markNotificationAsRead(notificationId: string) {
-  const notifications = getNotifications();
-  const updated = notifications.map((notification) =>
-    notification.id === notificationId ? { ...notification, status: "read" as const } : notification
-  );
-  saveNotifications(updated);
+export async function markNotificationAsRead(notificationId: string) {
+  try {
+    await api.patch(`/accounts/notifications/${notificationId}/`);
+  } catch (error) {
+    handleApiError(error);
+  }
 }
 
-export function deleteNotification(notificationId: string) {
-  const notifications = getNotifications();
-  const updated = notifications.filter((notification) => notification.id !== notificationId);
-  saveNotifications(updated);
+export async function deleteNotification(notificationId: string) {
+  try {
+    await api.delete(`/accounts/notifications/${notificationId}/`);
+  } catch (error) {
+    handleApiError(error);
+  }
 }
 
-export function markAllNotificationsAsRead(userId: string) {
-  const notifications = getNotifications();
-  const updated = notifications.map((notification) =>
-    notification.userId === userId ? { ...notification, status: "read" as const } : notification
-  );
-  saveNotifications(updated);
+export async function markAllNotificationsAsRead(notificationIds: string[]) {
+  try {
+    await Promise.all(
+      notificationIds.map((notificationId) =>
+        api.patch(`/accounts/notifications/${notificationId}/`).catch((error) => {
+          handleApiError(error);
+        })
+      )
+    );
+  } catch (error) {
+    handleApiError(error);
+  }
 }

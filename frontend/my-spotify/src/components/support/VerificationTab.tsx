@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useArtistApplications } from '@/hooks/queries/support/useArtistApplications';
 import { useUpdateApplication } from '@/hooks/queries/support/useUpdateApplication';
-import { ArtistApplicationTicket, SongItem } from '@/types';
+import { SongItem } from '@/types';
 import { statusStyles } from '@/utils/supportUtils';
 import { UserX, CheckCircle2, Play, Pause, Music } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -16,7 +16,7 @@ export default function VerificationTab() {
   const [rejectReason, setRejectReason] = useState('');
   const [isRejecting, setIsRejecting] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page] = useState(1);
 
   // Audio Playback Tracking States
   const [playingSampleIdx, setPlayingSampleIdx] = useState<number | null>(null);
@@ -33,6 +33,7 @@ export default function VerificationTab() {
   const selectedVerification = verifications.find(v => v.id === selectedVerificationId)
 
   const updateApplication = useUpdateApplication();
+  const mutationError = updateApplication.error as Error | null;
 
   // Clean up audio context instantly if navigating away
   const resetSelection = () => {
@@ -177,6 +178,12 @@ export default function VerificationTab() {
             <h2 className="text-xl sm:text-2xl font-black text-white">{selectedVerification.artisticName}</h2>
             <p className="text-xs sm:text-sm text-neutral-400 mt-1 truncate">{selectedVerification.email}</p>
           </div>
+
+          {updateApplication.isError && (
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+              {mutationError?.message ?? "Unable to update application. Please try again."}
+            </div>
+          )}
 
           <div className="space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Provided Sample Portfolio tracks</h3>

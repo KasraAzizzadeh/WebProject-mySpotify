@@ -11,6 +11,7 @@ import {
   useUserNotifications,
 } from '@/hooks/queries/user/useUserNotifications';
 import { Notifications, UserProfile } from '@/types';
+import { ApiError } from '@/services/api';
 
 interface NotificationModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export default function NotificationModal({ isOpen, onClose, user }: Notificatio
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const { data: notifications = [], isLoading, isError } = useUserNotifications(user.id, user.role);
 
   const sortedNotifications = useMemo(() => {
@@ -32,23 +34,73 @@ export default function NotificationModal({ isOpen, onClose, user }: Notificatio
     });
   }, [notifications]);
 
-  const handleRead = (notificationId: string) => {
+  const handleRead = async (notificationId: string) => {
     setBusyId(notificationId);
-    markNotificationAsRead(notificationId);
-    queryClient.invalidateQueries({ queryKey: ['userNotifications', user.id, user.role] });
-    setBusyId(null);
+    setActionError(null);
+
+    try {
+      await markNotificationAsRead(notificationId);
+      queryClient.invalidateQueries({ queryKey: ['userNotifications', user.id, user.role] });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setActionError(error.getFirstError());
+      } else {
+        setActionError('Unable to update notification.');
+      }
+      console.error('Failed to mark notification as read:', error);
+    } finally {
+      setBusyId(null);
+    }
   };
 
-  const handleDelete = (notificationId: string) => {
+  const handleDelete = async (notificationId: string) => {
     setBusyId(notificationId);
-    deleteNotification(notificationId);
-    queryClient.invalidateQueries({ queryKey: ['userNotifications', user.id, user.role] });
-    setBusyId(null);
+    setActionError(null);
+
+    try {
+      await deleteNotification(notificationId);
+      if (selectedNotificationId === notificationId) {
+        setSelectedNotificationId(null);
+      }
+      queryClient.invalidateQueries({ queryKey: ['userNotifications', user.id, user.role] });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setActionError(error.getFirstError());
+      } else {
+        setActionError('Unable to delete notification.');
+      }
+      console.error('Failed to delete notification:', error);
+    } finally {
+      setBusyId(null);
+    }
   };
 
-  const handleMarkAllRead = () => {
-    markAllNotificationsAsRead(user.id);
-    queryClient.invalidateQueries({ queryKey: ['userNotifications', user.id, user.role] });
+  const handleMarkAllRead = async () => {
+    setActionError(null);
+
+    const unreadNotificationIds = notifications
+      .filter((notification) => notification.status === 'unread')
+      .map((notification) => notification.id);
+
+    if (unreadNotificationIds.length === 0) {
+      return;
+    }
+
+    setBusyId('mark-all');
+
+    try {
+      await markAllNotificationsAsRead(unreadNotificationIds);
+      queryClient.invalidateQueries({ queryKey: ['userNotifications', user.id, user.role] });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setActionError(error.getFirstError());
+      } else {
+        setActionError('Unable to mark notifications as read.');
+      }
+      console.error('Failed to mark all notifications as read:', error);
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const selectedNotification = sortedNotifications.find((notification) => notification.id === selectedNotificationId) ?? null;
@@ -107,9 +159,10 @@ export default function NotificationModal({ isOpen, onClose, user }: Notificatio
               <button
                 type="button"
                 onClick={handleMarkAllRead}
-                className="text-xs font-medium text-green-400 transition hover:text-green-300"
+                disabled={busyId === 'mark-all'}
+                className="text-xs font-medium text-green-400 transition hover:text-green-300 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Mark All as Read
+                {busyId === 'mark-all' ? 'Working...' : 'Mark All as Read'}
               </button>
             ) : null}
             <button
@@ -121,6 +174,10 @@ export default function NotificationModal({ isOpen, onClose, user }: Notificatio
             </button>
           </div>
         </div>
+
+        {actionError && (
+          <div className="px-4 pt-3 text-sm text-red-400">{actionError}</div>
+        )}
 
         <div className="max-h-[70vh] overflow-y-auto p-2">
           {isLoading && (

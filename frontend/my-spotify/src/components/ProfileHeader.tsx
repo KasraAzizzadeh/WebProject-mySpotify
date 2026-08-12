@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Bell, Infinity } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
 import NotificationModal from '@/components/NotificationModal';
-import { getNotifications } from '@/store/mockDb';
+import { useUserNotifications } from '@/hooks/queries/user/useUserNotifications';
 import { userService } from '@/services/userService';
 import { UserProfile } from '@/types';
 
@@ -41,14 +41,11 @@ export default function ProfileHeader({ user }: Props) {
   }, [user?.id]);
 
   const currentUser = dbUser; //?? user;
+  const { data: notifications = [] } = useUserNotifications(currentUser.id, currentUser.role);
 
   const hasUnreadNotifications = useMemo(() => {
-    return getNotifications().some(
-      (notification) =>
-        notification.userId === currentUser.id &&
-        notification.status === 'unread'
-    );
-  }, [currentUser.id, isNotificationOpen]);
+    return notifications.some((notification) => notification.status === 'unread');
+  }, [notifications]);
 
   const dailyStreams = currentUser.listenerProfile?.dailyStreams ?? 0;
   const isBasic = currentUser.subscriptionType === 'basic';
