@@ -1,14 +1,6 @@
 import api, { handleApiError } from "@/services/api";
-import { ArtistApplicationTicket, SupportTicketLocal, TicketMessage, 
-    AuditingRecord, SubscriptionTier, SubscriptionType } from "@/types";
-import { mapArtistApplicationTicket } from "@/utils/supportUtils";
-import { getNotifications, saveNotifications,
-    getSupportTickets, saveSupportTickets,
-    getAuditingRecords, saveAuditingRecords,
-    getSubscriptions, saveSubscriptions,
-    getUsers } from "@/store/mockDb";
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+import { ArtistApplicationTicket, SupportTicketLocal, AuditingRecord, SubscriptionTier, SubscriptionType, AnalyticsData } from "@/types";
+import { mapArtistApplicationTicket, mapSupportTicket, mapAuditingRecord, mapAnalyticsData, mapSubscriptionTier } from "@/utils/supportUtils";
 
 // applications
 export const getApplications = async (
@@ -45,15 +37,29 @@ export const updateApplication = async (
 export const getTickets = async (
     page: number, limit: number
 ) : Promise<SupportTicketLocal[]> => {
-    await delay(100);
+    try {
+        const response = await api.get("/support/questions/");
+        const tickets = Array.isArray(response.data)
+            ? response.data.map(mapSupportTicket)
+            : [];
 
-    const allTickets = getSupportTickets();
-
-    const start = (page - 1) * limit;
-    const end = start + limit;
-
-    return allTickets.slice(start, end);
+        const start = (page - 1) * limit;
+        return tickets.slice(start, start + limit);
+    } catch (error) {
+        handleApiError(error);
+    }
 }
+
+export const getTicketById = async (
+  ticketId: string
+): Promise<SupportTicketLocal> => {
+  try {
+    const response = await api.get(`/support/questions/${ticketId}/`);
+    return mapSupportTicket(response.data);
+  } catch (error) {
+    handleApiError(error);
+  }
+};
 
 export const updateTicket = async (
   ticketId: string,
@@ -63,164 +69,63 @@ export const updateTicket = async (
     content: string;
   }
 ): Promise<SupportTicketLocal> => {
-  await delay(100);
-
-  const tickets = getSupportTickets();
-
-  const supportMessage: TicketMessage = {
-    id: crypto.randomUUID(),
-    senderId: reply.senderId,
-    senderName: reply.senderName,
-    senderRole: "support",
-    content: reply.content,
-    timestamp: new Date().toLocaleString(),
-  };
-
-  const updatedTickets = tickets.map(ticket => {
-    if (ticket.id !== ticketId) return ticket;
-
-    return {
-      ...ticket,
-      status: "Replied" as const,
-      messages: [...ticket.messages, supportMessage],
-    };
-  });
-
-  saveSupportTickets(updatedTickets);
-
-  const updated = updatedTickets.find(t => t.id === ticketId)!;
-
-  // Push notification
-  const notifications = getNotifications();
-
-  notifications.push({
-    id: crypto.randomUUID(),
-    userId: updated.messages.find(m => m.senderRole === "user")!.senderId,
-    content: `Your support question has been answered.
-
-Question:
-${updated.subject}
-
-Reply:
-${reply.content}`,
-    status: "unread",
-    type: "AQ",
-    createdAt: new Date()
-  });
-
-  saveNotifications(notifications);
-
-  return updated;
+  try {
+    const response = await api.patch(`/support/questions/${ticketId}/`, {
+      message: reply.content,
+    });
+    return mapSupportTicket(response.data);
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
 // audit records
 export const getAudits = async (
     page: number, limit: number
 ) : Promise<AuditingRecord[]> => {
-    await delay(100);
+    try {
+        const response = await api.get("/support/audits/");
+        const audits = Array.isArray(response.data)
+            ? response.data.map(mapAuditingRecord)
+            : [];
 
-    const allAuditS = getAuditingRecords();
-
-    const start = (page - 1) * limit;
-    const end = start + limit;
-
-    return allAuditS.slice(start, end);
+        const start = (page - 1) * limit;
+        return audits.slice(start, start + limit);
+    } catch (error) {
+        handleApiError(error);
+    }
 }
 
 export const updateAuditRecord = async (
     recordId: string
-) : Promise<void> => {
-    
-    const allAudits = getAuditingRecords();
-    
-    const updatedAudits = allAudits.map(rec =>
-        rec.id === recordId
-            ? { ...rec, paymentStatus: 'Settled' as const }
-            : rec
-    );
-    
-    saveAuditingRecords(updatedAudits);
-    
-    const record = updatedAudits.find(a => a.id === recordId)!;
+) : Promise<AuditingRecord> => {
+    try {
+        const response = await api.patch(`/support/audits/${recordId}/`);
+        return mapAuditingRecord(response.data);
+    } catch (error) {
+        handleApiError(error);
+    }
+};
 
-    // Push notification
-    const notifications = getNotifications();
-
-    notifications.push({
-        id: crypto.randomUUID(),
-        userId: record.artistId,
-        content: `Your monthly payout has been completed.
-
-Performance Summary
-• Total Streams: ${record.totalStreams}
-• Unique Listeners: ${record.uniqueListeners}
-
-$${record.calculatedReward.toFixed(2)} has been transferred to your account. Thank you for being part of the platform!`,
-        status: "unread",
-        type: "AT",
-        createdAt: new Date()
-    });
-
-    saveNotifications(notifications);
-}
-
-// Admin specific info
-export const getUserDistribution = async () => {
-  await delay(100);
-
-  const users = getUsers();
-  const subscriptions = getSubscriptions();
-
-  const basic = users.filter(u => u.subscriptionType === "basic").length;
-  const silver = users.filter(u => u.subscriptionType === "silver").length;
-  const gold = users.filter(u => u.subscriptionType === "gold").length;
-
-  const total = users.length;
-
-  const silverPrice = parseFloat(
-    subscriptions.find(t => t.id === "silver")?.price.replace("$", "") ?? "0"
-  );
-
-  const goldPrice = parseFloat(
-    subscriptions.find(t => t.id === "gold")?.price.replace("$", "") ?? "0"
-  );
-
-  return {
-    totalUsers: total,
-
-    activePremiumUsers: silver + gold,
-
-    monthlyGrossRevenue:
-      silver * silverPrice +
-      gold * goldPrice,
-
-    distribution: [
-      {
-        tier: "Free Tier",
-        count: basic,
-        percentage: total ? Math.round((basic / total) * 100) : 0,
-        color: "bg-neutral-700",
-      },
-      {
-        tier: "Silver Premium",
-        count: silver,
-        percentage: total ? Math.round((silver / total) * 100) : 0,
-        color: "bg-neutral-400",
-      },
-      {
-        tier: "Gold Premium",
-        count: gold,
-        percentage: total ? Math.round((gold / total) * 100) : 0,
-        color: "bg-yellow-500",
-      },
-    ],
-  };
+// analytics and subscriptions
+export const getUserDistribution = async (): Promise<AnalyticsData> => {
+  try {
+    const response = await api.get("/support/analytics/");
+    return mapAnalyticsData(response.data);
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
 export const getSubscriptionSettings = async (): Promise<SubscriptionTier[]> => {
-  await delay(100);
-
-  return getSubscriptions();
+  try {
+    const response = await api.get("/subscriptions/");
+    return Array.isArray(response.data)
+      ? response.data.map(mapSubscriptionTier)
+      : [];
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
 export const updateSubscriptionSettings = async (
@@ -228,21 +133,23 @@ export const updateSubscriptionSettings = async (
     id: SubscriptionType;
     price: string;
   }[]
-): Promise<void> => {
-  await delay(100);
+): Promise<SubscriptionTier[]> => {
+  try {
+    const payload: Record<string, string> = {};
+    updates.forEach(update => {
+      const priceValue = update.price.replace("$", "");
+      if (update.id === "silver") {
+        payload.silver_price = priceValue;
+      } else if (update.id === "gold") {
+        payload.gold_price = priceValue;
+      }
+    });
 
-  const subscriptions = getSubscriptions();
-
-  const updatedSubscriptions = subscriptions.map(sub => {
-    const update = updates.find(u => u.id === sub.id);
-
-    if (!update) return sub;
-
-    return {
-      ...sub,
-      price: update.price,
-    };
-  });
-
-  saveSubscriptions(updatedSubscriptions);
+    const response = await api.patch("/subscriptions/", payload);
+    return Array.isArray(response.data)
+      ? response.data.map(mapSubscriptionTier)
+      : [];
+  } catch (error) {
+    handleApiError(error);
+  }
 };

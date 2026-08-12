@@ -155,6 +155,18 @@ export type TicketStatus = 'Open' | 'Replied' | 'Closed';
 export type PaymentStatus = 'Pending Payment' | 'Settled';
 export type TabState = 'verification' | 'tickets' | 'auditing' | 'settings';
 
+export interface AnalyticsData {
+  totalUsers: number;
+  activePremiumUsers: number;
+  monthlyGrossRevenue: number;
+  distribution: {
+    tier: string;
+    count: number;
+    percentage: number;
+    color?: string;
+  }[];
+}
+
 export interface ArtistApplicationTicket {
   id: string;
   userId: string;

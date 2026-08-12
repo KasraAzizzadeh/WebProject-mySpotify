@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { useSupportTickets } from '@/hooks/queries/support/useSupportTickets';
+import { useSupportTicket } from '@/hooks/queries/support/useSupportTicket';
 import { useUpdateSupportTicket } from '@/hooks/queries/support/useUpdateSupportTicket';
-import { SupportTicketLocal, TicketStatus, UserProfile } from '@/types';
+import { TicketStatus, UserProfile } from '@/types';
 import { X, CheckCircle, MessageSquarePlus } from 'lucide-react';
 
 const LIMIT = 20;
@@ -11,7 +12,7 @@ const LIMIT = 20;
 export default function TicketsTab({user} : {user: UserProfile}) {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [ticketReply, setTicketReply] = useState('');
-  const [page, setPage] = useState(1);
+  const [page] = useState(1);
 
   const {
     data: tickets = [],
@@ -19,9 +20,14 @@ export default function TicketsTab({user} : {user: UserProfile}) {
     error,
   } = useSupportTickets(page, LIMIT);
 
-  const selectedTicket = tickets.find(t => t.id === selectedTicketId)
+  const {
+    data: selectedTicket,
+    isLoading: isTicketLoading,
+    error: ticketError,
+  } = useSupportTicket(selectedTicketId);
 
   const updateTicket = useUpdateSupportTicket();
+  const mutationError = updateTicket.error as Error | null;
 
   const handleReply = () => {
     if (!selectedTicket || !ticketReply.trim())
@@ -36,10 +42,9 @@ export default function TicketsTab({user} : {user: UserProfile}) {
       }
     }, {
       onSuccess: () => {
-            setTicketReply("");
-        },
-    }
-  )
+        setTicketReply("");
+      },
+    });
   }
 
   if (isLoading) {
@@ -56,6 +61,22 @@ export default function TicketsTab({user} : {user: UserProfile}) {
               Failed to load tickets.
           </div>
       );
+  }
+
+  if (selectedTicketId && isTicketLoading) {
+    return (
+      <div className="p-8 text-center text-neutral-400">
+        Loading ticket details...
+      </div>
+    );
+  }
+
+  if (selectedTicketId && ticketError) {
+    return (
+      <div className="p-8 text-center text-red-400">
+        Failed to load ticket details.
+      </div>
+    );
   }
 
   if (selectedTicket) {
@@ -93,9 +114,15 @@ export default function TicketsTab({user} : {user: UserProfile}) {
             </span>
           </div>
           <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed whitespace-pre-wrap">
-            {originalInquiry?.content || "No message body provided."}
+            {originalInquiry?.content || 'No message body provided.'}
           </p>
         </div>
+
+        {updateTicket.isError && (
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+            {(mutationError && mutationError.message) || 'Unable to submit response. Please try again.'}
+          </div>
+        )}
 
         {isAnswered ? (
           <div className="bg-neutral-950 border border-neutral-900 rounded-2xl p-5 sm:p-6 relative">
@@ -105,7 +132,7 @@ export default function TicketsTab({user} : {user: UserProfile}) {
               <span className="sm:ml-auto text-[9px] font-normal text-neutral-500 font-mono">{officialAnswer?.timestamp}</span>
             </div>
             <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed whitespace-pre-wrap italic">
-              "{officialAnswer?.content || "This ticket has been locked and marked resolved."}"
+              {officialAnswer?.content || 'This ticket has been locked and marked resolved.'}
             </p>
           </div>
         ) : (

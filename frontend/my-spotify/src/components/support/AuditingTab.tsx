@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { useAuditRecords } from '@/hooks/queries/support/useAuditRecords';
 import { useUpdateAuditRecord } from '@/hooks/queries/support/useUpdateAuditRecord';
-import { AuditingRecord } from '@/types';
 import { Lock } from 'lucide-react';
 import Message from '@/components/ui/Message';
 import Button from '@/components/ui/Button';
@@ -18,7 +17,7 @@ export default function AuditingTab({
   isSystemAdmin,
 }: AuditingTabProps) {
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
+  const [page] = useState(1);
 
   const {
     data: auditingRecords = [],
@@ -27,6 +26,7 @@ export default function AuditingTab({
   } = useAuditRecords(page, LIMIT);
 
   const updateAudit = useUpdateAuditRecord();
+  const mutationError = updateAudit.error as Error | null;
 
   const handleConfirmSettlement = () => {
     if (!selectedRecordId)
@@ -38,7 +38,7 @@ export default function AuditingTab({
       onSuccess: () => {
         setSelectedRecordId(null);
       }
-    })
+    });
   };
 
   if (isLoading) {
@@ -69,6 +69,11 @@ export default function AuditingTab({
       </div>
 
       <div className="bg-[#121212] border border-neutral-800/50 rounded-2xl overflow-hidden">
+        {updateAudit.isError && (
+          <div className="p-4 text-sm text-red-300 bg-red-500/10 border border-red-500/20">
+            {mutationError?.message ?? 'Unable to confirm settlement. Please try again.'}
+          </div>
+        )}
         <table className="w-full text-left text-sm text-neutral-400 table-fixed">
           <thead className="bg-neutral-900/50 text-xs uppercase font-semibold text-neutral-500 border-b border-neutral-800/50">
             <tr>

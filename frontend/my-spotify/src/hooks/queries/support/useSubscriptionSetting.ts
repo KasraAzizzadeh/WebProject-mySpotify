@@ -5,6 +5,6 @@ export function useSubscriptionSettings() {
   return useQuery({
     queryKey: ["subscriptionSettings"],
     queryFn: getSubscriptionSettings,
-    staleTime: 1000 * 60 & 5,
+    staleTime: 1000 * 60 * 5,
   });
 }

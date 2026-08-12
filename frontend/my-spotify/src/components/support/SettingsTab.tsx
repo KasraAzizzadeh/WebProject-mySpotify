@@ -12,6 +12,8 @@ export default function SettingsTab() {
   const [isEditingPrices, setIsEditingPrices] = useState(false);
   const [silverPrice, setSilverPrice] = useState('');
   const [goldPrice, setGoldPrice] = useState('');
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const initializedRef = useRef(false);
 
   const {
     data: analytics,
@@ -28,8 +30,9 @@ export default function SettingsTab() {
   const updateSubscriptions = useUpdateSubscriptions();
 
   useEffect(() => {
-    if (!subscriptions.length) return;
+    if (!subscriptions.length || initializedRef.current) return;
 
+    initializedRef.current = true;
     setSilverPrice(
       subscriptions.find(s => s.id === "silver")?.price.replace("$", "") ?? ""
     );
@@ -66,6 +69,7 @@ export default function SettingsTab() {
   }, []);
 
   const handleSave = () => {
+    setMutationError(null);
     updateSubscriptions.mutate(
       [
         {
@@ -80,6 +84,9 @@ export default function SettingsTab() {
       {
         onSuccess: () => {
           setIsEditingPrices(false);
+        },
+        onError: (err) => {
+          setMutationError((err as Error)?.message ?? "Failed to update subscription prices");
         },
       }
     );
@@ -271,14 +278,22 @@ export default function SettingsTab() {
               </p>
             </div>
 
+            {mutationError && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                <p className="text-xs text-red-400 font-medium">
+                  {mutationError}
+                </p>
+              </div>
+            )}
+
             <div className="space-y-5">
               <Input
                 label="Silver Tier Pricing ($ / Month)"
                 type="text"
                 value={silverPrice}
                 onChange={(e) => setSilverPrice(e.target.value)}
-                disabled={!isEditingPrices}
-                className={!isEditingPrices ? 'opacity-60 text-neutral-400 cursor-not-allowed' : ''}
+                disabled={!isEditingPrices || updateSubscriptions.isPending}
+                className={!isEditingPrices || updateSubscriptions.isPending ? 'opacity-60 text-neutral-400 cursor-not-allowed' : ''}
               />
 
               <Input
@@ -286,8 +301,8 @@ export default function SettingsTab() {
                 type="text"
                 value={goldPrice}
                 onChange={(e) => setGoldPrice(e.target.value)}
-                disabled={!isEditingPrices}
-                className={!isEditingPrices ? 'opacity-60 text-neutral-400 cursor-not-allowed' : ''}
+                disabled={!isEditingPrices || updateSubscriptions.isPending}
+                className={!isEditingPrices || updateSubscriptions.isPending ? 'opacity-60 text-neutral-400 cursor-not-allowed' : ''}
               />
             </div>
 
@@ -298,6 +313,7 @@ export default function SettingsTab() {
                     variant="secondary"
                     onClick={() => setIsEditingPrices(false)}
                     className="py-2.5 text-xs font-bold"
+                    disabled={updateSubscriptions.isPending}
                   >
                     Cancel
                   </Button>
@@ -305,8 +321,9 @@ export default function SettingsTab() {
                     variant="primary"
                     onClick={handleSave}
                     className="py-2.5 text-xs font-bold"
+                    disabled={updateSubscriptions.isPending}
                   >
-                    Save Prices
+                    {updateSubscriptions.isPending ? 'Saving...' : 'Save Prices'}
                   </Button>
                 </div>
               ) : (

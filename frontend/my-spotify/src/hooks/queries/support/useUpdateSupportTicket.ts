@@ -20,10 +20,9 @@ export function useUpdateSupportTicket() {
       reply,
     }: UpdateTicketMutation) => updateTicket(ticketId, reply),
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["supportTickets"],
-      });
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["supportTickets"] });
+      queryClient.invalidateQueries({ queryKey: ["supportTicket", variables.ticketId] });
     },
   });
 }
