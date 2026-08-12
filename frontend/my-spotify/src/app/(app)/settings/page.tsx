@@ -19,7 +19,7 @@ import { useUserProfile } from '@/hooks/queries/user/useUserProfile';
 type ModalState = 'none' | 'delete' | 'plans' | 'save_success';
 
 export default function SettingsPage() {
-  const { user: authUser, deleteUser } = useAuth() as any;
+  const { user: authUser, deleteUser } = useAuth();
   const router = useRouter();
 
   const [successDescription, setSuccessDescription] = useState('');
@@ -48,6 +48,17 @@ export default function SettingsPage() {
     return (
       <div className="h-screen flex items-center justify-center text-red-400 text-sm bg-[#121212]">
         Failed to load user profile.
+      </div>
+    );
+  }
+
+  // If the user session has been cleared (e.g., after delete) ensure we don't render
+  // components that expect a non-null user. The AuthContext.deleteUser performs a
+  // router.push('/login'), but render can continue briefly — guard against null.
+  if (!userToUse) {
+    return (
+      <div className="h-screen flex items-center justify-center text-neutral-500 text-sm bg-[#121212]">
+        Redirecting...
       </div>
     );
   }
@@ -137,7 +148,7 @@ export default function SettingsPage() {
                 Need Help?
               </p>
               <p className="text-xs text-neutral-400 mt-1 max-w-md">
-                Send a question to our support team and we'll get back to you as soon as possible.
+                Send a question to our support team and we will get back to you as soon as possible.
               </p>
             </div>
 

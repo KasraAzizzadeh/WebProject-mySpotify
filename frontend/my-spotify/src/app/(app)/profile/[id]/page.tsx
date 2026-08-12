@@ -181,39 +181,27 @@ export default function ProfilePage() {
 
     setFollowLoading(true);
     try {
-      const rawUsers = localStorage.getItem('app_users');
-      if (!rawUsers) return;
-
-      const parsedUsers = JSON.parse(rawUsers);
-
-      const targetUserIndex = parsedUsers.findIndex((u: any) => u.id === dbUser.id);
-      const authUserIndex = parsedUsers.findIndex((u: any) => u.id === authUser.id);
-
-      if (targetUserIndex === -1 || authUserIndex === -1) return;
-
-      let updatedTargetFollowers = [...(parsedUsers[targetUserIndex].followers || [])];
-      let updatedAuthFollowing = [...(parsedUsers[authUserIndex].following || [])];
-
       if (isFollowing) {
-        updatedTargetFollowers = updatedTargetFollowers.filter(id => id !== authUser.id);
-        updatedAuthFollowing = updatedAuthFollowing.filter(id => id !== dbUser.id);
+        await userService.unfollowUser(targetUserId);
       } else {
-        if (!updatedTargetFollowers.includes(authUser.id)) updatedTargetFollowers.push(authUser.id);
-        if (!updatedAuthFollowing.includes(dbUser.id)) updatedAuthFollowing.push(dbUser.id);
+        await userService.followUser(targetUserId);
       }
 
-      parsedUsers[targetUserIndex].followers = updatedTargetFollowers;
-      parsedUsers[authUserIndex].following = updatedAuthFollowing;
-      localStorage.setItem('app_users', JSON.stringify(parsedUsers));
+      // Refresh the target user's profile and the auth user's profile in cache
+      const refreshedTarget = await userService.getUserProfile(targetUserId);
+      setDbUser(refreshedTarget ?? null);
+      setIsFollowing(refreshedTarget?.followers?.includes(authUser.id) ?? false);
 
-      setDbUser(prev => prev ? { ...prev, followers: updatedTargetFollowers } : null);
-      setIsFollowing(!isFollowing);
+      // invalidate TanStack queries so other UI updates (settings/profile) refresh
+      queryClient.invalidateQueries({ queryKey: ['user-profile', targetUserId] });
+      if (authUser?.id) queryClient.invalidateQueries({ queryKey: ['user-profile', authUser.id] });
 
-      if (refreshUser) {
-        await refreshUser();
+      // if an auth refresh helper exists, call it
+      if (typeof (refreshUser as any) === 'function') {
+        await (refreshUser as any)();
       }
     } catch (err) {
-      console.error("Critical issue toggling following metrics: ", err);
+      console.error('Critical issue toggling following metrics: ', err);
     } finally {
       setFollowLoading(false);
     }

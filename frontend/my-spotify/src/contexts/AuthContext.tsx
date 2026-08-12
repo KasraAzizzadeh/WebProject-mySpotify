@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserProfile } from "@/types";
+import api, { handleApiError } from '@/services/api';
 
 type AuthContextType = {
   user: UserProfile | null;
@@ -73,17 +74,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 };
 
   const deleteUser = async () => {
+    try {
+      // attempt server-side delete if we have an authenticated user id
+      if (user?.id) {
+        await api.delete(`/accounts/${user.id}/`);
+      }
+    } catch (error) {
+      // surface server errors to caller
+      handleApiError(error);
+    }
+
+    // Clear local session state
     setUser(null);
     setAccessToken(null);
     setRefreshToken(null);
-    
+
     localStorage.removeItem("user");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("setting_notification_limit");
     localStorage.removeItem("setting_system_voice");
     localStorage.removeItem("setting_interface_language");
-    
+
     router.push("/login");
   };
 

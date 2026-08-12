@@ -93,10 +93,29 @@ export const userService = {
   },
 
   async submitTicket(userId: string, question: string): Promise<void> {
-    const response = await api.post('/support/tickets/', {
-      userId,
-      question,
-    });
-    return response.data;
+    try {
+      const response = await api.post('/support/questions/', {
+        message: question,
+      });
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  async followUser(userId: string): Promise<void> {
+    try {
+      await api.post(`/accounts/${userId}/follow/`);
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  async unfollowUser(userId: string): Promise<void> {
+    try {
+      await api.delete(`/accounts/${userId}/follow/`);
+    } catch (error) {
+      handleApiError(error);
+    }
   },
 };
