@@ -1,4 +1,4 @@
-import { PlaylistItem, SongItem } from "@/types";
+import { PlaylistItem, SongItem, AlbumItem, DiscoverFilter } from "@/types";
 import { getUsers } from "@/store/mockDb";
 import { getMediaUrl } from "@/services/api";
 
@@ -92,3 +92,18 @@ export function mapAlbum(data: any): AlbumItem {
         songList: (data.songList ?? data.song_list ?? []).map(String),
     };
 }
+
+export const getBackendFilter = (
+    filter: DiscoverFilter,
+    type: "songs" | "albums" | "playlists"
+) => {
+    if (filter === "latest") return "newest";
+    if (filter === "oldest") return "oldest";
+
+    if (filter === "most-streamed") {
+        if (type === "albums") return "stream";
+        if (type === "songs") return "streams";
+    }
+
+    return undefined;
+};

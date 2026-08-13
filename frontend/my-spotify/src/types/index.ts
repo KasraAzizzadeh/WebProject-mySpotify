@@ -1,6 +1,7 @@
 export type UserRole = 'listener' | 'artist' | 'supporter' | 'admin';
 export type SubscriptionType = 'basic' | 'silver' | 'gold';
 export type VerificationStatus = "pending" | "approved" | "rejected";
+export type DiscoverFilter = "latest" | "most-streamed" | "oldest";
 export type ApiValidationErrors = Record<string, string | string[]>;
 
 export interface UserProfile {
@@ -106,8 +107,6 @@ export interface ArtistDashboard {
   releases: AlbumItem[];
   songs: SongItem[];
 }
-
-export type DiscoverFilter = "latest" | "most-streamed" | "oldest";
 
 export interface PlaybackSource {
   type: 'album' | 'playlist' | 'single';

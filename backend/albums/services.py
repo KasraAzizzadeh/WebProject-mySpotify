@@ -99,7 +99,10 @@ def delete_album(pk):
 
 def get_songs_for_album(pk):
     album = get_album(pk)
-    return Song.objects.filter(album=album).select_related("artist__owner", "album").order_by("track_number")
+    return (Song.objects.filter(album=album)
+            .select_related("artist__owner", "album")
+            .prefetch_related("genre", "collaborators__owner")
+            .order_by("track_number"))
 
 
 def compute_listeners_count(album):

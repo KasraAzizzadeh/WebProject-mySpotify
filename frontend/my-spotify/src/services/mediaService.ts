@@ -1,17 +1,20 @@
 import { getAlbums, getSongs, getPlaylists, getUsers, savePlaylists, saveSongs , saveUsers } from "@/store/mockDb";
 import { AlbumItem, SongItem, PlaylistItem, DiscoverData, DiscoverFilter, PlaybackSource } from "@/types";
-import { isSameDay, mapPlaylist, mapSong } from "@/utils/mediaUtils";
+import { getBackendFilter, isSameDay, mapAlbum, mapPlaylist, mapSong } from "@/utils/mediaUtils";
 import api from "@/services/api"
 import { handleApiError } from "@/services/api";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const getAlbumById = async (albumId: string) : Promise<AlbumItem> => {
-    await delay(100);
-    const allAlbums = getAlbums();
-    const album = allAlbums.find(al => al.id === albumId);
-    if (!album) throw new Error("Sorry no such album exists");
-    return album;
+  try {
+    const response = await api.get(
+      `/albums/${albumId}/`
+    );
+    return mapAlbum(response.data);
+  } catch (error) {
+    handleApiError(error)
+  }
 }
 
 export const getSongById = async (songId: string) : Promise<SongItem> => {
@@ -23,10 +26,14 @@ export const getSongById = async (songId: string) : Promise<SongItem> => {
 }
 
 export const getSongsByAlbumId = async (albumId: string): Promise<SongItem[]> => {
-  await delay(100);
-  const album = await getAlbumById(albumId);
-  const songs = await Promise.all(album.songList.map((songId) => getSongById(songId)));
-  return songs.filter((song): song is SongItem => song != null);
+  try {
+    const response = await api.get(
+      `/albums/${albumId}/songs/`
+    );
+    return response.data.map(mapSong)
+  } catch (error) {
+    handleApiError(error)
+  }
 };
 
 export const getPlaylistById = async (playlistId: string): Promise<PlaylistItem> => {
@@ -103,81 +110,60 @@ export const removeSongFromPlaylist = async (songId: string, playlistId: string)
   }
 };
 
-export const getMediaData = async (
+export const discoverSongs = async (
   query: string,
   filter: DiscoverFilter = "latest"
-): Promise<DiscoverData> => {
-  await delay(100);
+): Promise<SongItem[]> => {
+  try {
+    const response = await api.get("/songs/", {
+      params: {
+        query: query || undefined,
+        filter: getBackendFilter(filter, "songs")
+      },
+    });
 
-  let songs = getSongs();
-  // don't show singles in album section
-  let albums = getAlbums().filter(a => a.songList.length > 1);
-  let playlists = getPlaylists();
-
-  if (query.trim()) {
-    const search = query.toLowerCase();
-
-    songs = songs.filter(
-      (song) =>
-        song.title.toLowerCase().includes(search) ||
-        song.artistName.toLowerCase().includes(search)
-    );
-
-    albums = albums.filter(
-      (album) =>
-        album.name.toLowerCase().includes(search) ||
-        album.artistName.toLowerCase().includes(search)
-    );
-
-    playlists = playlists.filter((playlist) =>
-      playlist.name.toLowerCase().includes(search)
-    );
+    return response.data.map(mapSong);
+  } catch (error) {
+    handleApiError(error);
   }
-  
-  switch (filter) {
-    case "latest":
-      songs.sort(
-        (a, b) =>
-          new Date(b.releaseDate).getTime() -
-          new Date(a.releaseDate).getTime()
-      );
+};
 
-      albums.sort(
-        (a, b) =>
-          new Date(b.releaseDate).getTime() -
-          new Date(a.releaseDate).getTime()
-      );
+export const discoverAlbums = async (
+  query: string,
+  filter: DiscoverFilter = "latest"
+): Promise<AlbumItem[]> => {
+  try {
+    const response = await api.get("/albums/", {
+      params: {
+        query: query || undefined,
+        filter: getBackendFilter(filter, "albums")
+      },
+    });
 
-      break;
-
-    case "oldest":
-      songs.sort(
-        (a, b) =>
-          new Date(a.releaseDate).getTime() -
-          new Date(b.releaseDate).getTime()
-      );
-
-      albums.sort(
-        (a, b) =>
-          new Date(a.releaseDate).getTime() -
-          new Date(b.releaseDate).getTime()
-      );
-
-      break;
-
-    case "most-streamed":
-      songs.sort((a, b) => b.streams - a.streams);
-
-      albums.sort((a, b) => b.listeners - a.listeners);
-
-      break;
+    return response.data
+      .filter((album: any) => (album.song_list ?? album.songList ?? []).length > 1)
+      .map(mapAlbum);
+  } catch (error) {
+    handleApiError(error);
   }
+};
 
-  return {
-    songs: songs.slice(0, 50),
-    albums: albums.slice(0, 50),
-    playlists: playlists.slice(0, 50),
-  };
+export const discoverPlaylists = async (
+  query: string,
+  filter: DiscoverFilter = "latest"
+): Promise<PlaylistItem[]> => {
+  try {
+    const response = await api.get("/playlists/", {
+      params: {
+        query: query || undefined,
+        filter: getBackendFilter(filter, "playlists")
+      },
+    });
+
+    return response.data.map(mapPlaylist);
+  } catch (error) {
+    handleApiError(error);
+  }
 };
 
 export const updatePlaylist = async (
