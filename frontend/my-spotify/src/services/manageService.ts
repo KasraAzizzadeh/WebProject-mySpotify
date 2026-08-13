@@ -12,68 +12,36 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export async function getArtistDashboard(
   userId: string
 ): Promise<ArtistDashboard> {
-  await delay(100);
+  try {
+    // Fetch user profile (includes artistProfile totals)
+    const user = await userService.getUserProfile(userId);
 
-  const user = await userService.getUserProfile(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
 
-  if (!user) {
-    throw new Error("User not found");
+    // Fetch artist albums and songs from backend
+    const [albumsResp, songsResp] = await Promise.all([
+      api.get(`/accounts/${userId}/albums/`),
+      api.get(`/accounts/${userId}/songs/`),
+    ]);
+
+    const releases: AlbumItem[] = Array.isArray(albumsResp.data)
+      ? albumsResp.data.map(mapAlbum)
+      : [];
+
+    const userSongs: SongItem[] = Array.isArray(songsResp.data)
+      ? songsResp.data.map(mapSong)
+      : [];
+
+    return {
+      user,
+      releases,
+      songs: userSongs,
+    };
+  } catch (error) {
+    handleApiError(error);
   }
-
-  const allAlbums = getAlbums();
-  const allSongs = getSongs();
-
-  const albumIds = user.artistProfile?.albums ?? [];
-  const singleIds = user.artistProfile?.singles ?? [];
-
-  // Albums owned by artist
-  const userAlbums = allAlbums.filter(album =>
-    albumIds.includes(album.id)
-  );
-
-  // Songs inside albums
-  const albumSongIds = userAlbums.flatMap(album =>
-    album.songList ?? []
-  );
-
-  const targetSongIds = [
-    ...new Set([
-      ...singleIds,
-      ...albumSongIds,
-    ]),
-  ];
-
-  const userSongs = allSongs.filter(song =>
-    targetSongIds.includes(song.id)
-  );
-
-  // Build virtual albums for singles
-  const virtualSingles: AlbumItem[] = allSongs
-    .filter(song => singleIds.includes(song.id))
-    .map(song => ({
-      id: song.id,
-      name: song.title,
-      artistName: song.artistName,
-      artistId: song.artistId,
-      listeners: 0,
-      releaseDate: song.releaseDate,
-      releaseType: "single",
-      genre: song.genre,
-      collaborators: song.collaborators,
-      imageUrl: song.imageUrl,
-      songList: [song.id],
-    }));
-
-  const releases = [...userAlbums, ...virtualSingles].filter(
-    (release, index, self) =>
-      index === self.findIndex(r => r.id === release.id)
-  );
-
-  return {
-    user,
-    releases,
-    songs: userSongs,
-  };
 }
 
 export async function createRelease(
@@ -154,110 +122,101 @@ export async function updateRelease(
   newImageFile?: File,
   updatedTracks?: TrackEditData[]
 ): Promise<void> {
-  await delay(100);
+  try {
+    // Update album attributes first
+    const albumId = updatedRelease.id;
 
-  let updatedImageUrl = updatedRelease.imageUrl;
+    if (newImageFile) {
+      const form = new FormData();
+      if (updatedRelease.name) form.append('title', updatedRelease.name);
+      if (updatedRelease.genre !== undefined && updatedRelease.genre !== null) form.append('genre', String(updatedRelease.genre));
+      form.append('cover_image', newImageFile);
 
-  if (newImageFile) {
-    updatedImageUrl = `/covers/${newImageFile.name}`;
-  }
+      await api.patch(`/albums/${albumId}/`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    } else {
+      const body: any = {};
+      if (updatedRelease.name) body.title = updatedRelease.name;
+      if (updatedRelease.genre !== undefined && updatedRelease.genre !== null) body.genre = updatedRelease.genre;
 
-  const finalRelease: AlbumItem = {
-    ...updatedRelease,
-    imageUrl: updatedImageUrl,
-  };
-
-  const albums = getAlbums().map(album =>
-    album.id === finalRelease.id
-      ? finalRelease
-      : album
-  );
-
-  if (!albums.some(album => album.id === finalRelease.id)) {
-    albums.push(finalRelease);
-  }
-
-  saveAlbums(albums);
-
-  const songs = getSongs();
-  const updatedSongs: SongItem[] = [];
-
-  for (const song of songs) {
-    const trackUpdate = updatedTracks?.find(
-      t => t.id === song.id
-    );
-
-    if (trackUpdate) {
-      let audioUrl = song.audioUrl;
-
-      if (trackUpdate.audioFile) {
-        audioUrl = `/songs/${trackUpdate.audioFile.name}`;
+      // Only send body if there's something to update
+      if (Object.keys(body).length > 0) {
+        await api.patch(`/albums/${albumId}/`, body);
       }
-
-      updatedSongs.push({
-        ...song,
-        title: trackUpdate.title,
-        lyrics: trackUpdate.lyrics,
-        audioUrl,
-        albumName: finalRelease.name,
-        genre: finalRelease.genre,
-        imageUrl: updatedImageUrl ?? song.imageUrl,
-      });
-      continue;
     }
 
-    if (
-      finalRelease.releaseType === "single" &&
-      song.id === finalRelease.id
-    ) {
-      updatedSongs.push({
-        ...song,
-        title: finalRelease.name,
-        albumName: finalRelease.name,
-        genre: finalRelease.genre,
-        imageUrl: updatedImageUrl ?? song.imageUrl,
-      });
-      continue;
+    // Update songs (if any updates provided)
+    if (Array.isArray(updatedTracks) && updatedTracks.length > 0) {
+      for (const t of updatedTracks) {
+        const songId = t.id;
+        try {
+          if (t.audioFile) {
+            const sf = new FormData();
+            if (t.title) sf.append('title', t.title);
+            if (t.lyrics) sf.append('lyrics', t.lyrics);
+            sf.append('audio_file', t.audioFile);
+            await api.patch(`/songs/${songId}/`, sf, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+          } else {
+            const body: any = {};
+            if (t.title) body.title = t.title;
+            if (t.lyrics !== undefined) body.lyrics = t.lyrics;
+            if (Object.keys(body).length > 0) {
+              await api.patch(`/songs/${songId}/`, body);
+            }
+          }
+        } catch (err) {
+          // surface error with consistent handler
+          handleApiError(err);
+          throw err;
+        }
+      }
     }
 
-    if (song.albumId === finalRelease.id) {
-      updatedSongs.push({
-        ...song,
-        albumName: finalRelease.name,
-        genre: finalRelease.genre,
-        imageUrl: updatedImageUrl ?? song.imageUrl,
-      });
-      continue;
-    }
-
-    updatedSongs.push(song);
+    // Optionally the caller can invalidate queries (handled by callers/hooks)
+    return;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
   }
-
-  saveSongs(updatedSongs);
 }
 
 export const deleteRelease = async (
   userId: string,
   releaseId: string
 ): Promise<void> => {
-  await delay(100);
+  try {
+    // Fetch album details to obtain song list (backend shape may vary)
+    const albumResp = await api.get(`/albums/${releaseId}/`);
+    const albumData = albumResp.data;
+    const songIds: string[] = Array.isArray(albumData.song_list)
+      ? albumData.song_list.map(String)
+      : Array.isArray(albumData.songList)
+        ? albumData.songList.map(String)
+        : Array.isArray(albumData.songs)
+          ? albumData.songs.map((s: any) => String(s.id ?? s))
+          : [];
 
-  deleteReleaseAndSongs(releaseId);
+    // Delete songs first
+    for (const sid of songIds) {
+      try {
+        await api.delete(`/songs/${sid}/`);
+      } catch (err) {
+        // if a song delete fails, surface error
+        handleApiError(err);
+        throw err;
+      }
+    }
 
-  const users = getUsers();
+    // Delete album
+    await api.delete(`/albums/${releaseId}/`);
 
-  const updatedUsers = users.map(user => {
-    if (user.id !== userId) return user;
-
-    return {
-      ...user,
-      artistProfile: {
-        ...user.artistProfile!,
-        singles: user.artistProfile!.singles.filter(id => id !== releaseId),
-        albums: user.artistProfile!.albums.filter(id => id !== releaseId),
-      },
-    };
-  });
-
-  saveUsers(updatedUsers);
+    // Note: callers should invalidate queries / refresh state
+    return;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };

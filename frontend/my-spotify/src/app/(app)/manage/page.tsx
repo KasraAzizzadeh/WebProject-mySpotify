@@ -168,7 +168,7 @@ export default function ManagePage() {
             </div>
           ) : (
             <div className="divide-y divide-neutral-800/50">
-              {myReleases.map((release: AlbumItem) => {
+              {myReleases.slice().reverse().map((release: AlbumItem) => {
                 const releaseStreams = release.songList.reduce((sum: number, id: string) => {
                   const s = mySongs.find((song: SongItem) => song.id === id);
                   return sum + (s?.streams || 0);
@@ -206,7 +206,7 @@ export default function ManagePage() {
                             {release.name}
                           </h3>
                           <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 shrink-0">
-                            {release.releaseType || 'Album'}
+                                                      {release.releaseType ? (release.releaseType === 'single' ? 'Single' : 'Album') : 'Album'}
                           </span>
                         </div>
                         <p className="text-xs text-neutral-500 truncate mt-0.5">
