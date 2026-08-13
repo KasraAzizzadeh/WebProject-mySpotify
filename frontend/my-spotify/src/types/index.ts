@@ -29,6 +29,7 @@ interface ArtistProfile {
   albums: string[];
   totalStreams: number;
   uniqueListener?: number;
+  estRevenue?: number;
 }
 
 interface ListenerProfile {

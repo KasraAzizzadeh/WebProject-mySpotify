@@ -7,13 +7,11 @@ import { BarChart2, Headphones, DollarSign } from 'lucide-react';
 interface ArtistAnalyticsProps {
   myReleases: AlbumItem[];
   mySongs: SongItem[];
+  estimatedRevenue?: number;
 }
 
-export default function ArtistAnalytics({ myReleases, mySongs }: ArtistAnalyticsProps) {
-  const REVENUE_PER_STREAM = 0.004;
-
+export default function ArtistAnalytics({ myReleases, mySongs, estimatedRevenue = 0 }: ArtistAnalyticsProps) {
   const totalStreams = mySongs.reduce((sum, song) => sum + song.streams, 0);
-  const totalRevenue = totalStreams * REVENUE_PER_STREAM;
   const totalListeners = myReleases.reduce((sum, rel) => sum + rel.listeners, 0);
 
   return (
@@ -45,7 +43,7 @@ export default function ArtistAnalytics({ myReleases, mySongs }: ArtistAnalytics
         <div>
           <p className="text-xs font-bold text-neutral-500 uppercase">Est. Revenue</p>
           <p className="text-xl font-black text-white">
-            ${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            ${estimatedRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </p>
         </div>
       </div>

@@ -97,6 +97,7 @@ class ArtistProfileSerializer(serializers.ModelSerializer):
     albums = serializers.SerializerMethodField()
     total_streams = serializers.SerializerMethodField()
     unique_listeners = serializers.SerializerMethodField()
+    est_revenue = serializers.SerializerMethodField()
 
     class Meta:
         model = ArtistProfile
@@ -108,6 +109,7 @@ class ArtistProfileSerializer(serializers.ModelSerializer):
             "albums",
             "total_streams",
             "unique_listeners",
+            "est_revenue",
         )
 
     def get_songs(self, artist):
@@ -124,6 +126,10 @@ class ArtistProfileSerializer(serializers.ModelSerializer):
 
     def get_unique_listeners(self, artist):
         return get_artist_unique_listeners(artist)
+
+    def get_est_revenue(self, artist):
+        total_streams = get_artist_total_streams(artist)
+        return round(total_streams * 0.004, 2)
 
 
 class UserPublicArtistProfileSerializer(serializers.ModelSerializer):
@@ -132,6 +138,7 @@ class UserPublicArtistProfileSerializer(serializers.ModelSerializer):
     albums = serializers.SerializerMethodField()
     total_streams = serializers.SerializerMethodField()
     unique_listeners = serializers.SerializerMethodField()
+    est_revenue = serializers.SerializerMethodField()
 
     class Meta:
         model = ArtistProfile
@@ -143,6 +150,7 @@ class UserPublicArtistProfileSerializer(serializers.ModelSerializer):
             "albums",
             "total_streams",
             "unique_listeners",
+            "est_revenue",
         )
 
     def get_songs(self, artist):
@@ -159,6 +167,10 @@ class UserPublicArtistProfileSerializer(serializers.ModelSerializer):
 
     def get_unique_listeners(self, artist):
         return get_artist_unique_listeners(artist)
+
+    def get_est_revenue(self, artist):
+        total_streams = get_artist_total_streams(artist)
+        return round(total_streams * 0.004, 2)
 
 
 class ListenerProfileSerializer(serializers.Serializer):

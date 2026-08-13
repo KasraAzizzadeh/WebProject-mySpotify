@@ -120,6 +120,11 @@ export function mapAuthUser(data: Record<string, unknown> | null | undefined): U
                           : artistProfile.unique_listeners !== undefined
                               ? Number(artistProfile.unique_listeners)
                               : undefined,
+                      estRevenue: artistProfile.est_revenue !== undefined
+                          ? Number(artistProfile.est_revenue)
+                          : artistProfile.estRevenue !== undefined
+                              ? Number(artistProfile.estRevenue)
+                              : undefined,
                   }
                 : undefined,
     };

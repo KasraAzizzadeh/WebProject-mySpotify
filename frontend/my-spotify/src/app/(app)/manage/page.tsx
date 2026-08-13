@@ -150,7 +150,11 @@ export default function ManagePage() {
           </Button>
         </div>
 
-        <ArtistAnalytics myReleases={myReleases} mySongs={mySongs} />
+        <ArtistAnalytics
+          myReleases={myReleases}
+          mySongs={mySongs}
+          estimatedRevenue={dbUser?.artistProfile?.estRevenue ?? 0}
+        />
 
         <div className="bg-[#121212] border border-neutral-800/50 rounded-2xl overflow-hidden shadow-xl">
           <div className="p-5 border-b border-neutral-800/50">
