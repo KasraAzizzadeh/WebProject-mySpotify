@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import Cover from '@/components/ui/Cover';
 
 import { AlbumItem, SongItem } from '@/types';
+import { getGenres } from '@/services/manageService';
 
 export interface TrackEditData {
   id: string;
@@ -38,11 +39,14 @@ export default function EditAlbumModal({
   const [imageUrl, setImageUrl] = useState('');
   const [imageFile, setImageFile] = useState<File[]>([]);
 
+  const [genres, setGenres] = useState<{ id: number; name: string }[]>([]);
+
   const [tracks, setTracks] = useState<{ id: string; title: string; lyrics: string; audioFiles: File[] }[]>([]);
 
   useEffect(() => {
     setName(release.name);
-    setGenre(release.genre || '');
+    // store genre as string (could be id or name depending on backend)
+    setGenre(release.genre !== undefined && release.genre !== null ? String(release.genre) : '');
     setImageUrl(release.imageUrl || '');
 
     setTracks(releaseSongs.map(s => ({
@@ -51,6 +55,17 @@ export default function EditAlbumModal({
       lyrics: s.lyrics || '',
       audioFiles: []
     })));
+
+    // fetch genres for dropdown
+    (async () => {
+      try {
+        const g = await getGenres();
+        if (Array.isArray(g)) setGenres(g);
+      } catch (err) {
+        // ignore — calling component handles errors elsewhere
+        console.error('Failed to load genres', err);
+      }
+    })();
   }, [release, releaseSongs]);
 
   const handleTrackChange = (index: number, field: string, value: any) => {
@@ -143,11 +158,19 @@ export default function EditAlbumModal({
                     required
                   />
 
-                  <Input
-                    label="Primary Genre"
-                    value={genre}
-                    onChange={(e) => setGenre(e.target.value)}
-                  />
+                  <div>
+                    <label className="block text-sm text-neutral-400 mb-1">Primary Genre</label>
+                    <select
+                      value={genre}
+                      onChange={(e) => setGenre(e.target.value)}
+                      className="w-full bg-neutral-800/60 border border-neutral-700/40 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-green-500 transition-all"
+                    >
+                      <option value="">Select genre</option>
+                      {genres.map(g => (
+                        <option key={g.id} value={String(g.id)}>{g.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             ) : (

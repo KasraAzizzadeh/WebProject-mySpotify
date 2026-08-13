@@ -80,6 +80,10 @@ export function mapSong(data: any): SongItem {
 }
 
 export function mapAlbum(data: any): AlbumItem {
+    // Normalize various possible backend field names to frontend AlbumItem
+    const img = data.imageUrl ?? data.image_url ?? data.cover_image ?? data.coverImage ?? null;
+    const relType = data.releaseType ?? data.release_type ?? (data.is_single ? 'single' : undefined);
+
     return {
         id: String(data.id),
         name: data.name ?? data.title,
@@ -87,9 +91,13 @@ export function mapAlbum(data: any): AlbumItem {
         artistId: data.artistId !== undefined && data.artistId !== null ? String(data.artistId) : String(data.artist_id ?? ''),
         listeners: Number(data.listeners ?? 0),
         releaseDate: data.releaseDate ?? data.release_date,
-        imageUrl: getMediaUrl(data.imageUrl ?? data.cover_image) ?? undefined,
+        imageUrl: getMediaUrl(img) ?? undefined,
         description: data.description ?? undefined,
         songList: (data.songList ?? data.song_list ?? []).map(String),
+        // map optional metadata
+        genre: data.genre ?? undefined,
+        collaborators: data.collaborators ?? undefined,
+        releaseType: relType,
     };
 }
 
