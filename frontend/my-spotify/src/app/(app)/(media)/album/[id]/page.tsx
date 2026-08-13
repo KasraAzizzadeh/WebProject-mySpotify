@@ -6,12 +6,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePlayerStore } from "@/store/playerStore";
 
 import { AlbumItem, SongItem } from "@/types";
-import { getAlbumById, getSongById, getSongsByAlbumId } from "@/services/mediaService";
 import SongEntry from "@/components/music/SongEntry";
 import SongTableHeader from "@/components/music/TableHead";
 import HeroCard from "@/components/music/AlbumHero";
 import StickyBar from "@/components/music/StickyBar";
 import AddToPlaylistModal from "@/components/music/AddToPlaylistModal";
+import { useAlbum } from "@/hooks/queries/media/useAlbum";
+import { useAlbumSongs } from "@/hooks/queries/media/useAlbumSongs";
 
 export default function AlbumPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,12 +24,22 @@ export default function AlbumPage() {
   const setQueue = usePlayerStore((s) => s.setQueue);
   const addToQueue = usePlayerStore((s) => s.addToQueue);
 
-  const [album, setAlbum] = useState<AlbumItem | null>(null);
-  const [songs, setSongs] = useState<SongItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [selectedSongId, setSelectedSongId] = useState("");
 
+  const {
+      data: album,
+      isLoading: albumLoading,
+      isError: albumError,
+  } = useAlbum(id);
+  
+  const {
+      data: songs = [],
+      isLoading: songsLoading,
+  } = useAlbumSongs(id);
+
+  const loading = albumLoading || songsLoading;
+  
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -44,42 +55,17 @@ export default function AlbumPage() {
 
     return () => observer.disconnect();
   }, [loading]);
-  
-  useEffect(() => {
-    if (!id) return;
-
-    if (!authUser) router.push("/login");
-
-    const loadAlbum = async () => {
-      setLoading(true);
-
-      const albumData = await getAlbumById(id);
-
-      if (!albumData) {
-        setAlbum(null);
-        setLoading(false);
-        return;
-      }
-
-      const songsData : SongItem[] = await getSongsByAlbumId(id);
-
-      setAlbum(albumData);
-      setSongs(songsData);
-      setLoading(false);
-    };
-
-    loadAlbum();
-  }, [id]);
 
   if (loading) {
     return <div className="p-8">Loading...</div>;
   }
 
-  if (!album) {
+  if (albumError || !album) {
     notFound();
   }  
 
   const handlePlayAlbum = () => {
+    if (songs.length === 0) return;
     setQueue(songs, {type: "album", id: album.id}, songs[0]);
   }
   
@@ -88,6 +74,7 @@ export default function AlbumPage() {
   }
 
   const handleAddAlbum = () => {
+    if (songs.length === 0) return;
     addToQueue(songs, {type: "album", id: album.id})
   }
 

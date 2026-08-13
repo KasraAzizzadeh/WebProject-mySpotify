@@ -88,6 +88,7 @@ export default function PlaylistPage() {
   };
 
   const handlePlayPlaylist = () => {
+    if (songs.length === 0) return;
     setQueue(songs, {type: "playlist", id: playlist.id}, songs[0]);
   }
   
@@ -96,6 +97,7 @@ export default function PlaylistPage() {
   }
 
   const handleAddPlaylist = () => {
+    if (songs.length === 0) return;
     addToQueue(songs, {type: "playlist", id: playlist.id})
   }
 

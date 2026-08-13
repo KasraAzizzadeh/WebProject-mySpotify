@@ -12,7 +12,9 @@ import ItemRow from '@/components/ItemRow';
 import ShowAll from '@/components/ShowAll';
 
 import { DiscoverData, DiscoverFilter } from '@/types';
-import { getMediaData } from '@/services/mediaService';
+import { useDiscoverSongs } from '@/hooks/queries/media/useDiscoverSongs';
+import { useDiscoverAlbums } from '@/hooks/queries/media/useDiscoverAlbums';
+import { useDiscoverPlaylists } from '@/hooks/queries/media/useDiscoverPlaylists';
 
 type ViewMode = 'discover' | 'songs' | 'albums' | 'playlists';
 
@@ -23,29 +25,34 @@ export default function DiscoverPage() {
     const query = searchParams.get('q') ?? '';
     const filter = (searchParams.get("filter") as DiscoverFilter) ?? "latest";
 
-    const [data, setData] = useState<DiscoverData | null>(null);
-    const [loading, setLoading] = useState(true);
     const [view, setView] = useState<ViewMode>('discover');
 
+    const {
+        data: songs = [],
+        isLoading: songsLoading,
+    } = useDiscoverSongs(query, filter);
+
+    const {
+        data: albums = [],
+        isLoading: albumsLoading,
+    } = useDiscoverAlbums(query, filter);
+
+    const {
+        data: playlists = [],
+        isLoading: playlistsLoading,
+    } = useDiscoverPlaylists(query, filter);
+
+    const loading = songsLoading || albumsLoading || playlistsLoading;
+
+    const data: DiscoverData = {
+        songs,
+        albums,
+        playlists,
+    }
+
     useEffect(() => {
-        if (!user) return;
-
-        setView('discover');
-
-        const load = async () => {
-            try {
-                setLoading(true);
-                const result = await getMediaData(query, filter);
-                setData(result);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        load();
-    }, [user, query, filter]);
+        setView("discover");
+    }, [query, filter]);
 
     if (!user) {
         return (

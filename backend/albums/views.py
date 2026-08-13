@@ -17,6 +17,7 @@ from .serializers import (
     AlbumUpdateRequestSerializer,
     GenreSerializer,
 )
+from songs.serializers import SongSerializer
 from .permissions import IsAlbumOwner
 
 
@@ -146,8 +147,13 @@ class AlbumListCreateView(generics.ListCreateAPIView):
 class AlbumRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AlbumDetailModelSerializer
     parser_classes = [JSONParser, MultiPartParser, FormParser]
-    permission_classes = [IsAuthenticated, IsAlbumOwner]
     http_method_names = ["get", "patch", "delete"]
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [IsAuthenticated()]
+
+        return [IsAuthenticated(), IsAlbumOwner()]
 
     def get_queryset(self):
         return services.list_albums()
@@ -161,10 +167,10 @@ class AlbumRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 @extend_schema(
     summary="List songs of an album",
     description="Returns the tracks for a given album id in track order.",
-    responses={status.HTTP_200_OK: AlbumSongSerializer(many=True)},
+    responses={status.HTTP_200_OK: SongSerializer(many=True)},
 )
 class AlbumSongsView(generics.ListAPIView):
-    serializer_class = AlbumSongSerializer
+    serializer_class = SongSerializer
 
     def get_queryset(self):
         return services.get_songs_for_album(self.kwargs["pk"])
