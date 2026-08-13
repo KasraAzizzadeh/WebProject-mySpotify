@@ -137,7 +137,9 @@ def _to_zarinpal_amount(price: Decimal) -> int:
     return amount_int if amount_int > 0 else 1000
 
 
-def create_subscription_checkout(user, plan_name: str, duration_months: int = 1) -> tuple[SubscriptionTransaction, str]:
+from urllib.parse import quote_plus
+
+def create_subscription_checkout(user, plan_name: str, duration_months: int = 1, return_url: str | None = None) -> tuple[SubscriptionTransaction, str]:
     if plan_name not in {
         SubscriptionPlan.PlanType.SILVER,
         SubscriptionPlan.PlanType.GOLD,
@@ -150,6 +152,12 @@ def create_subscription_checkout(user, plan_name: str, duration_months: int = 1)
     callback_url = getattr(settings, "ZARINPAL_CALLBACK_URL", None)
     if not callback_url:
         raise ImproperlyConfigured("ZARINPAL_CALLBACK_URL must be configured.")
+
+    # If caller provided a frontend return URL, append it to the backend callback so the
+    # verify endpoint can redirect back to the frontend after verification.
+    if return_url:
+        # quote the return_url so it survives as a query value
+        callback_url = f"{callback_url.rstrip('?')}?return_url={quote_plus(return_url)}"
 
     plan = SubscriptionPlan.objects.get(name=plan_name)
     # multiply plan price by duration

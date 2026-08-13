@@ -8,6 +8,7 @@ import Alert from '@/components/ui/Alert';
 import Message from '@/components/ui/Message';
 import Button from '@/components/ui/Button';
 import PlansModal from '@/components/settings/PlansModal';
+import PaymentResultModal from '@/components/settings/PaymentResultModal';
 import PreferencesForm from '@/components/settings/PreferencesForm';
 import { SettingsHeader, ProfilePanel, SubscriptionPanel } from '@/components/settings/Panels';
 
@@ -26,6 +27,7 @@ export default function SettingsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeModal, setActiveModal] = useState<ModalState>('none');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentResult, setPaymentResult] = useState<{ status: 'success'|'failed'; plan?: string | null; referenceId?: string | null } | null>(null);
 
   // Fetch the freshest user profile via TanStack
   const {
@@ -35,6 +37,32 @@ export default function SettingsPage() {
   } = useUserProfile(authUser?.id);
 
   const userToUse = freshUser ?? authUser;
+
+  // On mount, parse payment return query params and set result, then clean URL
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const status = params.get('status');
+      if (!status) return;
+
+      const transaction_status = params.get('transaction_status') ?? undefined;
+      const plan = params.get('subscription_plan') ?? undefined;
+      const reference_id = params.get('reference_id') ?? undefined;
+
+      if (status === 'success' || transaction_status === 'SUCCESS') {
+        setTimeout(() => setPaymentResult({ status: 'success', plan, referenceId: reference_id }), 0);
+      } else {
+        setTimeout(() => setPaymentResult({ status: 'failed', plan, referenceId: reference_id }), 0);
+      }
+
+      // Remove query params from URL to avoid re-showing modal on reload
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   if (profileLoading) {
     return (
@@ -77,6 +105,7 @@ export default function SettingsPage() {
     );
     setActiveModal('save_success');
   };
+
 
   const executeDeleteAccount = async () => {
     setErrorMessage(null);
@@ -204,6 +233,14 @@ export default function SettingsPage() {
           confirmLabel="OK"
           type="alert"
           onConfirm={() => setActiveModal('none')}
+        />
+
+        <PaymentResultModal
+          isOpen={!!paymentResult}
+          status={paymentResult?.status ?? 'failed'}
+          plan={paymentResult?.plan}
+          referenceId={paymentResult?.referenceId}
+          onClose={() => setPaymentResult(null)}
         />
 
         <Message

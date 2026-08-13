@@ -106,8 +106,9 @@ class SubscriptionCheckoutView(APIView):
 
         plan_name = serializer.validated_data["plan"]
         duration = int(serializer.validated_data.get("duration", 1))
+        return_url = request.data.get("return_url")
         try:
-            transaction, payment_url = create_subscription_checkout(request.user, plan_name, duration)
+            transaction, payment_url = create_subscription_checkout(request.user, plan_name, duration, return_url)
         except (ZarinpalServiceError, ImproperlyConfigured, ValueError) as exc:
             return Response(
                 {"detail": str(exc)},

@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useSubscriptionSettings } from "@/hooks/queries/support/useSubscriptionSetting";
 import { X, Check } from 'lucide-react';
+import { createSubscriptionCheckout } from '@/services/supportService';
 
 interface PlansModalProps {
   isOpen: boolean;
@@ -13,6 +14,9 @@ interface PlansModalProps {
 
 export default function PlansModal({ isOpen, onClose, currentPlan, onSelectPlan }: PlansModalProps) {
   const [selected, setSelected] = useState<'basic' | 'silver' | 'gold'>(currentPlan);
+  const [duration, setDuration] = useState<number>(1);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     data: subscriptions = [],
@@ -122,24 +126,63 @@ export default function PlansModal({ isOpen, onClose, currentPlan, onSelectPlan 
         </div>
 
         {/* Footer actions wrapper */}
-        <div className="flex items-center justify-end gap-3 pt-2 border-t border-neutral-900">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold rounded-xl text-neutral-400 hover:text-white transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onSelectPlan(selected);
-              onClose();
-            }}
-            className="bg-white hover:bg-neutral-200 text-black px-5 py-2.5 text-xs font-bold rounded-xl transition-colors shadow-lg"
-          >
-            Update Tier
-          </button>
+        <div className="flex items-center justify-between gap-3 pt-2 border-t border-neutral-900">
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-neutral-400">Duration:</label>
+            <select
+              className="bg-transparent border border-neutral-800 text-white text-xs px-2 py-1 rounded"
+              value={duration}
+              onChange={(e) => setDuration(Number(e.target.value))}
+            >
+              <option value={1}>1 month</option>
+              <option value={3}>3 months</option>
+              <option value={6}>6 months</option>
+              <option value={12}>12 months</option>
+            </select>
+            {error && <div className="text-xs text-red-400 ml-2">{error}</div>}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-xs font-semibold rounded-xl text-neutral-400 hover:text-white transition-colors"
+              disabled={isProcessing}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                setError(null);
+                // If basic selected, just close and call onSelectPlan
+                if (selected === 'basic') {
+                  onSelectPlan(selected);
+                  onClose();
+                  return;
+                }
+
+                setIsProcessing(true);
+                try {
+                  const returnUrl = typeof window !== 'undefined' ? `${window.location.origin}/settings` : undefined;
+                  const result = await createSubscriptionCheckout(selected, duration, returnUrl);
+                  if (result && result.payment_url) {
+                    // Redirect to the payment gateway
+                    window.location.href = result.payment_url;
+                  } else {
+                    setError('Unable to start payment session.');
+                  }
+                } catch (err: unknown) {
+                  if (err instanceof Error) setError(err.message);
+                  else setError('Payment failed to start.');
+                } finally {
+                  setIsProcessing(false);
+                }              }}              className="bg-white hover:bg-neutral-200 text-black px-5 py-2.5 text-xs font-bold rounded-xl transition-colors shadow-lg"
+              disabled={isProcessing}
+            >
+              {isProcessing ? 'Processing...' : 'Proceed to Payment'}
+            </button>
+          </div>
         </div>
 
       </div>

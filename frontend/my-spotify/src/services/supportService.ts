@@ -127,6 +127,17 @@ export const getSubscriptionSettings = async (): Promise<SubscriptionTier[]> => 
     handleApiError(error);
   }
 };
+ 
+export const createSubscriptionCheckout = async (plan: string, duration = 1, return_url?: string) => {
+  try {
+    const payload: any = { plan, duration };
+    if (return_url) payload.return_url = return_url;
+    const response = await api.post("/subscriptions/checkout/", payload);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
 
 export const updateSubscriptionSettings = async (
   updates: {
