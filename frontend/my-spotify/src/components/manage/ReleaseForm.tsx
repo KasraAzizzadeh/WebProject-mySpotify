@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import FileInput from '@/components/ui/FileInput';
 import RadioGroup from '@/components/ui/RadioGroup';
 import TrackFormItem from './TrackFormItem';
+import Select from '@/components/ui/Select';
+import { getGenres } from '@/services/manageService';
 
 type ReleaseFormErrors = Record<string, string>;
 
@@ -41,6 +43,20 @@ const initialFormState: ReleaseFormState = {
 export default function ReleaseForm({ onCancel, onSave }: ReleaseFormProps) {
   const [formData, setFormData] = useState<ReleaseFormState>(initialFormState);
   const [errors, setErrors] = useState<ReleaseFormErrors>({});
+  const [genres, setGenres] = useState<{ id: number; name: string }[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const g = await getGenres();
+        if (mounted && Array.isArray(g)) setGenres(g);
+    } catch {
+      // getGenres already handles errors via handleApiError - ignore here
+      }
+    })();
+    return () => { mounted = false };
+  }, []);
 
   const handleUpdateTrack = (idx: number, fields: Partial<ReleaseFormState['tracks'][number]>) => {
     const updatedTracks = [...formData.tracks];
@@ -115,7 +131,7 @@ export default function ReleaseForm({ onCancel, onSave }: ReleaseFormProps) {
               { label: 'Full Album / EP', value: 'album' }
             ]}
             value={formData.releaseType}
-            onChange={(val) => setFormData({ ...formData, releaseType: val as any })}
+            onChange={(val: string) => setFormData({ ...formData, releaseType: val as ReleaseFormState['releaseType'] })}
             className="flex gap-6 flex-wrap border border-neutral-800 p-4 rounded-xl bg-neutral-900/30"
           />
 
@@ -127,12 +143,16 @@ export default function ReleaseForm({ onCancel, onSave }: ReleaseFormProps) {
               placeholder="Enter title..." 
               error={errors.title}
             />
-            <Input 
-              label="Primary Genre" 
-              value={formData.genre}
-              onChange={e => setFormData({ ...formData, genre: e.target.value })}
-              placeholder="e.g. Synthwave, Hip-Hop..." 
-            />
+            <Select
+               label="Primary Genre"
+               value={formData.genre}
+               onChange={e => setFormData({ ...formData, genre: e.target.value })}
+            >
+               <option value="">Select genre...</option>
+               {genres.map(g => (
+                 <option key={g.id} value={String(g.id)}>{g.name}</option>
+               ))}
+            </Select>
             <Input 
               label="Release Date" 
               type="date"

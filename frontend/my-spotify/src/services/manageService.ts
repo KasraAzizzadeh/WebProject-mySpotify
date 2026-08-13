@@ -1,9 +1,10 @@
 import { AlbumItem, SongItem, UserProfile, ArtistDashboard } from "@/types";
 import { userService } from "./userService";
-import { getAlbums, getSongs, getUsers, getNotifications, saveNotifications,
-     saveAlbums, saveSongs, saveUsers, deleteReleaseAndSongs } from "@/store/mockDb";
+import { getAlbums, getSongs, getUsers, saveAlbums, saveSongs, saveUsers, deleteReleaseAndSongs } from "@/store/mockDb";
 
 import { ReleaseFormState } from "@/components/manage/ReleaseForm";
+import api, { handleApiError } from "@/services/api";
+import { mapSong, mapAlbum } from "@/utils/mediaUtils";
 import { TrackEditData } from "@/components/music/EditAlbumModal";
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -79,135 +80,73 @@ export async function createRelease(
   dbUser: UserProfile,
   formData: ReleaseFormState
 ): Promise<void> {
-  await delay(100);
-
-  const coverUrl =
-    formData.coverImage.length > 0
-        ? `/covers/${formData.coverImage[0].name}`
-        : undefined;
-
-  let newSongs: SongItem[] = [];
-
-  const releaseId =
-    `${formData.releaseType === "single" ? "song" : "album"}-${Date.now()}`;
-
-  const releaseAlbum: AlbumItem = {
-    id: releaseId,
-    name: formData.title,
-    artistName: dbUser.displayName,
-    artistId: dbUser.id,
-    listeners: 0,
-    releaseDate: formData.releaseDate,
-    releaseType: formData.releaseType === "single" ? "single" : "album",
-    genre: formData.genre,
-    collaborators: formData.collaborators,
-    imageUrl: coverUrl,
-    songList: [],
-  };
-
-  if (formData.releaseType === "single") {
-    newSongs.push({
-      id: releaseId,
-      title: formData.title,
-      artistName: dbUser.displayName,
-      artistId: dbUser.id,
-      albumName: formData.title,
-      albumId: releaseId,
-      streams: 0,
-      releaseDate: formData.releaseDate,
-      genre: formData.genre,
-      collaborators: formData.collaborators,
-      audioUrl:
-        formData.singleAudio.length > 0
-            ? `/songs/${formData.singleAudio[0].name}`
-            : "",
-      lyrics: formData.singleLyrics,
-      imageUrl: coverUrl,
-    });
-  } else {
-    for (const [index, track] of formData.tracks.entries()) {
-      newSongs.push({
-        id: `song-${Date.now()}-${index}`,
-        title: track.title || `Track ${index + 1}`,
-        artistName: dbUser.displayName,
-        artistId: dbUser.id,
-        albumName: formData.title,
-        albumId: releaseId,
-        streams: 0,
-        releaseDate: formData.releaseDate,
-        genre: formData.genre,
-        collaborators: formData.collaborators,
-        audioUrl:
-          track.audio.length > 0
-              ? `/songs/${track.audio[0].name}`
-              : "",
-        lyrics: track.lyrics,
-        trackNumber: index + 1,
-        imageUrl: coverUrl,
-      });
+  try {
+    // Create album via backend
+    const albumForm = new FormData();
+    albumForm.append("title", formData.title);
+    // backend expects ISO datetime for release_date
+    albumForm.append("release_date", new Date(formData.releaseDate).toISOString());
+    albumForm.append("is_single", String(formData.releaseType === "single"));
+    if (formData.coverImage.length > 0) {
+      albumForm.append("cover_image", formData.coverImage[0]);
     }
-  }
 
-  const updatedReleaseAlbum: AlbumItem = {
-    ...releaseAlbum,
-    songList: newSongs.map(song => song.id),
-  };
-
-  saveSongs([
-    ...getSongs(),
-    ...newSongs,
-  ]);
-
-  saveAlbums([
-    ...getAlbums(),
-    updatedReleaseAlbum,
-  ]);
-
-    const users = getUsers().map(user => {
-        if (user.id !== dbUser.id) return user;
-
-        if (!user.artistProfile)
-            throw new Error("Artist profile not found.");
-
-        return {
-            ...user,
-            artistProfile: {
-            ...user.artistProfile,
-            singles:
-                formData.releaseType === "single"
-                ? [...user.artistProfile.singles, releaseId]
-                : user.artistProfile.singles,
-
-            albums: [...user.artistProfile.albums, releaseId],
-            },
-        };
+    const albumResp = await api.post("/albums/", albumForm, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
 
-    saveUsers(users);
+    const createdAlbum = mapAlbum(albumResp.data);
 
-    const notifications = getNotifications();
+    const createdSongs: SongItem[] = [];
 
-    const followers = users.filter(user =>
-    user.following.includes(dbUser.id)
-    );
+    if (formData.releaseType === "single") {
+      if (formData.singleAudio.length === 0) throw new Error("No audio file provided for single.");
+      const songForm = new FormData();
+      songForm.append("title", formData.title);
+      songForm.append("album_id", String(createdAlbum.id));
+      songForm.append("track_number", "1");
+      songForm.append("audio_file", formData.singleAudio[0]);
+      if (formData.singleLyrics) songForm.append("lyrics", formData.singleLyrics);
+      if (formData.genre) songForm.append("genre", String(formData.genre));
 
-    const releaseName = formData.title;
-    const releaseType =
-    formData.releaseType === "single" ? "single" : "album";
+      const songResp = await api.post(`/songs/`, songForm, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-    followers.forEach(user => {
-        notifications.push({
-            id: crypto.randomUUID(),
-            userId: user.id,
-            content: `${dbUser.displayName} has released a new ${releaseType}: "${releaseName}".`,
-            status: "unread",
-            type: "NA",
-            redirectId: releaseId,
-            createdAt: new Date(),
+      createdSongs.push(mapSong(songResp.data));
+    } else {
+      for (const [index, track] of formData.tracks.entries()) {
+        if (track.audio.length === 0) throw new Error(`Track ${index + 1} has no audio file.`);
+        const songForm = new FormData();
+        songForm.append("title", track.title || `Track ${index + 1}`);
+        songForm.append("album_id", String(createdAlbum.id));
+        songForm.append("track_number", String(index + 1));
+        songForm.append("audio_file", track.audio[0]);
+        if (track.lyrics) songForm.append("lyrics", track.lyrics);
+        if (formData.genre) songForm.append("genre", String(formData.genre));
+
+        const songResp = await api.post(`/songs/`, songForm, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
-    });
 
-    saveNotifications(notifications);
+        createdSongs.push(mapSong(songResp.data));
+      }
+    }
+
+    // Success: return (caller mutation invalidates queries)
+    return;
+  } catch (error) {
+    handleApiError(error);
+  }
+}
+
+export async function getGenres(): Promise<{ id: number; name: string }[]> {
+  try {
+    const resp = await api.get(`/albums/genres/`);
+    return resp.data;
+  } catch (error) {
+    handleApiError(error);
+  }
 }
 
 export async function updateRelease(
