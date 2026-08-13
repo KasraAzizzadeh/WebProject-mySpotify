@@ -10,7 +10,6 @@ import { formatDuration } from "@/utils/mediaUtils";
 import { useAverageColor } from "@/hooks/useAverageColor";
 import { darken } from "@/utils/color";
 import { Shuffle, Play, Pause, Pen, Plus, ListMusic, Trash2 } from "lucide-react";
-import { error } from 'console';
 
 type HeroProps =
   | {
@@ -50,7 +49,7 @@ export default function HeroCard(props: HeroProps) {
             : ((props.edit ? "Private " : "Public") + "Playlist");
 
     const profileHref = type === "album" 
-      ? `/album/${item.artistId}` 
+      ? `/profile/${item.artistId}` 
       : `/profile/${item.ownerId}`;
 
     const isThisPlayback = playbackSource?.id === item.id;

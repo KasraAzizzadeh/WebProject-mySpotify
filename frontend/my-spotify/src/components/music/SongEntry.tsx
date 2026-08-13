@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { Play, Pause, CirclePlus, CircleX, ListMusic } from 'lucide-react';
+import { Play, Pause, CirclePlus, CircleX, ListMusic, Download } from 'lucide-react';
 import { usePlayerStore } from '@/store/playerStore';
 import { SongItem, SubscriptionType } from '@/types';
 import Cover from '../ui/Cover';
 import { formatDuration } from '@/utils/mediaUtils';
+import { downloadSong } from '@/services/mediaService';
 
 interface SongEntryProps {
   song: SongItem;
@@ -41,6 +42,8 @@ export default function SongEntry({
   const isCurrentSongActive = currentSong?.id === song.id;
   const isThisSpecificTrackPlaying = isCurrentSongActive && isPlaying;
 
+  const canDownload = subscriptionType !== "basic";
+
   const handlePlayAction = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isCurrentSongActive) {
@@ -49,6 +52,14 @@ export default function SongEntry({
       handlePlay(song);
     }
   };
+
+  const handleDownload = async (songId: string) => {
+    try {
+      await downloadSong(songId)
+    } catch (error) {
+      console.error("Failed to download song:", error);
+    }
+  }
 
   return (
     <div
@@ -165,6 +176,19 @@ export default function SongEntry({
             title="Remove from playlist"
           >
             <CircleX size={16} />
+          </button>
+        )}
+
+        {canDownload && (
+          <button
+            className="md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-150 hover:text-green-400 text-neutral-500 hover:scale-110 active:scale-90"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownload(song.id)
+            }}
+            title="Download"
+          >
+            <Download size={16} />
           </button>
         )}
 

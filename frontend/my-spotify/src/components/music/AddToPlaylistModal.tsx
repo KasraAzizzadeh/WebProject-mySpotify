@@ -8,6 +8,8 @@ import { X } from 'lucide-react';
 import { PlaylistItem, UserProfile } from '@/types';
 import { getUserPlaylists, addSongToPlaylist } from '@/services/mediaService';
 import Alert from '../ui/Alert';
+import { useUserPlaylist } from '@/hooks/queries/media/useUserPlaylists';
+import { useAddSongToPlaylist } from '@/hooks/queries/media/useAddPlaylistSong';
 
 interface AddToPlaylistModalProps {
   songId: string;
@@ -16,48 +18,34 @@ interface AddToPlaylistModalProps {
 }
 
 export default function AddToPlaylistModal({ songId, user, onClose }: AddToPlaylistModalProps) {
-  const [playlists, setPlaylists] = useState<PlaylistItem[]>([]);
-  const [alert, setAlert] = useState('');
   const [searchInput, setSeachInput] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchPlaylists = async () => {
-        if (!user) return;
+  const {
+    data: playlists = [],
+    isLoading: playlistsLoading,
+  } = useUserPlaylist(user.id);
 
-        try {
-            setLoading(true);
-            const fetchedPlaylists = await getUserPlaylists(user.listenerProfile?.playlists || [])
-            setPlaylists(fetchedPlaylists)
-        } catch (error) {
-            console.error("Failed fetching user specific playlists", error);
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    fetchPlaylists();
-  }, []);
+  const addSongMutation = useAddSongToPlaylist();
 
   const filteredPlaylists = playlists.filter((playlist) =>
     playlist.name.toLowerCase().includes(searchInput.toLowerCase())
   );
 
-  const handlePlaylistClick = async (playlist: PlaylistItem) => {
-    try {
-      setIsSubmitting(true);
-      setAlert("");
-      await addSongToPlaylist(songId, playlist.id)
-      onClose();
-    } catch (err: any) {
-      setAlert(err.message || 'Something went wrong. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handlePlaylistClick = async (playlistId: string) => {
+    addSongMutation.mutate({songId, playlistId}, {
+        onSuccess: () => onClose(),
+    });
   };
 
-  if (loading) return <div className="p-8 text-neutral-400">Loading your playlists...</div>;
+  const isSubmitting = addSongMutation.isPending;
+
+  if (playlistsLoading) {
+    return (
+        <div className="p-8 text-neutral-400">
+            Loading your playlists...
+        </div>
+    );
+  }
 
 
   return (
@@ -114,7 +102,7 @@ export default function AddToPlaylistModal({ songId, user, onClose }: AddToPlayl
                     type="button"
                     onClick={(e) => {
                         e.stopPropagation();
-                        handlePlaylistClick(playlist);
+                        handlePlaylistClick(playlist.id);
                     }}
                     disabled={isSubmitting}
                     className="w-full px-4 py-3 text-left transition-colors hover:bg-neutral-800 disabled:opacity-50"
@@ -127,7 +115,7 @@ export default function AddToPlaylistModal({ songId, user, onClose }: AddToPlayl
             )}
             </div>
 
-            {alert && <Alert message={alert} />}
+            {addSongMutation.isError && <Alert message={addSongMutation.error.message || "Something went wrong!"} />}
         </div>
         </div>
     </div>

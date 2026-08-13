@@ -87,16 +87,12 @@ export const getSongsByPlaylistId = async (playlistId: string): Promise<SongItem
 };
 
 export const addSongToPlaylist = async (songId: string, playlistId: string): Promise<void> => {
-  await delay(100);
-
-  const allPlaylists = getPlaylists();
-  const index = allPlaylists.findIndex((p) => p.id === playlistId);
-      
-  if (index !== -1) {
-    if (allPlaylists[index].songList.find(s => s === songId))
-      throw new Error ("Song is already in this playlist");
-    allPlaylists[index].songList.push(songId);
-    savePlaylists(allPlaylists);
+  try {
+    await api.post(
+      `/playlists/${playlistId}/songs/${songId}/`
+    );
+  } catch (error) {
+    handleApiError(error);
   }
 };
 
@@ -267,4 +263,30 @@ export const updateStreams = async (
   saveUsers(updatedUsers);
 
   // add unique listeners update later
+};
+
+
+export const downloadSong = async (songId: string): Promise<void> => {
+  try {
+    const response = await api.get(
+      `/songs/${songId}/download/`,
+      {
+        responseType: "blob",
+      }
+    );
+
+    const blob = new Blob([response.data]);
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `song-${songId}`;
+    document.body.appendChild(link);
+    link.click();
+
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    handleApiError(error);
+  }
 };
