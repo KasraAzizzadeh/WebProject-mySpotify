@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Lock, Unlock } from 'lucide-react';
 
 import Input from '@/components/ui/Input';
 import FileInput from '@/components/ui/FileInput';
@@ -27,6 +27,7 @@ export default function EditPlaylistModal({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [isPrivate, setIsPrivate] = useState(true);
 
   const [imageFile, setImageFile] = useState<File[]>([]);
 
@@ -38,6 +39,7 @@ export default function EditPlaylistModal({
     setName(playlist.name);
     setDescription(playlist.description ?? '');
     setImageUrl(playlist.imageUrl ?? '');
+    setIsPrivate(playlist.isPrivate ?? true);
   }, [playlist]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,6 +51,7 @@ export default function EditPlaylistModal({
       name,
       description,
       imageFile: imageFile[0],
+      isPrivate,
     }, {
       onSuccess: () => onClose(),
       onError: (error) => {
@@ -120,6 +123,44 @@ export default function EditPlaylistModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+
+            <button
+              type="button"
+              onClick={() => setIsPrivate((current) => !current)}
+              className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-950 px-4 py-3 text-left transition hover:border-neutral-600"
+            >
+              <div className="flex items-center gap-3">
+                {isPrivate ? (
+                  <Lock size={18} className="text-green-500" />
+                ) : (
+                  <Unlock size={18} className="text-neutral-400" />
+                )}
+
+                <div>
+                  <p className="text-sm font-medium text-white">
+                    {isPrivate ? "Private playlist" : "Public playlist"}
+                  </p>
+
+                  <p className="text-xs text-neutral-500">
+                    {isPrivate
+                      ? "Only you can view this playlist."
+                      : "Other users can view this playlist."}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className={`relative h-6 w-11 rounded-full transition ${
+                  isPrivate ? "bg-green-500" : "bg-neutral-700"
+                }`}
+              >
+                <div
+                  className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-transform ${
+                    isPrivate ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </div>
+            </button>
 
             {alert && <Alert message={alert} />}
 

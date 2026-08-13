@@ -1,7 +1,7 @@
 import { getAlbums, getSongs, getPlaylists, getUsers, savePlaylists, saveSongs , saveUsers } from "@/store/mockDb";
 import { AlbumItem, SongItem, PlaylistItem, DiscoverData, DiscoverFilter, PlaybackSource } from "@/types";
 import { getBackendFilter, isSameDay, mapAlbum, mapPlaylist, mapSong } from "@/utils/mediaUtils";
-import api from "@/services/api"
+import api, { getMediaUrl } from "@/services/api"
 import { handleApiError } from "@/services/api";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -168,10 +168,12 @@ export const updatePlaylist = async (
     name: string;
     description?: string;
     imageFile?: File;
+    isPrivate: boolean;
   }
 ): Promise<PlaylistItem> => {
   try {
     const formData = new FormData();
+
     formData.append("name", updates.name);
     if (updates.description !== undefined) {
       formData.append("description", updates.description)
@@ -179,6 +181,7 @@ export const updatePlaylist = async (
     if (updates.imageFile) {
       formData.append("cover_image", updates.imageFile);
     }
+    formData.append("is_private", String(updates.isPrivate));
 
     const response = await api.patch(
       `/playlists/${playlistId}/`, formData
@@ -197,72 +200,28 @@ export const deletePlaylist = async (playlistId: string): Promise<void> => {
     }
 };
 
-export const updateStreams = async (
-  userId: string,
-  songId: string,
-  playback: PlaybackSource
-): Promise<void> => {
-  await delay(100);
+interface SongStreamResponse {
+  audio_url: string;
+}
 
-  // Update song streams
-  const allSongs = getSongs();
+export const getSongStreamUrl = async (songId: string): Promise<string | undefined> => {
+  try {
+    const response = await api.get<SongStreamResponse>(
+      `/songs/${songId}/stream/`
+    );
 
-  const songIndex = allSongs.findIndex((s) => s.id === songId);
-
-  if (songIndex === -1) {
-    throw new Error("Song not found");
+    return getMediaUrl(response.data.audio_url)
+  } catch (error) {
+    return handleApiError(error);
   }
+};
 
-  allSongs[songIndex] = {
-    ...allSongs[songIndex],
-    streams: allSongs[songIndex].streams + 1,
-  };
-
-  saveSongs(allSongs);
-
-  // Update user's daily streams
-  const today = new Date();
-
-  const allUsers = getUsers();
-
-  const updatedUsers = allUsers.map((u) => {
-    if (u.id !== userId) return u;
-
-    const profile = u.listenerProfile;
-
-    if (!profile) return u;
-
-    const listenedToday =
-      profile.lastStreamDate &&
-      isSameDay(new Date(profile.lastStreamDate), today);
-
-    let recents = [...profile.recentlyPlayed];
-    if (playback.type === "playlist") {
-      recents = recents.filter(r => {
-        r !== playback.id
-      })
-      recents.unshift(playback.id);
-      if (recents.length > 20) {
-        recents.splice(20);
-      }
-    }
-
-    return {
-      ...u,
-      listenerProfile: {
-        ...profile,
-        recentlyPlayed: recents,
-        dailyStreams: listenedToday
-          ? profile.dailyStreams + 1
-          : 1,
-        lastStreamDate: today,
-      },
-    };
-  });
-
-  saveUsers(updatedUsers);
-
-  // add unique listeners update later
+export const registerSongStream = async (songId: string): Promise<void> => {
+  try {
+    await api.post(`/songs/${songId}/stream/`);
+  } catch (error) {
+    return handleApiError(error);
+  }
 };
 
 

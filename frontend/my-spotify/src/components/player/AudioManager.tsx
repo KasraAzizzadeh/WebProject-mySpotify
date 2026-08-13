@@ -1,218 +1,271 @@
 'use client';
 
-import { useEffect, useState, useRef } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "@/store/playerStore";
-import { updateStreams } from "@/services/mediaService";
-import { canPlaySong } from "@/utils/mediaUtils";
+import { getSongStreamUrl, registerSongStream } from "@/services/mediaService";
+import { ApiError } from "@/services/api";
 import Message from "../ui/Message";
 
-const LISTEN_THRESHHOLD = 60;
+const LISTEN_THRESHOLD = 60;
 
 async function playAudioSafely(audio: HTMLAudioElement) {
-    try {
-        await audio.play();
-    } catch (error) {
-        const isExpectedInterruption =
-            error instanceof DOMException &&
-            (error.name === "AbortError" || error.name === "NotAllowedError");
+  try {
+    await audio.play();
+  } catch (error) {
+    const isExpectedInterruption =
+      error instanceof DOMException &&
+      (error.name === "AbortError" || error.name === "NotAllowedError");
 
-        if (!isExpectedInterruption) {
-            console.warn("Audio playback could not start:", error);
-        }
+    if (!isExpectedInterruption) {
+      console.warn("Audio playback could not start:", error);
     }
+  }
 }
 
 export default function AudioManager() {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-    const audioRef = useRef<HTMLAudioElement>(null);
-    const listenedSeconds = useRef(0);
-    const lastTimeRef = useRef(0);
-    const streamRegistered = useRef(false);
-    const alreadyUpdated = useRef(false);
+  const listenedSeconds = useRef(0);
+  const lastTimeRef = useRef(0);
+  const streamRegistered = useRef(false);
+  const alreadyUpdating = useRef(false);
 
-    const {user: authUser} = useAuth();
-    const [message, setMessage] = useState({
-        isOpen: false,
-        title: "",
-        description: "",
+  const [message, setMessage] = useState({
+    isOpen: false,
+    title: "",
+    description: "",
+  });
+
+  const currentSong = usePlayerStore((s) => s.currentSong);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const volume = usePlayerStore((s) => s.volume);
+  const progress = usePlayerStore((s) => s.progress);
+
+  const setProgress = usePlayerStore((s) => s.setProgress);
+  const setDuration = usePlayerStore((s) => s.setDuration);
+  const resetPlayer = usePlayerStore((s) => s.resetPlayer);
+  const nextTrack = usePlayerStore((s) => s.nextTrack);
+
+  const closeMessage = () => {
+    setMessage({
+      isOpen: false,
+      title: "",
+      description: "",
     });
+  };
 
-    const closeMessage = () => {
-        setMessage({
-            isOpen: false,
-            title: "",
-            description: "",
-        });
+  /*
+   * Create audio element once.
+   */
+  useEffect(() => {
+    const audio = new Audio();
+
+    audioRef.current = audio;
+
+    const updateTime = () => {
+      const current = audio.currentTime;
+
+      setProgress(current);
+
+      const delta = current - lastTimeRef.current;
+
+      /*
+       * Only count normal forward playback.
+       * This prevents seeking from contributing to the
+       * stream threshold.
+       */
+      if (
+        !streamRegistered.current &&
+        delta > 0 &&
+        delta < 1.5
+      ) {
+        listenedSeconds.current += delta;
+      }
+
+      lastTimeRef.current = current;
+
+      if (
+        !streamRegistered.current &&
+        listenedSeconds.current >= LISTEN_THRESHOLD
+      ) {
+        streamRegistered.current = true;
+        registerStream();
+      }
     };
 
-    const currentSong = usePlayerStore(s => s.currentSong);
-    const isPlaying = usePlayerStore(s => s.isPlaying);
-    const volume = usePlayerStore(s => s.volume);
-    const setProgress = usePlayerStore(s => s.setProgress);
-    const setDuration = usePlayerStore(s => s.setDuration);
-    const resetPlayer = usePlayerStore(s => s.resetPlayer);
+    const updateDuration = () => {
+      setDuration(audio.duration);
+    };
 
-    // create audio once
+    const handleEnded = () => {
+      const { repeatMode } = usePlayerStore.getState();
 
-    useEffect(() => {
+      if (repeatMode === "one") {
+        audio.currentTime = 0;
+        void playAudioSafely(audio);
+        return;
+      }
 
-        audioRef.current = new Audio();
+      nextTrack();
+    };
 
-        const audio = audioRef.current;
+    audio.addEventListener("timeupdate", updateTime);
+    audio.addEventListener("loadedmetadata", updateDuration);
+    audio.addEventListener("ended", handleEnded);
 
-        const updateTime = () => {
-            const audio = audioRef.current;
-            if (!audio) return;
+    return () => {
+      audio.pause();
 
-            const current = audio.currentTime;
+      audio.removeEventListener("timeupdate", updateTime);
+      audio.removeEventListener("loadedmetadata", updateDuration);
+      audio.removeEventListener("ended", handleEnded);
 
-            setProgress(current);
+      audio.src = "";
+      audioRef.current = null;
+    };
+  }, []);
 
-            const delta = current - lastTimeRef.current;
+  /*
+   * Register the stream once the listening threshold is reached.
+   */
+  const registerStream = async () => {
+    const song = usePlayerStore.getState().currentSong;
 
-            if (!streamRegistered.current && delta > 0 && delta < 1.5) {
-                listenedSeconds.current += delta;
-                lastTimeRef.current = current;
-            }
+    if (!song || alreadyUpdating.current) {
+      return;
+    }
 
-            if (listenedSeconds.current > LISTEN_THRESHHOLD) {
-                streamRegistered.current = true;
-            }
+    alreadyUpdating.current = true;
 
-            if (!alreadyUpdated.current && streamRegistered.current) {
-                alreadyUpdated.current = true;
+    try {
+      await registerSongStream(song.id);
+    } catch (error) {
+      console.error("Failed to register song stream:", error);
+    }
+  };
 
-                const song = usePlayerStore.getState().currentSong;
-                const playbackSource = usePlayerStore.getState().playbackSource;
-                if (song && authUser && playbackSource) {
-                    updateStreams(authUser?.id, song.id, playbackSource);
-                }
-            }
-        };
+  /*
+   * Load a new song.
+   */
+  useEffect(() => {
+    const audio = audioRef.current;
 
-        const updateDuration = () => {
-            setDuration(audio.duration);
-        };
+    if (!audio || !currentSong) {
+      return;
+    }
 
-        const handleEnded = () => {
-            const { repeatMode, nextTrack } = usePlayerStore.getState();
+    let cancelled = false;
 
-            if (repeatMode === "one") {
-                audio.currentTime = 0;
-                void playAudioSafely(audio);
-                return;
-            }
+    const loadSong = async () => {
+      /*
+       * Reset stream tracking for the new song.
+       */
+      listenedSeconds.current = 0;
+      lastTimeRef.current = 0;
+      streamRegistered.current = false;
+      alreadyUpdating.current = false;
 
-            nextTrack();
-        };
+      audio.pause();
+      audio.currentTime = 0;
+      audio.removeAttribute("src");
+      audio.load();
 
-        audio.addEventListener("timeupdate", updateTime);
+      try {
+        const audioUrl = await getSongStreamUrl(currentSong.id);
 
-        audio.addEventListener("loadedmetadata", updateDuration);
-
-        audio.addEventListener("ended", handleEnded);
-
-        return () => {
-
-            audio.pause();
-
-            audio.removeEventListener("timeupdate", updateTime);
-
-            audio.removeEventListener("loadedmetadata", updateDuration);
-
-            audio.removeEventListener("ended", handleEnded);
-
-        };
-
-    }, []);
-
-    // song changed
-
-    useEffect(() => {
-
-        if (!audioRef.current || !currentSong)
-            return;
-
-        if (isPlaying && authUser && !canPlaySong(authUser.id)) {
-            setMessage({
-                isOpen: true,
-                title: "Daily limit reached",
-                description:
-                    "You have reached your daily listening limit. Upgrade your subscription to continue listening.",
-            });
-
-            audioRef.current.pause();
-            resetPlayer();
-            return;
+        if (cancelled) {
+          return;
         }
 
+        audio.src = audioUrl || "";
+        audio.load();
 
-        audioRef.current.src =
-            currentSong.audioUrl ??
-            `/songs/${currentSong.id}.mp3`;
-
-        audioRef.current.currentTime = 0;
-
-        listenedSeconds.current = 0;
-        lastTimeRef.current = 0;
-        streamRegistered.current = false;
-        alreadyUpdated.current = false;
-
-
-        if (isPlaying) {
-            void playAudioSafely(audioRef.current);
+        if (usePlayerStore.getState().isPlaying) {
+          await playAudioSafely(audio);
+        }
+      } catch (error) {
+        if (cancelled) {
+          return;
         }
 
-    }, [currentSong]);
-
-    // play pause
-
-    useEffect(() => {
-
-        if (!audioRef.current)
-            return;
-
-        if (isPlaying) {
-            void playAudioSafely(audioRef.current);
+        if (error instanceof ApiError) {
+          setMessage({
+            isOpen: true,
+            title: "Unable to play song",
+            description: error.getFirstError(),
+          });
         } else {
-            audioRef.current.pause();
+          setMessage({
+            isOpen: true,
+            title: "Unable to play song",
+            description: "Something went wrong while loading the song.",
+          });
         }
 
-    }, [isPlaying]);
+        resetPlayer();
+      }
+    };
 
-    // volume
+    void loadSong();
 
-    useEffect(() => {
+    return () => {
+      cancelled = true;
+    };
+  }, [currentSong]);
 
-        if (!audioRef.current)
-            return;
+  /*
+   * Play / pause.
+   */
+  useEffect(() => {
+    const audio = audioRef.current;
 
-        audioRef.current.volume = volume;
+    if (!audio) {
+      return;
+    }
 
-    }, [volume]);
+    if (isPlaying) {
+      void playAudioSafely(audio);
+    } else {
+      audio.pause();
+    }
+  }, [isPlaying]);
 
-    // seeking
+  /*
+   * Volume.
+   */
+  useEffect(() => {
+    const audio = audioRef.current;
 
-    const progress = usePlayerStore(s => s.progress);
+    if (!audio) {
+      return;
+    }
 
-    useEffect(() => {
+    audio.volume = volume;
+  }, [volume]);
 
-        if (!audioRef.current)
-            return;
+  /*
+   * Seeking.
+   */
+  useEffect(() => {
+    const audio = audioRef.current;
 
-        if (Math.abs(audioRef.current.currentTime - progress) > 0.25)
-            audioRef.current.currentTime = progress;
+    if (!audio) {
+      return;
+    }
 
-    }, [progress]);
+    if (Math.abs(audio.currentTime - progress) > 0.25) {
+      audio.currentTime = progress;
+      lastTimeRef.current = progress;
+    }
+  }, [progress]);
 
-    return (
-        <Message
-            isOpen={message.isOpen}
-            title={message.title}
-            description={message.description}
-            type="alert"
-            onConfirm={closeMessage}
-        />
-    );
+  return (
+    <Message
+      isOpen={message.isOpen}
+      title={message.title}
+      description={message.description}
+      type="alert"
+      onConfirm={closeMessage}
+    />
+  );
 }
