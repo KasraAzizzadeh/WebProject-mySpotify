@@ -1,7 +1,7 @@
 import { DashboardData, UserProfile, SubscriptionType, PlaylistItem } from '@/types';
 import { getUsers, getPlaylists } from '@/store/mockDb';
 import api, { handleApiError } from '@/services/api';
-import { mapSong, mapAlbum } from '@/utils/mediaUtils';
+import { mapSong, mapAlbum, mapPlaylist } from '@/utils/mediaUtils';
 
 export async function getDashboardData(
   subscriptionType?: SubscriptionType,
@@ -13,23 +13,39 @@ export async function getDashboardData(
   let recentlyPlayed: PlaylistItem[] = [];
 
   if (userId) {
-    const users = getUsers();
-    const user = users.find((u) => u.id === userId);
+    try {
+      const resp = await api.get('/playlists/recent/', { params: { id: userId } });
 
-    if (
-      user &&
-      user.listenerProfile &&
-      Array.isArray(user.listenerProfile.recentlyPlayed) &&
-      user.listenerProfile.recentlyPlayed.length > 0
-    ) {
-      recentlyPlayed = user.listenerProfile.recentlyPlayed
-        .map((pid) => allPlaylists.find((p) => p.id === pid))
-        .filter((p): p is PlaylistItem => !!p);
+      if (Array.isArray(resp.data)) {
+        recentlyPlayed = resp.data.map(mapPlaylist);
+      }
+    } catch (error) {
+      // If backend call fails, fall back to mock DB logic below
+      console.warn('Failed to fetch recent playlists from backend, falling back to client-side mock. Error:', error);
     }
   }
 
   if (!recentlyPlayed || recentlyPlayed.length === 0) {
-    recentlyPlayed = allPlaylists;
+    // fallback: use client-side mock DB as before
+    if (userId) {
+      const users = getUsers();
+      const user = users.find((u) => u.id === userId);
+
+      if (
+        user &&
+        user.listenerProfile &&
+        Array.isArray(user.listenerProfile.recentlyPlayed) &&
+        user.listenerProfile.recentlyPlayed.length > 0
+      ) {
+        recentlyPlayed = user.listenerProfile.recentlyPlayed
+          .map((pid) => allPlaylists.find((p) => p.id === pid))
+          .filter((p): p is PlaylistItem => !!p);
+      }
+    }
+
+    if (!recentlyPlayed || recentlyPlayed.length === 0) {
+      recentlyPlayed = allPlaylists;
+    }
   }
 
   try {

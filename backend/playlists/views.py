@@ -17,6 +17,8 @@ from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializ
     extend_schema_view
 
 from .services import PlaylistService
+from rest_framework.exceptions import PermissionDenied
+from accounts.services import get_recently_played
 
 
 # Create your views here.
@@ -300,10 +302,47 @@ class PlaylistSongsView(generics.ListAPIView):
 
 
 
+@extend_schema(
+    summary="List recent playlists for a user",
+    description=(
+        "Returns playlists belonging to the specified user that overlap with the user's recently played songs. "
+        "Only the user themselves may call this endpoint for their id."
+    ),
+    parameters=[
+        OpenApiParameter(
+            name="id",
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="The id of the user whose recent playlists to return (must be the authenticated user).",
+        )
+    ],
+    responses={
+        status.HTTP_200_OK: PlaylistsSerializer(many=True),
+        status.HTTP_403_FORBIDDEN: FORBIDDEN_RESPONSE,
+    },
+)
+class RecentPlaylistsView(generics.ListAPIView):
+    serializer_class = PlaylistsSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user_id = self.request.query_params.get("id")
+        if not user_id:
+            return Playlist.objects.none()
+        try:
+            uid = int(user_id)
+        except (TypeError, ValueError):
+            return Playlist.objects.none()
+
+        if self.request.user.id != uid:
+            raise PermissionDenied("You can only access your own recent playlists.")
+
+        return PlaylistService.get_recent_playlists_for_user(self.request.user)
+
 
 class PlaylistSongManageView(APIView):
     permission_classes = [IsAuthenticated, IsPlaylistOwner]
-
     def get_playlist(self, playlist_id):
         playlist = get_object_or_404(Playlist, id=playlist_id)
         self.check_object_permissions(self.request, playlist)

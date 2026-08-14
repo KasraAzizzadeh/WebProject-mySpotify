@@ -31,3 +31,18 @@ class PlaylistService:
         PlaylistItem.objects.filter(
             playlist=playlist, position__gt=deleted_position
         ).update(position=models.F("position") - 1)
+
+    @staticmethod
+    def get_recent_playlists_for_user(user):
+        """
+        Return playlists belonging to the given user that contain any of the
+        user's recently played songs. This uses get_recently_played from
+        accounts.services to retrieve the song ids (most-recent first).
+        """
+        from accounts.services import get_recently_played
+
+        song_ids = list(get_recently_played(user))
+        if not song_ids:
+            return Playlist.objects.none()
+
+        return Playlist.objects.filter(owner=user, items__song_id__in=song_ids).distinct()
