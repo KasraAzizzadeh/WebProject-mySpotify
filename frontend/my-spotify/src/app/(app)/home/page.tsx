@@ -82,18 +82,20 @@ export default function HomePage() {
         <>
           <ExclusiveRow user={authUser} data={data} />
 
-          <ItemRow
-            title={
-              <div className="flex items-center gap-2 text-white font-bold text-xl tracking-tight">
-                <History className="w-5 h-5 text-neutral-400" />
-                <span>Recently Played Playlists</span>
-              </div>
-            }
-            type="playlist"
-            items={data.recentlyPlayed}
-            user={authUser}
-            onShowAll={() => setView('recentlyPlayed')}
-          />
+          {Array.isArray(data.recentlyPlayed) && data.recentlyPlayed.length > 0 && (
+            <ItemRow
+              title={
+                <div className="flex items-center gap-2 text-white font-bold text-xl tracking-tight">
+                  <History className="w-5 h-5 text-neutral-400" />
+                  <span>Recently Played Playlists</span>
+                </div>
+              }
+              type="playlist"
+              items={data.recentlyPlayed}
+              user={authUser}
+              onShowAll={() => setView('recentlyPlayed')}
+            />
+          )}
 
           <ItemRow
             title={

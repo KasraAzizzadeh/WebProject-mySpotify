@@ -11,6 +11,7 @@ export async function getDashboardData(
   const allPlaylists = getPlaylists();
 
   let recentlyPlayed: PlaylistItem[] = [];
+  let backendReturned = false; // indicates whether backend responded successfully (even if empty array)
 
   if (userId) {
     try {
@@ -18,14 +19,19 @@ export async function getDashboardData(
 
       if (Array.isArray(resp.data)) {
         recentlyPlayed = resp.data.map(mapPlaylist);
+        backendReturned = true;
       }
     } catch (error) {
-      // If backend call fails, fall back to mock DB logic below
+      // If backend call fails, we'll fall back to mock DB logic below
       console.warn('Failed to fetch recent playlists from backend, falling back to client-side mock. Error:', error);
+      backendReturned = false;
     }
   }
 
-  if (!recentlyPlayed || recentlyPlayed.length === 0) {
+  // Only use client-side mock fallback when the backend was not called or it failed.
+  // If the backend returned an empty array intentionally, keep it empty so the
+  // UI can hide the Recent Playlists row as requested.
+  if (!backendReturned) {
     // fallback: use client-side mock DB as before
     if (userId) {
       const users = getUsers();
@@ -47,6 +53,7 @@ export async function getDashboardData(
       recentlyPlayed = allPlaylists;
     }
   }
+
 
   try {
     // Fetch trending songs and recent albums from backend API in parallel
