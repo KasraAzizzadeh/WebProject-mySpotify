@@ -4,9 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { UserProfile, SongItem, AlbumItem } from '@/types';
+import { UserProfile, AlbumItem } from '@/types';
 import { userService } from '@/services/userService';
-import { getAlbums, getSongs } from '@/store/mockDb';
+import { getAlbumsForAccount } from '@/services/mediaService';
 
 import { useUserProfile } from '@/hooks/queries/user/useUserProfile';
 
@@ -34,7 +34,7 @@ export default function ProfilePage() {
   const [followLoading, setFollowLoading] = useState(false);
   
   // Real Database Discography States
-  const [artistSongs, setArtistSongs] = useState<SongItem[]>([]);
+  const [artistSingles, setArtistSingles] = useState<AlbumItem[]>([]);
   const [artistAlbums, setArtistAlbums] = useState<AlbumItem[]>([]);
   
   // Modals Confirmation States
@@ -69,17 +69,22 @@ export default function ProfilePage() {
     }
 
     if (freshUser.role === 'artist') {
-      const allAlbums = getAlbums();
-      const allSongs = getSongs();
+      (async () => {
+        try {
+          const releases = await getAlbumsForAccount(targetUserId);
+          // normalize: releaseType may be 'single' or 'album'
+          const singles = releases.filter(r => (r.releaseType ?? '').toLowerCase() === 'single');
+          const albums = releases.filter(r => (r.releaseType ?? '').toLowerCase() === 'album');
 
-      const allowedAlbumIds = freshUser.artistProfile?.albums || [];
-      const allowedSingleIds = freshUser.artistProfile?.singles || [];
-
-      const userAlbums = allAlbums.filter(album => allowedAlbumIds.includes(album.id));
-      const userSingles = allSongs.filter(song => allowedSingleIds.includes(song.id));
-
-      setArtistAlbums(userAlbums);
-      setArtistSongs(userSingles);
+          setArtistSingles(singles);
+          setArtistAlbums(albums);
+        } catch (error) {
+          console.error('Failed to load artist releases for profile:', error);
+          // fallback: clear lists so UI shows 'No albums available' instead of crashing
+          setArtistSingles([]);
+          setArtistAlbums([]);
+        }
+      })();
     }
   }, [freshUser, authUser?.id]);
 
@@ -235,10 +240,12 @@ export default function ProfilePage() {
   const followingCount = dbUser.following?.length || 0;
   const shouldShowApplyArtistButton = isOwnProfile && dbUser.role === 'listener' && dbUser.artistProfile?.verificationStatus !== 'pending' && dbUser.artistProfile?.verificationStatus !== 'approved';
   
-  // Calculate total streams based strictly on standalone track items
+  // Calculate total streams using album listeners as a fallback when song-level data isn't loaded
   const totalStreams = dbUser.role === 'artist' 
-    ? artistSongs.reduce((sum, song) => sum + (song.streams || 0), 0) 
+    ? (artistSingles.concat(artistAlbums)).reduce((sum, a) => sum + (a.listeners || 0), 0)
     : 0;
+
+  const viewerIsBasic = authUser?.subscriptionType === 'basic';
 
   return (
     <main className="p-4 md:p-8 max-w-4xl mx-auto space-y-8">
@@ -254,6 +261,7 @@ export default function ProfilePage() {
         onAvatarDirectUpload={handleAvatarDirectUpload}
         onAvatarRemove={handleAvatarRemoveClick}
         onLogoutTrigger={() => setIsLogoutModalOpen(true)}
+        viewerIsBasic={viewerIsBasic}
       />
 
       <ProfileStats 
@@ -277,6 +285,7 @@ export default function ProfilePage() {
         setIsEditing={setIsEditing}
         handleCancelEdit={handleCancelEdit}
         handleSaveProfile={handleSaveProfile}
+        viewerIsBasic={viewerIsBasic}
       />
 
       {shouldShowApplyArtistButton && (
@@ -294,8 +303,8 @@ export default function ProfilePage() {
       {dbUser.role === 'artist' && (
         <ProfileDiscography 
           subscriptionType={dbUser.subscriptionType} 
-          mockArtistSongs={artistSongs} 
-          mockArtistAlbums={artistAlbums}
+          artistSingles={artistSingles}
+          artistAlbums={artistAlbums}
         />
       )}
 

@@ -18,6 +18,7 @@ interface ProfileDetailsProps {
   setIsEditing: (val: boolean) => void;
   handleCancelEdit: () => void;
   handleSaveProfile: () => void;
+  viewerIsBasic?: boolean;
 }
 
 export default function ProfileDetails({
@@ -34,6 +35,7 @@ export default function ProfileDetails({
   setIsEditing,
   handleCancelEdit,
   handleSaveProfile,
+  viewerIsBasic,
 }: ProfileDetailsProps) {
   return (
     <section className="bg-neutral-900/30 border border-neutral-800/50 p-6 md:p-8 rounded-3xl space-y-6">
@@ -41,7 +43,7 @@ export default function ProfileDetails({
       <div className="flex items-center justify-between gap-4 pb-2 border-b border-neutral-800/60">
         <h2 className="text-xl font-bold text-white tracking-tight">Profile Details</h2>
         
-        {isOwnProfile && (
+        {isOwnProfile && !viewerIsBasic && (
           <div className="flex items-center gap-2 transform -translate-y-[2px]">
             {isEditing ? (
               <div className="flex items-center gap-2">

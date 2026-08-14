@@ -12,6 +12,7 @@ interface ProfileCardProps {
   onAvatarDirectUpload: (file: File) => void;
   onAvatarRemove: () => void;
   onLogoutTrigger?: () => void;
+  viewerIsBasic?: boolean;
 }
 
 export default function ProfileCard({
@@ -24,10 +25,12 @@ export default function ProfileCard({
   onAvatarDirectUpload,
   onAvatarRemove,
   onLogoutTrigger,
+  viewerIsBasic,
 }: ProfileCardProps) {
 
   const isVerified = dbUser.artistProfile?.verificationStatus === 'approved';
   const isPending = dbUser.artistProfile?.verificationStatus === 'pending';
+  const viewerIsBasicFlag = viewerIsBasic === true;
 
   return (
     <section className="bg-neutral-900/50 border border-neutral-800/60 rounded-3xl p-6 md:p-10 flex flex-col md:flex-row items-center md:items-start gap-8 relative overflow-hidden backdrop-blur-sm">
@@ -54,6 +57,7 @@ export default function ProfileCard({
           hasPermission={hasAvatarPermission}
           onFileSelect={onAvatarDirectUpload}
           onRemovePhoto={onAvatarRemove}
+          viewerIsBasic={viewerIsBasicFlag}
         />
       </div>
 

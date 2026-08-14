@@ -144,6 +144,56 @@ export const discoverAlbums = async (
   }
 };
 
+export const getAlbumsForAccount = async (userId: string): Promise<AlbumItem[]> => {
+  // First attempt: use common axios instance (which attaches tokens). If it fails
+  // due to interceptor/token issues, fall back to a direct fetch call that
+  // constructs the Authorization header explicitly.
+  try {
+    const response = await api.get(`/accounts/${userId}/albums/`);
+
+    return response.data.map(mapAlbum);
+  } catch (error) {
+    console.warn(`api.get /accounts/${userId}/albums/ failed, trying fetch fallback:`, error);
+
+    try {
+      const base = (process.env.NEXT_PUBLIC_API_URL ?? '').replace(/\/$/, '');
+      const url = `${base}/accounts/${encodeURIComponent(userId)}/albums/`;
+
+      let headers: Record<string, string> = { 'Accept': 'application/json' };
+      const storedToken = localStorage.getItem('accessToken');
+      if (storedToken) {
+        try {
+          const token = JSON.parse(storedToken);
+          headers['Authorization'] = `Bearer ${token}`;
+        } catch {
+          headers['Authorization'] = `Bearer ${storedToken}`;
+        }
+      }
+      if (storedToken) {
+        try {
+          const token = JSON.parse(storedToken);
+          headers['Authorization'] = `Bearer ${token}`;
+        } catch {
+          headers['Authorization'] = `Bearer ${storedToken}`;
+        }
+      }
+
+      const resp = await fetch(url, { headers });
+      if (!resp.ok) {
+        const body = await resp.text();
+        console.error('Fetch fallback failed:', resp.status, body);
+        return [];
+      }
+
+      const data = await resp.json();
+      return (data || []).map(mapAlbum);
+    } catch (fetchErr) {
+      console.error('Fallback fetch for account albums also failed:', fetchErr);
+      return []; // degrade gracefully
+    }
+  }
+};
+
 export const discoverPlaylists = async (
   query: string,
   filter: DiscoverFilter = "latest"

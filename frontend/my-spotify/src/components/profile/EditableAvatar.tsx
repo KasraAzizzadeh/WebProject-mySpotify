@@ -12,6 +12,7 @@ interface EditableAvatarProps {
   hasPermission: boolean;
   onFileSelect: (file: File) => void;
   onRemovePhoto: () => void;
+  viewerIsBasic?: boolean;
 }
 
 export default function EditableAvatar({
@@ -22,11 +23,15 @@ export default function EditableAvatar({
   hasPermission,
   onFileSelect,
   onRemovePhoto,
+  viewerIsBasic = false,
 }: EditableAvatarProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [localError, setLocalError] = useState("");
 
   const handleContainerClick = (e: React.MouseEvent) => {
+    // If viewer is basic, make the avatar read-only (no hover or click)
+    if (viewerIsBasic) return;
+
     if (!isOwnProfile) return;
     if ((e.target as HTMLElement).closest(".delete-btn")) return;
 
@@ -54,7 +59,7 @@ export default function EditableAvatar({
       {/* Outer Anchor Container Wrapper (Allows Group Hover State Tracking) */}
       <div 
         onClick={handleContainerClick}
-        className={`relative group ${isOwnProfile ? "cursor-pointer" : ""}`}
+        className={`relative ${isOwnProfile && !viewerIsBasic ? "group cursor-pointer" : ""}`}
       >
         
         {/* Rounded Image Frame Canvas Mask */}
@@ -65,7 +70,7 @@ export default function EditableAvatar({
           <Avatar src={src} alt={alt} size={size} />
 
           {/* Hover Center Control Panel Overlay */}
-          {isOwnProfile && (
+          {isOwnProfile && !viewerIsBasic && (
             <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out z-10">
               <div className="bg-neutral-900/90 p-2 rounded-full border border-neutral-700 text-white shadow-xl hover:text-green-400 transition-colors flex items-center justify-center">
                 <Pencil size={16} />
@@ -89,7 +94,7 @@ export default function EditableAvatar({
         </div>
 
         {/* Floating Lower Right Pencil Badge (Moved Outside Overflow Frame to prevent clipping) */}
-        {isOwnProfile && (
+        {isOwnProfile && !viewerIsBasic && (
           <div className="absolute bottom-0 right-0 bg-neutral-900 border border-neutral-800 p-2 rounded-full text-neutral-400 shadow-lg opacity-100 group-hover:opacity-0 transition-opacity duration-300 ease-in-out z-20 flex items-center justify-center translate-x-1 translate-y-1">
             <Pencil size={12} className="text-neutral-400" />
           </div>
