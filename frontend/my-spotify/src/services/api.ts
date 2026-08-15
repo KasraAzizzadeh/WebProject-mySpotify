@@ -51,7 +51,7 @@ api.interceptors.request.use(
 
             // Ensure headers exist and attach Authorization
             (config.headers as any) = config.headers || {};
-            (config.headers as any).Authorization = `Bearer ${tokenValue}`;
+            (config.headers as any).Authorization = 'Bearer ' + tokenValue;
         }
 
         return config;
@@ -119,7 +119,7 @@ api.interceptors.response.use(
 
             // Attach new access token to the original request and retry
             (originalRequest.headers as any) = originalRequest.headers || {};
-            (originalRequest.headers as any).Authorization = `Bearer ${newAccessToken}`;
+            (originalRequest.headers as any).Authorization = 'Bearer ' + newAccessToken;
 
             return api(originalRequest);
         } catch (refreshError) {
@@ -168,3 +168,4 @@ export function getMediaUrl(path: string | null | undefined) {
 
     return `${BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
+

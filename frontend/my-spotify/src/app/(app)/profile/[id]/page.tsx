@@ -72,12 +72,22 @@ export default function ProfilePage() {
       (async () => {
         try {
           const releases = await getAlbumsForAccount(targetUserId);
-          // normalize: releaseType may be 'single' or 'album'
-          const singles = releases.filter(r => (r.releaseType ?? '').toLowerCase() === 'single');
-          const albums = releases.filter(r => (r.releaseType ?? '').toLowerCase() === 'album');
+          // classify by actual song count: treat releases with 0-1 songs as singles (show in songs section)
+          // and releases with >1 songs as albums (show in albums section).
+          const singlesByCount: AlbumItem[] = [];
+          const albumsByCount: AlbumItem[] = [];
 
-          setArtistSingles(singles);
-          setArtistAlbums(albums);
+          releases.forEach((r) => {
+            const songCount = Array.isArray(r.songList) ? r.songList.length : 0;
+            if (songCount <= 1) {
+              singlesByCount.push(r);
+            } else {
+              albumsByCount.push(r);
+            }
+          });
+
+          setArtistSingles(singlesByCount);
+          setArtistAlbums(albumsByCount);
         } catch (error) {
           console.error('Failed to load artist releases for profile:', error);
           // fallback: clear lists so UI shows 'No albums available' instead of crashing

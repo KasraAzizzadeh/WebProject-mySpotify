@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserProfile } from "@/types";
 import api, { handleApiError } from '@/services/api';
+import { mapAuthUser } from '@/utils/authUtils';
 
 type AuthContextType = {
   user: UserProfile | null;
@@ -12,6 +13,7 @@ type AuthContextType = {
   isLoading: boolean;
   loginUser: (user: UserProfile, accessToken: string, refreshToken: string) => void;
   updateUser: (user: UserProfile) => void;
+  refreshUser?: () => Promise<void>;
   logoutUser: () => void;
   deleteUser: () => Promise<void>;
 };
@@ -45,6 +47,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     }
   }, []);
+
+  // Refresh the authenticated user's profile from the backend and update context
+  const refreshUser = async (): Promise<void> => {
+    if (!user?.id) return;
+    try {
+      const resp = await api.get(`/accounts/${user.id}/`);
+      const mapped = mapAuthUser(resp.data);
+      setUser(mapped);
+      localStorage.setItem('user', JSON.stringify(mapped));
+    } catch (err) {
+      try {
+        handleApiError(err);
+      } catch (e) {
+        console.error('Auth refresh failed:', e);
+      }
+    }
+  };
 
   const loginUser = (user: UserProfile, accessToken: string, refreshToken: string) => {
     setUser(user);
@@ -100,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, refreshToken, isLoading, loginUser, updateUser, logoutUser, deleteUser }}>
+    <AuthContext.Provider value={{ user, accessToken, refreshToken, isLoading, loginUser, updateUser, refreshUser, logoutUser, deleteUser }}>
       {!isLoading ? children : (
         <div className="h-screen bg-black flex items-center justify-center text-neutral-500 text-sm">
           Resuming secure session...

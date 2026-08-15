@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 import Alert from '@/components/ui/Alert';
 import Message from '@/components/ui/Message';
@@ -20,8 +21,9 @@ import { useUserProfile } from '@/hooks/queries/user/useUserProfile';
 type ModalState = 'none' | 'delete' | 'plans' | 'save_success';
 
 export default function SettingsPage() {
-  const { user: authUser, deleteUser } = useAuth();
+  const { user: authUser, deleteUser, refreshUser } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [successDescription, setSuccessDescription] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -49,6 +51,18 @@ export default function SettingsPage() {
       const transaction_status = params.get('transaction_status') ?? undefined;
       const plan = params.get('subscription_plan') ?? undefined;
       const reference_id = params.get('reference_id') ?? undefined;
+      const refresh = params.get('refresh');
+
+      if (refresh === '1') {
+        (async () => {
+          try {
+            if (typeof refreshUser === 'function') await refreshUser();
+            if (authUser?.id) queryClient.invalidateQueries({ queryKey: ['user-profile', authUser.id] });
+          } catch (e) {
+            // ignore
+          }
+        })();
+      }
 
       if (status === 'success' || transaction_status === 'SUCCESS') {
         setTimeout(() => setPaymentResult({ status: 'success', plan, referenceId: reference_id }), 0);

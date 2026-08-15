@@ -25,6 +25,10 @@ from .services import (
     verify_subscription_payment,
 )
 
+# Import user serializer so we can return updated user after verification
+from accounts.serializers import AuthUserSerializer
+from accounts.models import User
+
 
 @extend_schema(
     summary="List subscription plans",
@@ -195,12 +199,18 @@ class SubscriptionVerifyView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Refresh user instance so we return updated subscription info and feature flags
+        user = User.objects.select_related('subscription_plan', 'settings', 'artist_profile')\
+            .prefetch_related('followers', 'following', 'playlists').get(pk=transaction.user.pk)
+
         response_data = {
             "transaction_id": transaction.id,
             "transaction_status": transaction.status,
-            "subscription_plan": transaction.user.subscription_plan.name if transaction.user.subscription_plan else None,
-            "subscription_valid_until": transaction.user.subscription_valid_until,
+            "subscription_plan": user.subscription_plan.name if user.subscription_plan else None,
+            "subscription_valid_until": user.subscription_valid_until,
             "reference_id": transaction.reference_id,
+            # Include full serialized user so clients can immediately apply new features
+            "user": AuthUserSerializer(user).data,
         }
 
         if return_url:
@@ -213,6 +223,8 @@ class SubscriptionVerifyView(APIView):
                     "transaction_status": transaction.status,
                     "subscription_plan": response_data["subscription_plan"],
                     "reference_id": response_data["reference_id"] or "",
+                    # hint frontend to refresh session data after redirect
+                    "refresh": "1",
                 }
             )
             if response_data["subscription_valid_until"]:

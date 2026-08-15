@@ -175,7 +175,7 @@ export const getAlbumsForAccount = async (userId: string): Promise<AlbumItem[]> 
         // token is a raw string
       }
 
-      headers['Authorization'] = `Bearer ${tokenValue}`;
+      headers['Authorization'] = 'Bearer ' + tokenValue;
 
       const resp = await fetch(url, { headers });
       if (!resp.ok) {
@@ -298,3 +298,4 @@ export const downloadSong = async (songId: string): Promise<void> => {
     handleApiError(error);
   }
 };
+
