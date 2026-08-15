@@ -1,4 +1,4 @@
-import { getAlbums, getSongs, getPlaylists, getUsers, savePlaylists, saveSongs , saveUsers } from "@/store/mockDb";
+﻿import { getAlbums, getSongs, getPlaylists, getUsers, savePlaylists, saveSongs , saveUsers } from "@/store/mockDb";
 import { AlbumItem, SongItem, PlaylistItem, DiscoverData, DiscoverFilter, PlaybackSource } from "@/types";
 import { getBackendFilter, isSameDay, mapAlbum, mapPlaylist, mapSong } from "@/utils/mediaUtils";
 import api, { getMediaUrl } from "@/services/api"
@@ -161,22 +161,21 @@ export const getAlbumsForAccount = async (userId: string): Promise<AlbumItem[]> 
 
       let headers: Record<string, string> = { 'Accept': 'application/json' };
       const storedToken = localStorage.getItem('accessToken');
-      if (storedToken) {
-        try {
-          const token = JSON.parse(storedToken);
-          headers['Authorization'] = `Bearer ${token}`;
-        } catch {
-          headers['Authorization'] = `Bearer ${storedToken}`;
-        }
+
+      // If there is no stored token, don't attempt a fallback that will 401.
+      if (!storedToken) {
+        console.warn('No access token available for fetch fallback; skipping fallback.');
+        return [];
       }
-      if (storedToken) {
-        try {
-          const token = JSON.parse(storedToken);
-          headers['Authorization'] = `Bearer ${token}`;
-        } catch {
-          headers['Authorization'] = `Bearer ${storedToken}`;
-        }
+
+      let tokenValue = storedToken as string;
+      try {
+        tokenValue = JSON.parse(storedToken as string);
+      } catch {
+        // token is a raw string
       }
+
+      headers['Authorization'] = `Bearer ${tokenValue}`;
 
       const resp = await fetch(url, { headers });
       if (!resp.ok) {

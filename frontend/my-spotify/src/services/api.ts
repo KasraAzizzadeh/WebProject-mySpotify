@@ -1,4 +1,4 @@
-import axios, {AxiosError, InternalAxiosRequestConfig} from "axios";
+﻿import axios, {AxiosError, InternalAxiosRequestConfig} from "axios";
 import { ApiValidationErrors } from "@/types";
 
 export class ApiError extends Error {
@@ -39,10 +39,19 @@ const api = axios.create({
 // attach access token
 api.interceptors.request.use(
     (config) => {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessTokenRaw = localStorage.getItem("accessToken");
 
-        if (accessToken) {
-            config.headers.Authorization = `Bearer ${JSON.parse(accessToken)}`;
+        if (accessTokenRaw) {
+            let tokenValue = accessTokenRaw as string;
+            try {
+                tokenValue = JSON.parse(accessTokenRaw as string);
+            } catch {
+                // token stored as raw string, keep tokenValue
+            }
+
+            // Ensure headers exist and attach Authorization
+            (config.headers as any) = config.headers || {};
+            (config.headers as any).Authorization = `Bearer ${tokenValue}`;
         }
 
         return config;
@@ -63,7 +72,7 @@ const refreshAccessToken = async (): Promise<string> => {
     const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/accounts/refresh/`,
         {
-            refresh: JSON.parse(refreshToken),
+            refresh: JSON.parse(refreshToken as string),
         }
     );
 
@@ -108,8 +117,9 @@ api.interceptors.response.use(
 
             const newAccessToken = await refreshPromise;
 
-            originalRequest.headers.Authorization =
-                `Bearer ${newAccessToken}`;
+            // Attach new access token to the original request and retry
+            (originalRequest.headers as any) = originalRequest.headers || {};
+            (originalRequest.headers as any).Authorization = `Bearer ${newAccessToken}`;
 
             return api(originalRequest);
         } catch (refreshError) {

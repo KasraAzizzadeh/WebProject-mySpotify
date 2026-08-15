@@ -154,6 +154,7 @@ export default function ManagePage() {
           myReleases={myReleases}
           mySongs={mySongs}
           estimatedRevenue={dbUser?.artistProfile?.estRevenue ?? 0}
+          uniqueListeners={dbUser?.artistProfile?.uniqueListener}
         />
 
         <div className="bg-[#121212] border border-neutral-800/50 rounded-2xl overflow-hidden shadow-xl">

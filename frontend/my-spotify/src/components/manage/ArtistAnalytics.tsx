@@ -8,11 +8,17 @@ interface ArtistAnalyticsProps {
   myReleases: AlbumItem[];
   mySongs: SongItem[];
   estimatedRevenue?: number;
+  uniqueListeners?: number; // monthly unique listeners from artist profile
 }
 
-export default function ArtistAnalytics({ myReleases, mySongs, estimatedRevenue = 0 }: ArtistAnalyticsProps) {
+export default function ArtistAnalytics({ myReleases, mySongs, estimatedRevenue = 0, uniqueListeners }: ArtistAnalyticsProps) {
   const totalStreams = mySongs.reduce((sum, song) => sum + song.streams, 0);
-  const totalListeners = myReleases.reduce((sum, rel) => sum + rel.listeners, 0);
+  const totalListenersFromReleases = myReleases.reduce((sum, rel) => sum + rel.listeners, 0);
+
+  // Prefer explicit uniqueListeners passed from the artist profile; fall back to sum of release listeners
+  const monthlyListeners = typeof uniqueListeners === 'number' && !isNaN(uniqueListeners)
+    ? uniqueListeners
+    : totalListenersFromReleases;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -32,7 +38,7 @@ export default function ArtistAnalytics({ myReleases, mySongs, estimatedRevenue 
         </div>
         <div>
           <p className="text-xs font-bold text-neutral-500 uppercase">Monthly Listeners</p>
-          <p className="text-xl font-black text-white">{totalListeners.toLocaleString()}</p>
+          <p className="text-xl font-black text-white">{monthlyListeners.toLocaleString()}</p>
         </div>
       </div>
 
