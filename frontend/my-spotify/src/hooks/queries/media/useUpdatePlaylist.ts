@@ -9,6 +9,7 @@ export function useUpdatePlaylist(playlistId: string) {
             name: string;
             description?: string;
             imageFile?: File;
+            isPrivate: boolean;
         }) => updatePlaylist(playlistId, updates),
 
         onSuccess: (updatedPlaylist) => {

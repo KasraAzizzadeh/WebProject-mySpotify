@@ -70,19 +70,27 @@ export default function DiscoverPage() {
         );
     }
 
+    const showLatest = !query && filter === 'latest';
+
+    const sectionTitles = {
+        songs: showLatest ? 'Latest Songs' : 'Songs',
+        albums: showLatest ? 'Latest Albums' : 'Albums',
+        playlists: showLatest ? 'Latest Playlists' : 'Playlists',
+    };
+
     const viewConfigs = {
         songs: {
-            title: query ? 'Songs' : 'Latest Songs',
+            title: sectionTitles.songs,
             type: 'song' as const,
             items: data.songs,
         },
         albums: {
-            title: query ? 'Albums' : 'Latest Albums',
+            title: sectionTitles.albums,
             type: 'album' as const,
             items: data.albums,
         },
         playlists: {
-            title: query ? 'Playlists' : 'Latest Playlists',
+            title: sectionTitles.playlists,
             type: 'playlist' as const,
             items: data.playlists,
         },
@@ -120,7 +128,7 @@ export default function DiscoverPage() {
                 <>
                     {data.songs.length > 0 && (
                         <ItemRow
-                            title={query ? 'Songs' : 'Latest Songs'}
+                            title={sectionTitles.songs}
                             type="song"
                             items={data.songs}
                             user={user}
@@ -130,7 +138,7 @@ export default function DiscoverPage() {
 
                     {data.albums.length > 0 && (
                         <ItemRow
-                            title={query ? 'Albums' : 'Latest Albums'}
+                            title={sectionTitles.albums}
                             type="album"
                             items={data.albums}
                             user={user}
@@ -140,7 +148,7 @@ export default function DiscoverPage() {
 
                     {data.playlists.length > 0 && (
                         <ItemRow
-                            title={query ? 'Playlists' : 'Latest Playlists'}
+                            title={sectionTitles.playlists}
                             type="playlist"
                             items={data.playlists}
                             user={user}

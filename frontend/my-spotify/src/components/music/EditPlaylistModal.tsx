@@ -124,43 +124,48 @@ export default function EditPlaylistModal({
               onChange={(e) => setDescription(e.target.value)}
             />
 
-            <button
-              type="button"
-              onClick={() => setIsPrivate((current) => !current)}
-              className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-950 px-4 py-3 text-left transition hover:border-neutral-600"
-            >
-              <div className="flex items-center gap-3">
-                {isPrivate ? (
-                  <Lock size={18} className="text-green-500" />
-                ) : (
-                  <Unlock size={18} className="text-neutral-400" />
-                )}
-
-                <div>
-                  <p className="text-sm font-medium text-white">
-                    {isPrivate ? "Private playlist" : "Public playlist"}
-                  </p>
-
-                  <p className="text-xs text-neutral-500">
-                    {isPrivate
-                      ? "Only you can view this playlist."
-                      : "Other users can view this playlist."}
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className={`relative h-6 w-11 rounded-full transition ${
-                  isPrivate ? "bg-green-500" : "bg-neutral-700"
-                }`}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsPrivate((current) => !current)}
+                disabled={updatePlaylistMutation.isPending}
+                aria-label={
+                  isPrivate
+                    ? "Make playlist public"
+                    : "Make playlist private"
+                }
+                title={
+                  isPrivate
+                    ? "Make playlist public"
+                    : "Make playlist private"
+                }
+                className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-neutral-800 disabled:opacity-50"
               >
-                <div
-                  className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-transform ${
-                    isPrivate ? "translate-x-6" : "translate-x-1"
-                  }`}
-                />
+                {isPrivate ? (
+                  <Lock
+                    size={20}
+                    className="text-green-500"
+                  />
+                ) : (
+                  <Unlock
+                    size={20}
+                    className="text-neutral-400"
+                  />
+                )}
+              </button>
+
+              <div>
+                <p className="text-sm font-medium text-white">
+                  {isPrivate ? "Private playlist" : "Public playlist"}
+                </p>
+
+                <p className="text-xs text-neutral-500">
+                  {isPrivate
+                    ? "Only you can view this playlist."
+                    : "Other users can view this playlist."}
+                </p>
               </div>
-            </button>
+            </div>
 
             {alert && <Alert message={alert} />}
 

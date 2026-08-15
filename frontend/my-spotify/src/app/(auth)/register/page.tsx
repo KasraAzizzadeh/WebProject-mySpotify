@@ -32,7 +32,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [birthDate, setBirthDate] = useState("");
-  const [gender, setGender] = useState("male");
+  const [gender, setGender] = useState("MALE");
   const [acceptPolicy, setAcceptPolicy] = useState(false);
   const [applyArtist, setApplyArtist] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -160,9 +160,9 @@ export default function LoginPage() {
             onChange={(e) => {setGender(e.target.value); clearBackendError();}}
         >
             <option value={""}>Select Gender</option>
-            <option value={"male"}>Male</option>
-            <option value={"female"}>Female</option>
-            <option value={"undetermined"}>Rather not say</option>
+            <option value={"MALE"}>Male</option>
+            <option value={"FEMALE"}>Female</option>
+            <option value={"NOT_SPECIFIED"}>Rather not say</option>
         </Select>
 
         {/* add the privacy policy page */}

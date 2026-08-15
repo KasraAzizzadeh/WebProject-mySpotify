@@ -6,10 +6,12 @@ from .models import Playlist, PlaylistItem
 
 
 class PlaylistsSerializer(serializers.ModelSerializer):
+    songs = serializers.SerializerMethodField()
+
     class Meta:
         model = Playlist
-        fields = ["id", "name", "owner", "cover_image", "created_at"]
-        read_only_fields = ["id", "owner", "cover_image", "created_at"]
+        fields = ["id", "name", "owner", "cover_image", "created_at", "songs"]
+        read_only_fields = ["id", "owner", "cover_image", "created_at", "songs"]
 
     def create(self, validated_data):
         user = self.context['request'].user
@@ -19,6 +21,9 @@ class PlaylistsSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f"You can create at most {limit} playlists with your current subscription.")
 
         return Playlist.objects.create(**validated_data, owner=user)
+
+    def get_songs(self, obj):
+        return list(obj.items.order_by("position").values_list("song_id", flat=True))
 
 
 class PlaylistDetailSerializer(serializers.ModelSerializer):
