@@ -1,0 +1,63 @@
+services:
+
+  db:
+    image: postgres:18
+    container_name: myspotify-db
+    environment:
+      POSTGRES_DB: myspotify
+      POSTGRES_USER: myspotifyadmin
+      POSTGRES_PASSWORD: Admin_1234
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+  backend:
+    build:
+      context: ./backend
+    container_name: myspotify-backend
+    environment:
+      SECRET_KEY: django-insecure-jcibn@0xt=zi&k&5!^oq=s=brk_p&ke^e#yi_#%owt^z1n7!*@
+      DEBUG: "True"
+
+      DATABASE_NAME: myspotify
+      DATABASE_USER: myspotifyadmin
+      DATABASE_PASSWORD: Admin_1234
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+
+      ZARINPAL_MERCHANT_ID: 123456789012345678901234567890123456
+      ZARINPAL_CALLBACK_URL: http://localhost:8000/subscriptions/verify/
+      ZARINPAL_SANDBOX: "True"
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - ./backend:/app
+
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend/my-spotify
+    container_name: myspotify-frontend
+
+    environment:
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:8000/
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - ./frontend/my-spotify:/app
+      - /app/node_modules
+      - /app/.next
+
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  media_data:

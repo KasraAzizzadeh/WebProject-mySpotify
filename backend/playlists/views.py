@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 
 from songs.models import Song
 from .models import Playlist, PlaylistItem
-from .permissions import IsPlaylistOwner
+from .permissions import IsPlaylistOwner, CanViewPlaylist
 from .serializers import PlaylistsSerializer, PlaylistDetailSerializer, PlaylistSongsSerializer
 
 from rest_framework import serializers
@@ -286,7 +286,7 @@ class PlaylistDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_permissions(self):
         if self.request.method == "GET":
-            return [IsAuthenticated()]
+            return [IsAuthenticated(), CanViewPlaylist()]
 
         return [IsAuthenticated(), IsPlaylistOwner()]
 
