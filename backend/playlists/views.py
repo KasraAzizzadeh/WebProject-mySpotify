@@ -283,7 +283,12 @@ FORBIDDEN_RESPONSE = OpenApiResponse(
 class PlaylistDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PlaylistDetailSerializer
     parser_classes = [JSONParser, MultiPartParser, FormParser]
-    permission_classes = [IsAuthenticated, IsPlaylistOwner]
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [IsAuthenticated()]
+
+        return [IsAuthenticated(), IsPlaylistOwner()]
 
     def get_queryset(self):
         return Playlist.objects.all()
